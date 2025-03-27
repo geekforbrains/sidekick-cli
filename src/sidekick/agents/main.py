@@ -1,6 +1,8 @@
 import os
+from datetime import datetime, timezone
 
 from pydantic_ai import Agent
+from pydantic_ai.messages import ModelRequest, ToolReturnPart
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from sidekick import config, session
@@ -24,6 +26,33 @@ class MainAgent:
         if session.current_model.startswith("anthropic"):
             return {"max_tokens": 5000}
         return None
+
+    def _check_for_confirmation(self, node, agent_run):
+        for part in node.model_response.parts:
+            if part.part_kind == "tool-call":
+                try:
+                    ui.confirm(part, node)
+                except ui.UserAbort:
+                    self._patch_tool_message(part.tool_name, part.tool_call_id)
+                    raise
+
+    def _patch_tool_message(self, tool_name, tool_call_id):
+        """
+        If a tool is cancelled, we need to patch a response otherwise
+        some models will throw an error.
+        """
+        session.messages.append(ModelRequest(
+            parts=[
+                ToolReturnPart(
+                    tool_name=tool_name,
+                    content="Operation aborted by user.",
+                    tool_call_id=tool_call_id,
+                    timestamp=datetime.now(timezone.utc),
+                    part_kind="tool-return",
+                )
+            ],
+            kind="request"
+        ))
 
     def create_agent(self) -> Agent:
         return Agent(
@@ -60,25 +89,25 @@ class MainAgent:
             ui.error(f"Invalid model index: {model_index}")
 
     async def process_request(self, req):
-        hist = session.messages.copy()
         try:
             if not self.agent:
                 self.agent = self.get_agent()
 
-            async with self.agent.iter(req, message_history=hist) as agent_run:
+            async with self.agent.iter(req, message_history=session.messages) as agent_run:
                 async for node in agent_run:
                     if hasattr(node, "request"):
-                        hist.append(node.request)
+                        session.messages.append(node.request)
                     if hasattr(node, "model_response"):
-                        hist.append(node.model_response)
+                        session.messages.append(node.model_response)
+                        self._check_for_confirmation(node, agent_run)
                 ui.agent(agent_run.result.data)
                 self._calc_usage(agent_run)
+        except ui.UserAbort:
+            ui.status("Operation aborted.\n")
         except UnexpectedModelBehavior as e:
             ui.error(f"Model behavior error: {e.message}")
         except Exception as e:
             ui.error(f"Unexpected error: {e}")
-        finally:
-            session.messages = hist
 
     def _calc_usage(self, agent_run):
         data = agent_run.usage()

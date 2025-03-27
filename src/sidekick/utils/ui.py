@@ -30,6 +30,10 @@ colors = DotDict(
 )
 
 
+class UserAbort(Exception):
+    pass
+
+
 def _panel(title: str, text: str, top=1, right=0, bottom=1, left=1, border_style=None, **kwargs):
     border_style = border_style or kwargs.get("style")
     panel = Panel(Padding(text, 1), title=title, title_align="left", border_style=border_style)
@@ -81,3 +85,20 @@ def show_banner():
     version = Padding("v0.1.0", (0, 0, 1, 2))
     print(banner, style=colors.primary)
     print(version, style=colors.secondary)
+
+
+def confirm(tool_call, node):
+    if tool_call.tool_name in session.tool_ignore:
+        return
+
+    session.spinner.stop()
+    _panel("Confirmation", Pretty(node), style=colors.warning)
+    resp = input("  Continue? (y/N/(i)gnore): ")
+
+    if resp.lower() == "i":
+        session.tool_ignore.append(tool_call.tool_name)
+
+    elif resp.lower() != "y":
+        raise UserAbort("User aborted.")
+
+    session.spinner.start()

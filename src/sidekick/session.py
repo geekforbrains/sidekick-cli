@@ -4,3 +4,5 @@ agents = {}
 messages = []
 total_cost = 0.0
 current_model = config.default_model
+spinner = None
+tool_ignore = []

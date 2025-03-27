@@ -18,8 +18,14 @@ agent = MainAgent()
 
 async def process_request(res):
     msg = "[bold green]Thinking..."
-    with ui.console.status(msg, spinner=ui.spinner):
+    # Track spinner in session so we can start/stop
+    # during confirmation steps
+    session.spinner = ui.console.status(msg, spinner=ui.spinner)
+    session.spinner.start()
+    try:
         res = await agent.process_request(res)
+    finally:
+        session.spinner.stop()
 
 
 async def get_user_input():
