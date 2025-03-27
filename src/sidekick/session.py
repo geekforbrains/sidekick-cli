@@ -5,4 +5,5 @@ messages = []
 total_cost = 0.0
 current_model = config.default_model
 spinner = None
-tool_ignore = []
+tool_ignore = []  # Tools to ignore during confirmation
+yolo = False  # Skip all confirmations if true

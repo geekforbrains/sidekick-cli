@@ -88,7 +88,7 @@ def show_banner():
 
 
 def confirm(tool_call, node):
-    if tool_call.tool_name in session.tool_ignore:
+    if session.yolo or tool_call.tool_name in session.tool_ignore:
         return
 
     session.spinner.stop()

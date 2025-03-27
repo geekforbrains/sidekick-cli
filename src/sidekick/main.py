@@ -50,6 +50,14 @@ async def interactive_shell():
         if cmd == "exit":
             break
 
+        if cmd == "/yolo":
+            session.yolo = not session.yolo
+            if session.yolo:
+                ui.success("Ooh shit, its YOLO time!\n")
+            else:
+                ui.status("Pfft, boring...\n")
+            continue
+
         if cmd == "/dump":
             ui.dump_messages()
             continue
