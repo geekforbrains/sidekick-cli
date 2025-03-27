@@ -73,10 +73,13 @@ sidekick
 
 ```bash
 # Install development dependencies
-pip install -e ".[dev]"
+make install
 
 # Run linting
 make lint
+
+# Run tests
+make test
 ```
 
 ## License
