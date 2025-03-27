@@ -2,8 +2,8 @@ import os
 from datetime import datetime, timezone
 
 from pydantic_ai import Agent
-from pydantic_ai.messages import ModelRequest, ToolReturnPart
 from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.messages import ModelRequest, ToolReturnPart
 
 from sidekick import config, session
 from sidekick.tools import fetch, read_file, run_command, update_file, web_search, write_file
@@ -41,18 +41,20 @@ class MainAgent:
         If a tool is cancelled, we need to patch a response otherwise
         some models will throw an error.
         """
-        session.messages.append(ModelRequest(
-            parts=[
-                ToolReturnPart(
-                    tool_name=tool_name,
-                    content="Operation aborted by user.",
-                    tool_call_id=tool_call_id,
-                    timestamp=datetime.now(timezone.utc),
-                    part_kind="tool-return",
-                )
-            ],
-            kind="request"
-        ))
+        session.messages.append(
+            ModelRequest(
+                parts=[
+                    ToolReturnPart(
+                        tool_name=tool_name,
+                        content="Operation aborted by user.",
+                        tool_call_id=tool_call_id,
+                        timestamp=datetime.now(timezone.utc),
+                        part_kind="tool-return",
+                    )
+                ],
+                kind="request",
+            )
+        )
 
     def create_agent(self) -> Agent:
         return Agent(
