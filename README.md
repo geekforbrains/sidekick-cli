@@ -1,38 +1,84 @@
-# Sidekick Research Tool
+# Sidekick
 
-An interactive command-line research assistant powered by multiple LLM providers.
+Your agentic CLI developer.
+
+## Overview
+
+Sidekick is an AI agent that helps you with development tasks. It's powered by multiple LLM providers 
+and provides a seamless interactive experience in your terminal, allowing you to get help with coding, 
+run commands, manage files, and search the web without leaving your workflow.
 
 ## Features
 
-- Interactive REPL interface with multiline input support
-- Rich terminal output with syntax highlighting and markdown formatting
-- Support for multiple AI models (Google Gemini, OpenAI, Anthropic Claude)
-- Built-in tools for:
-  - Running shell commands
-  - Reading and writing files
-  - Fetching web content
-- Session management with history tracking
+- No vendor lock-in. Use whichever LLM provider you prefer.
+- CLI-first design. Ditch the clunky IDE.
+- Easily switch between models in the same session.
+- Cost and token tracking.
+- Web searching and fetching built-in.
 
-## Setup
+## Installation
 
-1. Install dependencies: `pip install -r requirements.txt`
-2. Configure environment variables (API keys)
-3. Run the application: `python main.py`
-4. Install Playwright for fetch tool: `python -m playwright install`
+### Using pip
+
+```bash
+pip install sidekick-cli
+```
+
+For the best fetching results, install the Playwright:
+
+```bash
+python -m playwright install
+```
+
+### From Source
+
+1. Clone the repository
+2. Install dependencies: `pip install .` (or `pip install -e .` for development)
+3. Install Playwright: `python -m playwright install`
+
+## Configuration
+
+You'll need to set API keys for each of the providers you want to use.
+
+```bash
+# For OpenAI models
+OPENAI_API_KEY=your_openai_key
+
+# For Google Gemini models
+GOOGLE_API_KEY=your_google_key
+
+# For Anthropic Claude models
+ANTHROPIC_API_KEY=your_anthropic_key
+```
+
+You can either set these in your environment or create a `.env` file in your project directory.
 
 ## Usage
 
-Available commands:
+Start Sidekick by running:
+
+```bash
+sidekick
+```
+
+### Available Commands
+
 - `/clear` - Clear message history
-- `/dump` - Show current message history (debugging)
-- `/help` - Show available commands
+- `/dump` - Show current message history (for debugging)
 - `/model` - List available models
-- `/model <num>` - Switch to a specific model
+- `/model <num>` - Switch to a specific model (by index)
+- `exit` - Exit the application
 
 ## Development
 
-Run linting: `make lint`
+```bash
+# Install development dependencies
+pip install -e ".[dev]"
 
-## Ideas / Future Work
+# Run linting
+make lint
+```
 
-- "Sentiment" agent that checks if a tool call was intended when AI responds without calling a tool
+## License
+
+MIT
