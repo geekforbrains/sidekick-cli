@@ -97,11 +97,7 @@ async def interactive_shell():
 
 
 @app.command()
-def main(
-    logfire_enabled: bool = typer.Option(
-        False, "--logfire", help="Enable Logfire tracing."
-    )
-):
+def main(logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable Logfire tracing.")):
     """Main entry point for the Sidekick CLI."""
     ui.show_banner()
     if logfire_enabled:

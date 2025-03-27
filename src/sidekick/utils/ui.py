@@ -92,7 +92,9 @@ def confirm(tool_call, node):
         return
 
     session.spinner.stop()
-    _panel("Confirmation", Pretty(node), style=colors.warning)
+    title = f"Tool({tool_call.tool_name})"
+    content = "\n".join(v for v in tool_call.args.values()).strip()
+    _panel(title, Pretty(content), style=colors.warning)
     resp = input("  Continue? (y/N/(i)gnore): ")
 
     if resp.lower() == "i":
