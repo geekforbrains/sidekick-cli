@@ -12,7 +12,6 @@ from sidekick.utils import ui
 
 load_dotenv()
 app = typer.Typer(help=config.name)
-logfire.configure(console=False)
 agent = MainAgent()
 
 
@@ -43,6 +42,9 @@ async def interactive_shell():
         # while in async mode.
         with patch_stdout():
             res = await get_user_input()
+
+        if res is None:
+            break
 
         res = res.strip()
         cmd = res.lower()
@@ -89,12 +91,22 @@ async def interactive_shell():
 
         # All output must be done after patched output otherwise
         # ANSI escape sequences will be printed.
-        await process_request(res)
+        # Process only non-empty requests
+        if res:
+            await process_request(res)
 
 
 @app.command()
-def main():
+def main(
+    logfire_enabled: bool = typer.Option(
+        False, "--logfire", help="Enable Logfire tracing."
+    )
+):
+    """Main entry point for the Sidekick CLI."""
     ui.show_banner()
+    if logfire_enabled:
+        logfire.configure(console=False)
+        ui.status("Logfire enabled.\n")
     asyncio.run(interactive_shell())
 
 
