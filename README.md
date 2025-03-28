@@ -68,6 +68,7 @@ sidekick
 - `/help` - Show available commands
 - `/model` - List available models
 - `/model <num>` - Switch to a specific model (by index)
+- `/undo` - Undo most recent changes
 - `exit` - Exit the application
 
 ## Development
