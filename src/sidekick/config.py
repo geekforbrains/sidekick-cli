@@ -2,11 +2,11 @@ from pathlib import Path
 
 name = "Sidekick"
 models = [
+    "anthropic:claude-3-7-sonnet-latest",
+    "google-gla:gemini-2.0-flash",
     "google-gla:gemini-2.5-pro-exp-03-25",
     "openai:gpt-4o",
     "openai:o3-mini",
-    "anthropic:claude-3-7-sonnet-latest",
-    "google-gla:gemini-2.0-flash",
 ]
 model_pricing = {
     # No public pricing yet, so use 2.0-flash numbers
@@ -42,6 +42,7 @@ default_model = models[0]
 CONFIG_DIR = Path.home() / ".config"
 CONFIG_FILE = CONFIG_DIR / "sidekick.json"
 DEFAULT_CONFIG = {
+    "default_model": "",
     "env": {
         "ANTHROPIC_API_KEY": "",
         "GEMINI_API_KEY": "",

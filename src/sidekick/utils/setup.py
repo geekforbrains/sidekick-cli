@@ -2,11 +2,34 @@ import json
 import os
 import sys
 
-from rich import print
+from prompt_toolkit import prompt
+from prompt_toolkit.validation import ValidationError, Validator
 
 from sidekick import session
-from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG
+from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, models
 from sidekick.utils import ui
+
+
+class ModelValidator(Validator):
+    """Validate default provider selection"""
+
+    def __init__(self, index):
+        # index is the range (non-zero) of the provider list
+        # to test against
+        self.index = index
+
+    def validate(self, document):
+        text = document.text.strip()
+        if not text:
+            raise ValidationError(message="Provider number cannot be empty")
+        elif text and not text.isdigit():
+            raise ValidationError(message="Invalid provider number")
+        elif text.isdigit():
+            number = int(text)
+            if number < 0 or number >= self.index:
+                raise ValidationError(
+                    message="Invalid provider number",
+                )
 
 
 def load_or_create_config():
@@ -49,66 +72,61 @@ def set_environment_variables():
 
 def _key_to_title(key):
     """
-    Convert a key to a title string.
+    Convert a provider env key to a title string.
+    Makes for nicer display in the UI.
     """
     return key.split("_")[0].title()
 
 
-def onboarding():
-    from prompt_toolkit import prompt
-    from prompt_toolkit.validation import Validator, ValidationError
-
-    message1 = (
+def _step1():
+    message = (
         "Welcome to Sidekick!\n"
         "Let's get you setup. First, we'll need to set some environment variables.\n"
         "Skip the ones you don't need."
     )
-    ui._panel("Setup", message1, top=0, border_style=ui.colors.primary)
+    ui._panel("Setup", message, top=0, border_style=ui.colors.primary)
 
-    envs = {}
-    for key, _ in session.user_config["env"].items():
-        envs[key] = prompt(f"  {_key_to_title(key)}: ", is_password=True)
-    session.user_config["env"] = envs
+    envs = session.user_config["env"].copy()
+    for key, _ in envs.items():
+        provider = _key_to_title(key)
+        val = prompt(f"  {provider}: ", is_password=True)
+        val = val.strip()
+        if val:
+            session.user_config["env"][key] = val
 
-    # TODO only ask for default if more than one provider set
 
-    message2 = "Which provider would you like to use by default?\n\n"
-    index = 1
-    for k, v in session.user_config["env"].items():
-        if not v:
-            continue
-        message2 += f"  {index} - {_key_to_title(k)}\n"
-        index += 1
-    message2 = message2.strip()
+def _step2():
+    message = "Which model would you like to use by default?\n\n"
 
-    class NumberValidator(Validator):
-        def __init__(self, index):
-            self.index = index
+    for index, key in enumerate(models):
+        message += f"  {index} - {key}\n"
+    message = message.strip()
 
-        def validate(self, document):
-            text = document.text
+    ui._panel("Default Model", message, border_style=ui.colors.primary)
+    choice = int(
+        prompt(
+            "  Default model (#): ",
+            validator=ModelValidator(len(models)),
+        )
+    )
+    session.user_config["default_model"] = models[choice]
 
-            if text and not text.isdigit():
-                i = 0
 
-                # Get index of first non numeric character.
-                # We want to move the cursor here.
-                for i, c in enumerate(text):
-                    if not c.isdigit():
-                        break
+def _step3():
+    message = (
+        "Config saved to: [bold]~/.config/sidekick.json[/bold]"
+    )
+    ui._panel("Finished", message, border_style=ui.colors.success)
 
-                raise ValidationError(
-                    message="This input contains non-numeric characters",
-                    cursor_position=i
-                )
 
-    # TODO make custom index map to determine selection
+def onboarding():
+    _step1()
+    _step2()
+    _step3()
 
-    ui._panel("Setup", message2, border_style=ui.colors.primary)
-    # prompt("  Default provider: ")
-    number = int(prompt("Choose a provider (#): ", validator=NumberValidator(index)))
-    print(f"You said: {number}")
-
+    # Save the updated configs
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(session.user_config, f, indent=4)
 
 
 def setup():
@@ -117,9 +135,6 @@ def setup():
     config and set environment variables.
 
     """
-    # for now always remove ~/.config/sidekick.json for testing
-    if CONFIG_FILE.is_file():
-        os.remove(CONFIG_FILE)
     # Load returns true if new config created (and requires onboarding)
     if load_or_create_config():
         onboarding()

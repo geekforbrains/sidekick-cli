@@ -102,10 +102,10 @@ def main(logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable L
     """Main entry point for the Sidekick CLI."""
     ui.show_banner()
     setup()
-    # if logfire_enabled:
-    #     logfire.configure(console=False)
-    #     ui.status("Logfire enabled.\n")
-    # asyncio.run(interactive_shell())
+    if logfire_enabled:
+        logfire.configure(console=False)
+        ui.status("Logfire enabled.\n")
+    asyncio.run(interactive_shell())
 
 
 if __name__ == "__main__":
