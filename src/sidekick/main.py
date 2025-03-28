@@ -9,6 +9,7 @@ from prompt_toolkit.shortcuts import PromptSession
 from sidekick import config, session
 from sidekick.agents.main import MainAgent
 from sidekick.utils import ui
+from sidekick.utils.setup import setup
 
 load_dotenv()
 app = typer.Typer(help=config.name)
@@ -100,10 +101,11 @@ async def interactive_shell():
 def main(logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable Logfire tracing.")):
     """Main entry point for the Sidekick CLI."""
     ui.show_banner()
-    if logfire_enabled:
-        logfire.configure(console=False)
-        ui.status("Logfire enabled.\n")
-    asyncio.run(interactive_shell())
+    setup()
+    # if logfire_enabled:
+    #     logfire.configure(console=False)
+    #     ui.status("Logfire enabled.\n")
+    # asyncio.run(interactive_shell())
 
 
 if __name__ == "__main__":

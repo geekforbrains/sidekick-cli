@@ -1,5 +1,6 @@
 from . import config
 
+user_config = {}
 agents = {}
 messages = []
 total_cost = 0.0

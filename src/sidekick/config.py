@@ -1,3 +1,5 @@
+from pathlib import Path
+
 name = "Sidekick"
 models = [
     "google-gla:gemini-2.5-pro-exp-03-25",
@@ -35,3 +37,17 @@ model_pricing = {
     },
 }
 default_model = models[0]
+
+
+CONFIG_DIR = Path.home() / ".config"
+CONFIG_FILE = CONFIG_DIR / "sidekick.json"
+DEFAULT_CONFIG = {
+    "env": {
+        "ANTHROPIC_API_KEY": "",
+        "GEMINI_API_KEY": "",
+        "OPENAI_API_KEY": "",
+    },
+    "settings": {
+        "max_retries": 10,
+    },
+}
