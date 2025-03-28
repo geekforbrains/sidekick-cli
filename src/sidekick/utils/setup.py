@@ -32,7 +32,7 @@ class ModelValidator(Validator):
                 )
 
 
-def load_or_create_config():
+def _load_or_create_config():
     """
     Load user config from ~/.config/sidekick.json,
     creating it with defaults if missing.
@@ -55,17 +55,30 @@ def load_or_create_config():
     return config_created
 
 
-def set_environment_variables():
+def _set_environment_variables():
     """
     Set environment variables from the config file.
     """
     if "env" in session.user_config and isinstance(session.user_config["env"], dict):
-        for key, value in session.user_config["env"].items():
-            if not isinstance(value, str):
-                raise ValueError(f"Invalid env value in config: {key}")
-            value = value.strip()
-            if value:
-                os.environ[key] = value
+        env_dict = session.user_config["env"]
+
+        # Handle provider keys
+        if "providers" in env_dict and isinstance(env_dict["providers"], dict):
+            for key, value in env_dict["providers"].items():
+                if not isinstance(value, str):
+                    raise ValueError(f"Invalid provider env value in config: {key}")
+                value = value.strip()
+                if value:
+                    os.environ[key] = value
+
+        # Handle tool keys
+        if "tools" in env_dict and isinstance(env_dict["tools"], dict):
+            for key, value in env_dict["tools"].items():
+                if not isinstance(value, str):
+                    raise ValueError(f"Invalid tool env value in config: {key}")
+                value = value.strip()
+                if value:
+                    os.environ[key] = value
     else:
         raise ValueError("Invalid env in config. Must be a dictionary.")
 
@@ -86,13 +99,13 @@ def _step1():
     )
     ui._panel("Setup", message, top=0, border_style=ui.colors.primary)
 
-    envs = session.user_config["env"].copy()
-    for key, _ in envs.items():
+    provider_envs = session.user_config["env"]["providers"].copy()
+    for key, _ in provider_envs.items():
         provider = _key_to_title(key)
         val = prompt(f"  {provider}: ", is_password=True)
         val = val.strip()
         if val:
-            session.user_config["env"][key] = val
+            session.user_config["env"]["providers"][key] = val
 
 
 def _step2():
@@ -113,16 +126,25 @@ def _step2():
 
 
 def _step3():
-    message = (
-        "Config saved to: [bold]~/.config/sidekick.json[/bold]"
-    )
-    ui._panel("Finished", message, border_style=ui.colors.success)
+    """Setup tools"""
+    message = "Now lets setup tools. Skip any you don't want to use"
+    ui._panel("Tools", message, border_style=ui.colors.primary)
+
+    # At the moment, we only have Brave search
+    brave_api_key = prompt("  Brave Search API Key: ", is_password=True)
+    brave_api_key = brave_api_key.strip()
+
+    if brave_api_key:
+        session.user_config["env"]["tools"]["BRAVE_SEARCH_API_KEY"] = brave_api_key
 
 
-def onboarding():
+def _onboarding():
     _step1()
     _step2()
     _step3()
+
+    message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
+    ui._panel("Finished", message, border_style=ui.colors.success)
 
     # Save the updated configs
     with open(CONFIG_FILE, "w") as f:
@@ -136,6 +158,6 @@ def setup():
 
     """
     # Load returns true if new config created (and requires onboarding)
-    if load_or_create_config():
-        onboarding()
-    set_environment_variables()
+    if _load_or_create_config():
+        _onboarding()
+    _set_environment_variables()
