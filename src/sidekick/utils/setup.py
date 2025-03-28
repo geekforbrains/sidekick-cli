@@ -88,7 +88,8 @@ def _key_to_title(key):
     Convert a provider env key to a title string.
     Makes for nicer display in the UI.
     """
-    return key.split("_")[0].title()
+    words = [word.title() for word in key.split("_")]
+    return " ".join(words).replace("Api", "API")
 
 
 def _step1():
