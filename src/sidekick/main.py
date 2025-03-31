@@ -12,7 +12,7 @@ from sidekick.utils import ui
 from sidekick.utils.setup import setup
 
 load_dotenv()
-app = typer.Typer(help=config.name)
+app = typer.Typer(help=config.NAME)
 agent = MainAgent()
 
 
@@ -102,6 +102,12 @@ def main(logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable L
     """Main entry point for the Sidekick CLI."""
     ui.show_banner()
     setup()
+
+    # Set the current model from user config
+    if not session.user_config.get("default_model"):
+        raise ValueError("No default model found in config at [bold]~/.config/sidekick.json")
+    session.current_model = session.user_config["default_model"]
+
     if logfire_enabled:
         logfire.configure(console=False)
         ui.status("Logfire enabled.\n")

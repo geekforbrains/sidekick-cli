@@ -84,7 +84,7 @@ class MainAgent:
 
     def switch_model(self, model_index):
         try:
-            session.current_model = config.models[int(model_index)]
+            session.current_model = config.MODELS[int(model_index)]
             self.agent = self.get_agent()
             ui.agent(f"I'm now using model: {session.current_model}", bottom=1)
         except IndexError:
@@ -117,8 +117,8 @@ class MainAgent:
         cached_tokens = details.get("cached_tokens", 0)
         non_cached_input = data.request_tokens - cached_tokens
 
-        pricing = config.model_pricing.get(
-            session.current_model, config.model_pricing[config.default_model]
+        pricing = config.MODEL_PRICING.get(
+            session.current_model, config.MODEL_PRICING[config.MODELS[0]]
         )
 
         input_cost = non_cached_input / 1_000_000 * pricing["input"]

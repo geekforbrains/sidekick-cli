@@ -6,7 +6,7 @@ from prompt_toolkit import prompt
 from prompt_toolkit.validation import ValidationError, Validator
 
 from sidekick import session
-from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, models
+from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
 from sidekick.utils import ui
 
 
@@ -112,7 +112,7 @@ def _step1():
 def _step2():
     message = "Which model would you like to use by default?\n\n"
 
-    for index, key in enumerate(models):
+    for index, key in enumerate(MODELS):
         message += f"  {index} - {key}\n"
     message = message.strip()
 
@@ -120,10 +120,10 @@ def _step2():
     choice = int(
         prompt(
             "  Default model (#): ",
-            validator=ModelValidator(len(models)),
+            validator=ModelValidator(len(MODELS)),
         )
     )
-    session.user_config["default_model"] = models[choice]
+    session.user_config["default_model"] = MODELS[choice]
 
 
 def _step3():

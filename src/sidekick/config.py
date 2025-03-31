@@ -1,14 +1,14 @@
 from pathlib import Path
 
-name = "Sidekick"
-models = [
+NAME = "Sidekick"
+MODELS = [
     "anthropic:claude-3-7-sonnet-latest",
     "google-gla:gemini-2.0-flash",
     "google-gla:gemini-2.5-pro-exp-03-25",
     "openai:gpt-4o",
     "openai:o3-mini",
 ]
-model_pricing = {
+MODEL_PRICING = {
     # No public pricing yet, so use 2.0-flash numbers
     "google-gla:gemini-2.5-pro-exp-03-25": {
         "input": 0.10,
@@ -36,8 +36,6 @@ model_pricing = {
         "output": 15.00,
     },
 }
-default_model = models[0]
-
 
 CONFIG_DIR = Path.home() / ".config"
 CONFIG_FILE = CONFIG_DIR / "sidekick.json"
