@@ -2,6 +2,7 @@ import os
 import subprocess
 import time
 from pathlib import Path
+from pydantic_ai.messages import ModelResponse, TextPart
 
 from .. import session
 
@@ -132,6 +133,8 @@ def commit_for_undo(message_prefix="sidekick"):
 def perform_undo():
     """
     Undo the most recent change by resetting to the previous commit.
+    Also adds a system message to the chat history to inform the AI
+    that the last changes were undone.
     
     Returns:
         tuple: (bool, str) - Success status and message
@@ -139,13 +142,13 @@ def perform_undo():
     # Get the session directory and git dir
     session_dir = get_session_dir()
     sidekick_git_dir = session_dir / ".git"
-    
+
     if not sidekick_git_dir.exists():
         return False, "Undo system not initialized"
-    
+
     try:
         git_dir_arg = f"--git-dir={sidekick_git_dir}"
-        
+
         # Get commit log to check if we have commits to undo
         result = subprocess.run(
             ["git", git_dir_arg, "log", "--format=%H", "-n", "2"],
@@ -153,18 +156,40 @@ def perform_undo():
             text=True,
             check=True
         )
-        
+
         commits = result.stdout.strip().split("\n")
         if len(commits) < 2:
             return False, "Nothing to undo"
-        
+
+        # Get the commit message of the commit we're undoing for context
+        commit_msg_result = subprocess.run(
+            ["git", git_dir_arg, "log", "--format=%B", "-n", "1"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        commit_msg = commit_msg_result.stdout.strip()
+
         # Perform reset to previous commit
         subprocess.run(
             ["git", git_dir_arg, "reset", "--hard", "HEAD~1"],
             capture_output=True,
             check=True
         )
-        
+
+        # Add a system message to the chat history to inform the AI
+        # about the undo operation
+        session.messages.append(
+            ModelResponse(
+                parts=[
+                    TextPart(
+                        content=f"The last changes were undone. Commit message of undone changes: {commit_msg}"
+                    )
+                ],
+                kind="response"
+            )
+        )
+
         return True, "Successfully undid last change"
     except Exception as e:
         return False, f"Error performing undo: {e}"

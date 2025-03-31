@@ -25,14 +25,12 @@ async def process_request(res):
     session.spinner = ui.console.status(msg, spinner=ui.spinner)
     session.spinner.start()
     
-    # If undo is initialized and last commit was from sidekick or None, make a user commit
     if session.undo_initialized:
         commit_for_undo("user")
     
     try:
         res = await agent.process_request(res)
         
-        # After processing, make a sidekick commit if changes were made
         if session.undo_initialized:
             commit_for_undo("sidekick")
     finally:
@@ -89,7 +87,6 @@ async def interactive_shell():
             continue
 
         if cmd == "/undo":
-            # Perform undo operation
             success, message = perform_undo()
             if success:
                 ui.success(message)
