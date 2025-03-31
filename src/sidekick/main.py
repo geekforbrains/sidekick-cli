@@ -19,6 +19,7 @@ agent = MainAgent()
 
 
 async def process_request(res):
+    ui.line()
     msg = "[bold green]Thinking..."
     # Track spinner in session so we can start/stop
     # during confirmation steps
