@@ -153,7 +153,6 @@ def list_cwd(max_depth=3):
     """
     ignore_patterns = _load_gitignore_patterns()
     if ignore_patterns is None:
-        print("Using default ignore patterns.")  # Inform user
         ignore_patterns = DEFAULT_IGNORE_PATTERNS
 
     file_list = []
@@ -174,12 +173,10 @@ def list_cwd(max_depth=3):
             current_depth = rel_root.count(os.sep) + 1
 
         # --- Depth Pruning ---
-        # If current depth is max_depth, process files but clear dirs to stop descent
         if current_depth >= max_depth:
             dirs[:] = []
 
         # --- Directory Ignoring ---
-        # Iterate over a copy of dirs for safe removal while iterating
         original_dirs = list(dirs)
         dirs[:] = []  # Reset dirs, only add back non-ignored ones
         for d in original_dirs:
@@ -191,16 +188,11 @@ def list_cwd(max_depth=3):
             #     print(f"Ignoring dir: {dir_rel_path}")
 
         # --- File Processing ---
-        # Process files only if within max_depth (current_depth <= max_depth)
-        # Note: os.walk yields files at the current 'root', which is at 'current_depth'
-        # So if current_depth is 2, files are at depth 2. If max_depth is 2, we include these.
         if current_depth <= max_depth:
             for f in files:
                 file_rel_path = os.path.join(rel_root, f) if rel_root else f
                 if not _is_ignored(file_rel_path, f, ignore_patterns):
                     # Standardize path separators for consistency
                     file_list.append(file_rel_path.replace(os.sep, "/"))
-                # else: # Optional debug print
-                #     print(f"Ignoring file: {file_rel_path}")
 
-    return sorted(file_list)  # Return sorted list
+    return sorted(file_list)
