@@ -40,6 +40,10 @@ def _panel(title: str, text: str, top=1, right=0, bottom=1, left=1, border_style
     print(Padding(panel, (top, right, bottom, left)), **kwargs)
 
 
+def line():
+    console.line()
+
+
 def print(text: str, **kwargs):
     console.print(text, **kwargs)
 
