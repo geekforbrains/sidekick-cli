@@ -87,6 +87,50 @@ def show_banner():
     print(version, style=colors.secondary)
 
 
+def show_help():
+    """
+    Display the available commands from the README.md file.
+    This function dynamically reads the README to ensure the help text
+    stays in sync with the documentation.
+    """
+    import re
+    from pathlib import Path
+    from rich.table import Table
+    
+    # Find the project root directory
+    root_dir = Path(__file__).resolve().parents[3]
+    readme_path = root_dir / "README.md"
+    
+    try:
+        with open(readme_path, "r") as f:
+            readme_content = f.read()
+            
+        # Extract the commands section
+        commands_match = re.search(r"### Available Commands\s+([\s\S]+?)(?=##|\Z)", readme_content)
+        
+        if commands_match:
+            commands_text = commands_match.group(1).strip()
+            # Extract individual commands with their descriptions
+            command_pattern = r'`(.*?)`\s*-\s*(.*)'
+            command_matches = re.findall(command_pattern, commands_text)
+            
+            # Create a table for nicer formatting
+            table = Table(show_header=False, box=None, padding=(0, 2, 0, 0))
+            table.add_column("Command", style="white", justify="right")
+            table.add_column("Description", style="white")
+            
+            # Add each command to the table
+            for cmd, desc in command_matches:
+                table.add_row(cmd, desc)
+                
+            # Create panel with title and the table
+            _panel("Available Commands", table, border_style=colors.muted)
+        else:
+            warning("Could not find commands section in README.md")
+    except Exception as e:
+        error(f"Error reading commands from README: {str(e)}")
+
+
 def confirm(tool_call, node):
     if session.yolo or tool_call.tool_name in session.tool_ignore:
         return

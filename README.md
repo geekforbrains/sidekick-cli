@@ -65,6 +65,7 @@ sidekick
 
 - `/clear` - Clear message history
 - `/dump` - Show current message history (for debugging)
+- `/help` - Show available commands
 - `/model` - List available models
 - `/model <num>` - Switch to a specific model (by index)
 - `exit` - Exit the application

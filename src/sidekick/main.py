@@ -70,6 +70,10 @@ async def interactive_shell():
             ui.show_banner()
             session.messages = []
             continue
+            
+        if cmd == "/help":
+            ui.show_help()
+            continue
 
         # Debug commands for UI
         if cmd.startswith("/debug"):
