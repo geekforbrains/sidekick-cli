@@ -1,3 +1,5 @@
+import sys
+import traceback
 import sentry_sdk
 
 from sidekick import config, session
@@ -52,3 +54,18 @@ def setup_sentry():
     
     # Set user ID to anonymous session ID
     sentry_sdk.set_user({"id": session.session_id})
+
+
+def handle_exception(exc_type, exc_value, exc_traceback):
+    """Custom exception handler that logs to Sentry if telemetry is enabled."""
+    
+    # Only send to Sentry if telemetry is enabled
+    if hasattr(session, 'telemetry_enabled') and session.telemetry_enabled:
+        sentry_sdk.capture_exception((exc_type, exc_value, exc_traceback))
+    
+    # Show user a friendly error message, avoid rich here to ensure error is visible
+    print(f"\nAn unexpected error occurred: {exc_value}", file=sys.stderr)
+    
+    # Print traceback to stderr
+    traceback_str = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    print(traceback_str, file=sys.stderr)

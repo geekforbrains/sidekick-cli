@@ -1,15 +1,10 @@
 import fnmatch
 import os
-import sys
-import traceback
 import uuid
 from pathlib import Path
 
 from sidekick import session
 from sidekick.utils.undo import get_session_dir
-
-
-import sentry_sdk
 from sidekick.utils import telemetry
 
 # Default ignore patterns if .gitignore is not found
@@ -146,22 +141,6 @@ def _is_ignored(rel_path, name, patterns):
 def get_cwd():
     """Returns the current working directory."""
     return os.getcwd()
-
-
-def handle_exception(exc_type, exc_value, exc_traceback):
-    """Custom exception handler that logs to Sentry if telemetry is enabled."""
-    
-    # Only send to Sentry if telemetry is enabled
-    if hasattr(session, 'telemetry_enabled') and session.telemetry_enabled:
-        sentry_sdk.capture_exception((exc_type, exc_value, exc_traceback))
-    
-    # Show user a friendly error message, avoid rich here to ensure error is visible
-    print(f"\nAn unexpected error occurred: {exc_value}", file=sys.stderr)
-    
-    # Print traceback to stderr
-    traceback_str = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-    print(traceback_str, file=sys.stderr)
-
 
 def cleanup_session():
     """

@@ -11,7 +11,8 @@ from sidekick import config, session
 from sidekick.agents.main import MainAgent
 from sidekick.utils import ui
 from sidekick.utils.setup import setup
-from sidekick.utils.system import cleanup_session, handle_exception
+from sidekick.utils.system import cleanup_session
+from sidekick.utils.telemetry import handle_exception
 from sidekick.utils.undo import init_undo_system, commit_for_undo, perform_undo
 
 load_dotenv()
