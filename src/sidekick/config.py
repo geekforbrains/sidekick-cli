@@ -53,5 +53,8 @@ DEFAULT_CONFIG = {
     },
     "settings": {
         "max_retries": 10,
+        "tool_ignore": [
+            "read_file",
+        ],
     },
 }

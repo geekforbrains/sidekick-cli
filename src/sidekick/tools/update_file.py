@@ -1,4 +1,3 @@
-import difflib
 import os
 
 from pydantic_ai.exceptions import ModelRetry
@@ -51,28 +50,10 @@ def update_file(filepath: str, target: str, patch: str) -> str:
                 "Was the `target` identical to the `patch`? Please check the file content."
             )
 
-        # Diff generation - useful for logging/confirmation step (handled externally now)
-        original_lines = original.splitlines(keepends=True)
-        new_lines = new_content.splitlines(keepends=True)
-        diff = "".join(
-            difflib.unified_diff(
-                original_lines,
-                new_lines,
-                fromfile=filepath,
-                tofile=f"{filepath} (updated)",
-                lineterm="",
-            )
-        )
-        # ui.debug(f"Proposed change diff for {filepath}:\n{diff}")
-
-        # Confirmation should be handled by the LLM/user interaction layer.
-        # This tool assumes confirmation was obtained.
-
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(new_content)
 
-        success_msg = f"File '{filepath}' updated successfully."
-        return success_msg
+        return f"File '{filepath}' updated successfully."
     except ModelRetry as e:
         ui.warning(str(e))
         raise e  # Re-raise
