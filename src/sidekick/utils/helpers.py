@@ -12,6 +12,22 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
 
+def key_to_title(key):
+    """
+    Convert key to title, replacing underscores with spaces and capitalizing words.
+
+    Replace words found in `CAPITALIZE` with uppercase.
+    """
+    UPPERCASE = ["Api", "Id", "Url"]
+    words = key.split("_")
+    for i, word in enumerate(words):
+        if word in UPPERCASE:
+            words[i] = word.upper()
+        else:
+            words[i] = word.title()
+    return " ".join(words)
+
+
 def ext_to_lang(path):
     """
     Get the language from the file extension. Default to `text` if not found.

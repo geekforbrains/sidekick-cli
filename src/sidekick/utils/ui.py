@@ -5,7 +5,7 @@ from rich.panel import Panel
 from rich.pretty import Pretty
 
 from sidekick import config, session
-from sidekick.utils.helpers import DotDict, ext_to_lang, render_file_diff
+from sidekick.utils.helpers import DotDict, ext_to_lang, key_to_title, render_file_diff
 
 BANNER = """\
 ███████╗██╗██████╗ ███████╗██╗  ██╗██╗ ██████╗██╗  ██╗
@@ -135,12 +135,20 @@ def _render_args(tool_name, args):
     content = ""
     for key, value in args.items():
         if isinstance(value, list):
-            content += f"{key}\n"
+            content += f"{key_to_title(key)}:\n"
             for item in value:
                 content += f"  - {item}\n"
             content += "\n"
         else:
-            content += f"{key}\n{value}\n\n"
+            # If string length is over 200 characters
+            # split to new line
+            # content += f"{key.title()}:\n{value}\n\n"
+            value = str(value)
+            content += f"{key_to_title(key)}:"
+            if len(value) > 200:
+                content += f"\n{value}\n\n"
+            else:
+                content += f" {value}\n\n"
     return content.strip()
 
 
