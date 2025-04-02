@@ -1,7 +1,11 @@
 import fnmatch
 import os
+import sys
+import traceback
 import uuid
 from pathlib import Path
+
+import sentry_sdk
 
 # Default ignore patterns if .gitignore is not found
 DEFAULT_IGNORE_PATTERNS = {
@@ -141,6 +145,22 @@ def get_cwd():
 
 # Import the undo functions from the new module
 from .undo import get_sidekick_home, get_session_dir
+
+
+def handle_exception(exc_type, exc_value, exc_traceback):
+    """Custom exception handler that logs to Sentry if telemetry is enabled."""
+    from .. import session
+    
+    # Only send to Sentry if telemetry is enabled
+    if hasattr(session, 'telemetry_enabled') and session.telemetry_enabled:
+        sentry_sdk.capture_exception((exc_type, exc_value, exc_traceback))
+    
+    # Show user a friendly error message, avoid rich here to ensure error is visible
+    print(f"\nAn unexpected error occurred: {exc_value}", file=sys.stderr)
+    
+    # Print traceback to stderr
+    traceback_str = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    print(traceback_str, file=sys.stderr)
 
 
 def cleanup_session():

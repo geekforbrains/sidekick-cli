@@ -122,6 +122,12 @@ def show_help():
             # Add each command to the table
             for cmd, desc in command_matches:
                 table.add_row(cmd, desc)
+            
+            # Add telemetry status
+            from sidekick import session
+            telemetry_status = "Disabled" if not session.telemetry_enabled else "Enabled"
+            table.add_row("", "")  # Empty row as separator
+            table.add_row("Telemetry:", telemetry_status)
                 
             # Create panel with title and the table
             _panel("Available Commands", table, border_style=colors.muted)

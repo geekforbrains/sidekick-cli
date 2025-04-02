@@ -8,3 +8,4 @@ tool_ignore = []  # Tools to ignore during confirmation
 yolo = False  # Skip all confirmations if true
 undo_initialized = False  # Whether the undo system has been initialized
 session_id = None  # Unique ID for the current session
+telemetry_enabled = True  # Default telemetry state

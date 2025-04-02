@@ -1,4 +1,5 @@
 import asyncio
+import sys
 
 import logfire
 import typer
@@ -10,7 +11,7 @@ from sidekick import config, session
 from sidekick.agents.main import MainAgent
 from sidekick.utils import ui
 from sidekick.utils.setup import setup
-from sidekick.utils.system import cleanup_session
+from sidekick.utils.system import cleanup_session, handle_exception
 from sidekick.utils.undo import init_undo_system, commit_for_undo, perform_undo
 
 load_dotenv()
@@ -121,9 +122,18 @@ async def interactive_shell():
 
 
 @app.command()
-def main(logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable Logfire tracing.")):
+def main(
+    logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable Logfire tracing."),
+    no_telemetry: bool = typer.Option(False, "--no-telemetry", help="Disable telemetry collection."),
+):
     """Main entry point for the Sidekick CLI."""
     ui.show_banner()
+    
+    # Set telemetry flag before setup so Sentry is configured correctly
+    if no_telemetry:
+        session.telemetry_enabled = False
+        ui.status("Telemetry disabled.\n")
+    
     setup()
 
     # Set the current model from user config
@@ -140,6 +150,9 @@ def main(logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable L
     if session.undo_initialized:
         # Create initial commit for user state
         commit_for_undo("user")
+    
+    # Set up custom exception handler
+    sys.excepthook = handle_exception
     
     try:
         asyncio.run(interactive_shell())

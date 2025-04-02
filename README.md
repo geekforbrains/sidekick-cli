@@ -51,7 +51,7 @@ GOOGLE_API_KEY=your_google_key
 ANTHROPIC_API_KEY=your_anthropic_key
 ```
 
-You can either set these in your environment or create a `.env` file in your project directory.
+You can either set these in your environment, create a `.env` file in your project directory, or add them to your config file at `~/.config/sidekick.json`.
 
 ## Usage
 
@@ -61,6 +61,11 @@ Start Sidekick by running:
 sidekick
 ```
 
+### Command Line Options
+
+- `--logfire` - Enable Logfire tracing
+- `--no-telemetry` - Disable telemetry collection
+
 ### Available Commands
 
 - `/clear` - Clear message history
@@ -69,7 +74,27 @@ sidekick
 - `/model` - List available models
 - `/model <num>` - Switch to a specific model (by index)
 - `/undo` - Undo most recent changes
+- `/yolo` - Run commands without confirmation
 - `exit` - Exit the application
+
+## Telemetry
+
+Sidekick collects anonymous usage data and error reports to help us improve the product. This data is stripped of all personally identifiable information and sensitive content. We never track your actual prompts or the content of your conversations.
+
+### What We Collect
+
+- Anonymous session ID
+- Non-sensitive command usage statistics
+- Error reports (without sensitive information)
+- Basic environment information (Python version, OS)
+
+### Opting Out
+
+You can disable telemetry collection by running Sidekick with the `--no-telemetry` flag:
+
+```bash
+sidekick --no-telemetry
+```
 
 ## Development
 

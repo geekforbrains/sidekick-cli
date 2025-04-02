@@ -36,6 +36,7 @@ dependencies = [
     "playwright",
     "httpx[http2]",
     "beautifulsoup4",
+    "sentry-sdk",
 ]
 
 [project.scripts]
