@@ -98,7 +98,7 @@ def _step1():
         "Let's get you setup. First, we'll need to set some environment variables.\n"
         "Skip the ones you don't need."
     )
-    ui._panel("Setup", message, top=0, border_style=ui.colors.primary)
+    ui.panel("Setup", message, top=0, border_style=ui.colors.primary)
 
     provider_envs = session.user_config["env"]["providers"].copy()
     for key, _ in provider_envs.items():
@@ -116,7 +116,7 @@ def _step2():
         message += f"  {index} - {key}\n"
     message = message.strip()
 
-    ui._panel("Default Model", message, border_style=ui.colors.primary)
+    ui.panel("Default Model", message, border_style=ui.colors.primary)
     choice = int(
         prompt(
             "  Default model (#): ",
@@ -129,7 +129,7 @@ def _step2():
 def _step3():
     """Setup tools"""
     message = "Now lets setup tools. Skip any you don't want to use"
-    ui._panel("Tools", message, border_style=ui.colors.primary)
+    ui.panel("Tools", message, border_style=ui.colors.primary)
 
     # At the moment, we only have Brave search
     brave_api_key = prompt("  Brave Search API Key: ", is_password=True)
@@ -145,7 +145,7 @@ def _onboarding():
     _step3()
 
     message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
-    ui._panel("Finished", message, border_style=ui.colors.success)
+    ui.panel("Finished", message, border_style=ui.colors.success)
 
     # Save the updated configs
     with open(CONFIG_FILE, "w") as f:

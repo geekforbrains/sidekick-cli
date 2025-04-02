@@ -1,7 +1,7 @@
 import fnmatch
 import os
-import uuid
-from pathlib import Path
+
+from .undo import get_session_dir
 
 # Default ignore patterns if .gitignore is not found
 DEFAULT_IGNORE_PATTERNS = {
@@ -139,33 +139,30 @@ def get_cwd():
     return os.getcwd()
 
 
-# Import the undo functions from the new module
-from .undo import get_sidekick_home, get_session_dir
-
-
 def cleanup_session():
     """
     Clean up the session directory after the CLI exits.
     Removes the session directory completely.
-    
+
     Returns:
         bool: True if cleanup was successful, False otherwise.
     """
     try:
         from .. import session
-        
+
         # If no session ID was generated, nothing to clean up
         if session.session_id is None:
             return True
-        
+
         # Get the session directory using the imported function
         session_dir = get_session_dir()
-        
+
         # If the directory exists, remove it
         if session_dir.exists():
             import shutil
+
             shutil.rmtree(session_dir)
-        
+
         return True
     except Exception as e:
         print(f"Error cleaning up session: {e}")

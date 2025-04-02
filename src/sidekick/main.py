@@ -11,7 +11,7 @@ from sidekick.agents.main import MainAgent
 from sidekick.utils import ui
 from sidekick.utils.setup import setup
 from sidekick.utils.system import cleanup_session
-from sidekick.utils.undo import init_undo_system, commit_for_undo, perform_undo
+from sidekick.utils.undo import commit_for_undo, init_undo_system, perform_undo
 
 load_dotenv()
 app = typer.Typer(help=config.NAME)
@@ -25,13 +25,13 @@ async def process_request(res):
     # during confirmation steps
     session.spinner = ui.console.status(msg, spinner=ui.spinner)
     session.spinner.start()
-    
+
     if session.undo_initialized:
         commit_for_undo("user")
-    
+
     try:
         res = await agent.process_request(res)
-        
+
         if session.undo_initialized:
             commit_for_undo("sidekick")
     finally:
@@ -82,7 +82,7 @@ async def interactive_shell():
             ui.show_banner()
             session.messages = []
             continue
-            
+
         if cmd == "/help":
             ui.show_help()
             continue
@@ -93,16 +93,6 @@ async def interactive_shell():
                 ui.success(message)
             else:
                 ui.warning(message)
-            continue
-
-        # Debug commands for UI
-        if cmd.startswith("/debug"):
-            try:
-                mode = cmd.split(" ")[-1]
-                if mode == "error":
-                    ui.error("This is an error!")
-            except IndexError:
-                ui.error("Invalid debug command.")
             continue
 
         if cmd.startswith("/model"):
@@ -135,13 +125,13 @@ def main(logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable L
     if logfire_enabled:
         logfire.configure(console=False)
         ui.status("Logfire enabled.\n")
-    
+
     # Initialize undo system
     session.undo_initialized = init_undo_system()
     if session.undo_initialized:
         # Create initial commit for user state
         commit_for_undo("user")
-    
+
     try:
         asyncio.run(interactive_shell())
     finally:

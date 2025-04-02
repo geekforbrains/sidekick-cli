@@ -1,4 +1,5 @@
 import os
+import traceback
 from datetime import datetime, timezone
 
 from pydantic_ai import Agent
@@ -108,8 +109,8 @@ class MainAgent:
             ui.status("Operation aborted.\n")
         except UnexpectedModelBehavior as e:
             ui.error(f"Model behavior error: {e.message}")
-        except Exception as e:
-            ui.error(f"Unexpected error: {e}")
+        except Exception:
+            ui.error(traceback.format_exc())
 
     def _calc_usage(self, agent_run):
         data = agent_run.usage()
