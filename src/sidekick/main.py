@@ -72,16 +72,6 @@ async def interactive_shell():
             session.messages = []
             continue
 
-        # Debug commands for UI
-        if cmd.startswith("/debug"):
-            try:
-                mode = cmd.split(" ")[-1]
-                if mode == "error":
-                    ui.error("This is an error!")
-            except IndexError:
-                ui.error("Invalid debug command.")
-            continue
-
         if cmd.startswith("/model"):
             try:
                 model = cmd.split(" ")[1]
