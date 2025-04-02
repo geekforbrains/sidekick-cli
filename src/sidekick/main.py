@@ -10,6 +10,8 @@ from sidekick import config, session
 from sidekick.agents.main import MainAgent
 from sidekick.utils import ui
 from sidekick.utils.setup import setup
+from sidekick.utils.system import cleanup_session
+from sidekick.utils.undo import init_undo_system, commit_for_undo, perform_undo
 
 load_dotenv()
 app = typer.Typer(help=config.NAME)
@@ -22,8 +24,15 @@ async def process_request(res):
     # during confirmation steps
     session.spinner = ui.console.status(msg, spinner=ui.spinner)
     session.spinner.start()
+    
+    if session.undo_initialized:
+        commit_for_undo("user")
+    
     try:
         res = await agent.process_request(res)
+        
+        if session.undo_initialized:
+            commit_for_undo("sidekick")
     finally:
         session.spinner.stop()
 
@@ -45,6 +54,8 @@ async def interactive_shell():
             res = await get_user_input()
 
         if res is None:
+            # Ensure cleanup happens on normal exit
+            cleanup_session()
             break
 
         res = res.strip()
@@ -73,6 +84,14 @@ async def interactive_shell():
             
         if cmd == "/help":
             ui.show_help()
+            continue
+
+        if cmd == "/undo":
+            success, message = perform_undo()
+            if success:
+                ui.success(message)
+            else:
+                ui.warning(message)
             continue
 
         # Debug commands for UI
@@ -115,7 +134,18 @@ def main(logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable L
     if logfire_enabled:
         logfire.configure(console=False)
         ui.status("Logfire enabled.\n")
-    asyncio.run(interactive_shell())
+    
+    # Initialize undo system
+    session.undo_initialized = init_undo_system()
+    if session.undo_initialized:
+        # Create initial commit for user state
+        commit_for_undo("user")
+    
+    try:
+        asyncio.run(interactive_shell())
+    finally:
+        # Clean up session when CLI exits
+        cleanup_session()
 
 
 if __name__ == "__main__":
