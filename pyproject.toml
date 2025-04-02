@@ -27,15 +27,15 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dependencies = [
-    "prompt_toolkit",
-    "pydantic-ai[logfire]",
-    "pygments",
-    "python-dotenv",
-    "rich",
-    "typer",
-    "playwright",
-    "httpx[http2]",
-    "beautifulsoup4",
+    "prompt_toolkit==3.0.50",
+    "pydantic-ai[logfire]==0.0.49",
+    "pygments==2.19.1",
+    "python-dotenv==1.1.0",
+    "rich==14.0.0",
+    "typer==0.15.2",
+    "playwright==1.51.0",
+    "httpx[http2]==0.28.1",
+    "beautifulsoup4==4.13.3",
 ]
 
 [project.scripts]
