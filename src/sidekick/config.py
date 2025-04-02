@@ -1,6 +1,12 @@
+import os
+import sys
 from pathlib import Path
 
 NAME = "Sidekick"
+
+# Determine if we're running in a development environment
+# Check if we're running from source or as an installed package
+IS_DEV = os.path.exists(os.path.join(os.path.dirname(__file__), '..', '..', 'pyproject.toml'))
 MODELS = [
     "anthropic:claude-3-7-sonnet-latest",
     "google-gla:gemini-2.0-flash",

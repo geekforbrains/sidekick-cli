@@ -35,12 +35,18 @@ def _setup_sentry():
     if not session.telemetry_enabled:
         return
     
+    from sidekick import config
+    
+    # Determine environment based on whether we're running in development or production
+    environment = "development" if config.IS_DEV else "production"
+    
     sentry_sdk.init(
         dsn='https://c967e1bebffe899093ed6bc2ee2e90c7@o171515.ingest.us.sentry.io/4509084774105088',
         traces_sample_rate=0.1,  # Sample only 10% of transactions
         profiles_sample_rate=0.1,  # Sample only 10% of profiles
         send_default_pii=False,  # Don't send personally identifiable information
         before_send=before_send,  # Filter sensitive data
+        environment=environment  # Set based on whether we're running from source or installed package
     )
     
     # Set user ID to anonymous session ID

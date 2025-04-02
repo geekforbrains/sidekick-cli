@@ -51,7 +51,7 @@ GOOGLE_API_KEY=your_google_key
 ANTHROPIC_API_KEY=your_anthropic_key
 ```
 
-You can either set these in your environment, create a `.env` file in your project directory, or add them to your config file at `~/.config/sidekick.json`.
+You can either set these in your environment or create a `.env` file in your project directory.
 
 ## Usage
 

@@ -101,6 +101,9 @@ async def interactive_shell():
                 mode = cmd.split(" ")[-1]
                 if mode == "error":
                     ui.error("This is an error!")
+                elif mode == "sentry":
+                    ui.status("Raising test exception to verify Sentry...")
+                    raise Exception("Test exception for Sentry verification")
             except IndexError:
                 ui.error("Invalid debug command.")
             continue
