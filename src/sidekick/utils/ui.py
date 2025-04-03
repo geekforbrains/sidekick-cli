@@ -213,11 +213,10 @@ def confirm(tool_call, node):
     if filepath:
         show_usage(f"File: {filepath}")
 
-    resp = input("  Continue? (y/N/(i)gnore): ")
+    resp = input("  Continue? [Y/n/(i)gnore]: ").strip() or "y"
 
     if resp.lower() == "i":
         session.tool_ignore.append(tool_call.tool_name)
-
     elif resp.lower() != "y":
         raise UserAbort("User aborted.")
 
