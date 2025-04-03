@@ -64,6 +64,7 @@ sidekick
 ### Available Commands
 
 - `/clear` - Clear message history
+- `/compact` - Compact and clear message history
 - `/dump` - Show current message history (for debugging)
 - `/help` - Show available commands
 - `/model` - List available models

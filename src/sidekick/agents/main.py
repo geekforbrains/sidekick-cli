@@ -92,7 +92,7 @@ class MainAgent:
         except IndexError:
             ui.error(f"Invalid model index: {model_index}")
 
-    async def process_request(self, req):
+    async def process_request(self, req, compact=False):
         try:
             if not self.agent:
                 self.agent = self.get_agent()
@@ -104,6 +104,11 @@ class MainAgent:
                     if hasattr(node, "model_response"):
                         session.messages.append(node.model_response)
                         self._check_for_confirmation(node, agent_run)
+
+                if compact:
+                    session.messages = [session.messages[-1]]
+                    ui.show_banner()
+
                 ui.agent(agent_run.result.data)
                 self._calc_usage(agent_run)
         except ui.UserAbort:

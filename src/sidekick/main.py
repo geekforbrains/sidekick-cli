@@ -18,7 +18,7 @@ app = typer.Typer(help=config.NAME)
 agent = MainAgent()
 
 
-async def process_request(res):
+async def process_request(res, compact=False):
     ui.line()
     msg = "[bold green]Thinking..."
     # Track spinner in session so we can start/stop
@@ -30,7 +30,7 @@ async def process_request(res):
         commit_for_undo("user")
 
     try:
-        res = await agent.process_request(res)
+        await agent.process_request(res, compact=compact)
 
         if session.undo_initialized:
             commit_for_undo("sidekick")
@@ -93,6 +93,17 @@ async def interactive_shell():
                 ui.success(message)
             else:
                 ui.warning(message)
+            continue
+
+        if cmd == "/compact":
+            await process_request(
+                (
+                    "Summarize the context of this conversation into a concise "
+                    "breakdown, ensuring it contain's enough key details for "
+                    "future conversations."
+                ),
+                compact=True,
+            )
             continue
 
         if cmd.startswith("/model"):
