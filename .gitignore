@@ -33,3 +33,6 @@ ENV/
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Project files
+SIDEKICK.md

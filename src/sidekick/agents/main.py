@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import UnexpectedModelBehavior
-from pydantic_ai.messages import ModelRequest, ToolReturnPart
+from pydantic_ai.messages import ModelRequest, ToolReturnPart, UserPromptPart
 
 from sidekick import config, session
 from sidekick.tools import fetch, read_file, run_command, update_file, web_search, write_file
@@ -57,6 +57,29 @@ class MainAgent:
             )
         )
 
+    def _inject_guide(self):
+        """
+        Loads SIDEKICK.md from dir root if available and adds to message history
+        for "JIT" style injection so the guide is always the last message
+        before a user request.
+        """
+        cwd = os.getcwd()
+        filepath = os.path.join(cwd, config.GUIDE_FILE)
+        if os.path.exists(filepath):
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+                return session.messages + [
+                    ModelRequest(
+                        parts=[
+                            UserPromptPart(
+                                content=content,
+                                timestamp=datetime.now(timezone.utc),
+                            )
+                        ]
+                    )
+                ]
+        return session.messages
+
     def create_agent(self) -> Agent:
         return Agent(
             model=session.current_model,
@@ -97,7 +120,7 @@ class MainAgent:
             if not self.agent:
                 self.agent = self.get_agent()
 
-            async with self.agent.iter(req, message_history=session.messages) as agent_run:
+            async with self.agent.iter(req, message_history=self._inject_guide()) as agent_run:
                 async for node in agent_run:
                     if hasattr(node, "request"):
                         session.messages.append(node.request)

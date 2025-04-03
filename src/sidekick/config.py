@@ -1,6 +1,7 @@
 from pathlib import Path
 
 NAME = "Sidekick"
+GUIDE_FILE = f"{NAME.upper()}.md"
 MODELS = {
     "anthropic:claude-3-7-sonnet-latest": {
         "pricing": {
