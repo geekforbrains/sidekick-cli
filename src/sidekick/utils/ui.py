@@ -202,7 +202,17 @@ def confirm(tool_call, node):
     session.spinner.stop()
     title = f"Tool({tool_call.tool_name})"
     content = _render_args(tool_call.tool_name, tool_call.args)
-    panel(title, content, border_style=colors.warning)
+    filepath = tool_call.args.get("filepath")
+
+    # Set bottom padding to 0 if filepath is not None
+    bottom_padding = 0 if filepath else 1
+
+    panel(title, content, bottom=bottom_padding, border_style=colors.warning)
+
+    # If tool call has filepath, show it under panel
+    if filepath:
+        show_usage(f"File: {filepath}")
+
     resp = input("  Continue? (y/N/(i)gnore): ")
 
     if resp.lower() == "i":
