@@ -33,18 +33,18 @@ def ext_to_lang(path):
     Get the language from the file extension. Default to `text` if not found.
     """
     MAP = {
-        ".py": "python",
-        ".js": "javascript",
-        ".ts": "typescript",
-        ".java": "java",
-        ".c": "c",
-        ".cpp": "cpp",
-        ".cs": "csharp",
-        ".html": "html",
-        ".css": "css",
-        ".json": "json",
-        ".yaml": "yaml",
-        ".yml": "yaml",
+        "py": "python",
+        "js": "javascript",
+        "ts": "typescript",
+        "java": "java",
+        "c": "c",
+        "cpp": "cpp",
+        "cs": "csharp",
+        "html": "html",
+        "css": "css",
+        "json": "json",
+        "yaml": "yaml",
+        "yml": "yaml",
     }
     ext = os.path.splitext(path)[1][1:]
     if ext in MAP:
