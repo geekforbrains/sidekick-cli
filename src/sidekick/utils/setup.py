@@ -112,18 +112,19 @@ def _step1():
 def _step2():
     message = "Which model would you like to use by default?\n\n"
 
-    for index, key in enumerate(MODELS):
-        message += f"  {index} - {key}\n"
+    model_ids = list(MODELS.keys())
+    for index, model_id in enumerate(model_ids):
+        message += f"  {index} - {model_id}\n"
     message = message.strip()
 
     ui.panel("Default Model", message, border_style=ui.colors.primary)
     choice = int(
         prompt(
             "  Default model (#): ",
-            validator=ModelValidator(len(MODELS)),
+            validator=ModelValidator(len(model_ids)),
         )
     )
-    session.user_config["default_model"] = MODELS[choice]
+    session.user_config["default_model"] = model_ids[choice]
 
 
 def _step3():

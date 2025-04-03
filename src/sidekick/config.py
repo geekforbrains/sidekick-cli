@@ -1,41 +1,47 @@
 from pathlib import Path
 
 NAME = "Sidekick"
-MODELS = [
-    "anthropic:claude-3-7-sonnet-latest",
-    "google-gla:gemini-2.0-flash",
-    "google-gla:gemini-2.5-pro-exp-03-25",
-    "openai:gpt-4o",
-    "openai:o3-mini",
-]
-MODEL_PRICING = {
-    # No public pricing yet, so use 2.0-flash numbers
-    "google-gla:gemini-2.5-pro-exp-03-25": {
-        "input": 0.10,
-        "cached_input": 0.025,
-        "output": 0.40,
+MODELS = {
+    "anthropic:claude-3-7-sonnet-latest": {
+        "pricing": {
+            "input": 3.00,
+            "cached_input": 1.50,
+            "output": 15.00,
+        }
     },
     "google-gla:gemini-2.0-flash": {
-        "input": 0.10,
-        "cached_input": 0.025,
-        "output": 0.40,
+        "pricing": {
+            "input": 0.10,
+            "cached_input": 0.025,
+            "output": 0.40,
+        }
     },
-    "openai:o3-mini": {
-        "input": 1.10,
-        "cached_input": 0.55,
-        "output": 4.40,
+    "google-gla:gemini-2.5-pro-exp-03-25": {
+        # No public pricing yet, so use 2.0-flash numbers
+        "pricing": {
+            "input": 0.10,
+            "cached_input": 0.025,
+            "output": 0.40,
+        }
     },
     "openai:gpt-4o": {
-        "input": 2.50,
-        "cached_input": 1.25,
-        "output": 10.00,
+        "pricing": {
+            "input": 2.50,
+            "cached_input": 1.25,
+            "output": 10.00,
+        }
     },
-    "anthropic:claude-3-7-sonnet-latest": {
-        "input": 3.00,
-        "cached_input": 1.50,
-        "output": 15.00,
+    "openai:o3-mini": {
+        "pricing": {
+            "input": 1.10,
+            "cached_input": 0.55,
+            "output": 4.40,
+        }
     },
 }
+
+# For backward compatibility
+MODEL_PRICING = {model_id: data["pricing"] for model_id, data in MODELS.items()}
 
 CONFIG_DIR = Path.home() / ".config"
 CONFIG_FILE = CONFIG_DIR / "sidekick.json"

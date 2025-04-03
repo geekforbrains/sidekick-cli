@@ -78,7 +78,8 @@ def dump_messages():
 
 
 def show_models():
-    model_list = "\n".join([f"{index} - {model}" for index, model in enumerate(config.MODELS)])
+    model_ids = list(config.MODELS.keys())
+    model_list = "\n".join([f"{index} - {model}" for index, model in enumerate(model_ids)])
     text = f"Current model: {session.current_model}\n\n{model_list}"
     panel("Models", text, border_style=colors.muted)
 
