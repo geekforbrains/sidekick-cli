@@ -27,12 +27,6 @@ def get_session_dir():
     Returns:
         Path: The path to the current session directory.
     """
-    # Generate a new session ID if we don't have one
-    if session.session_id is None:
-        import uuid
-
-        session.session_id = str(uuid.uuid4())
-
     session_dir = get_sidekick_home() / "sessions" / session.session_id
     session_dir.mkdir(exist_ok=True, parents=True)
     return session_dir

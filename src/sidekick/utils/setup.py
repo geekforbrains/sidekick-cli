@@ -162,4 +162,5 @@ def setup():
     # Load returns true if new config created (and requires onboarding)
     if _load_or_create_config():
         _onboarding()
+
     _set_environment_variables()
