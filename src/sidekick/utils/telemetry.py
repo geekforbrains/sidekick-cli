@@ -47,7 +47,10 @@ def setup():
         shutdown_timeout=0
     )
 
-    sentry_sdk.set_user({"id": session.session_id})
+    sentry_sdk.set_user({
+        "id": session.device_id,
+        "session_id": session.session_id
+    })
 
 
 def capture_exception(*args, **kwargs):
