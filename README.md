@@ -1,65 +1,50 @@
-# Sidekick
+# Sidekick (Beta)
 
 Your agentic CLI developer.
 
 ## Overview
 
-Sidekick is an AI agent that helps you with development tasks. It's powered by multiple LLM providers 
-and provides a seamless interactive experience in your terminal, allowing you to get help with coding, 
-run commands, manage files, and search the web without leaving your workflow.
+Sidekick is an agentic CLI-based AI tool inspired by Claude Code, Copilot, Windsurf and Cursor. It's meant
+to be an open source alternative to these tools, providing a similar experience but with the flexibility of
+using different LLM providers.
+
+Sidekick is currently in beta and under active development. I'd love your help shaping it!
 
 ## Features
 
 - No vendor lock-in. Use whichever LLM provider you prefer.
+- JIT-style system prompt injection ensures Sidekick doesn't lose the plot.
+- Per-project guide. Adjust Sidekick's behavior to suit your needs.
 - CLI-first design. Ditch the clunky IDE.
 - Easily switch between models in the same session.
 - Cost and token tracking.
 - Web searching and fetching built-in.
 
-## Installation
+## Roadmap
 
-### Using pip
+- Plugin system (custom tools and agents)
+- MCP Support
+- More LLM providers, including Ollama
 
-```bash
-pip install sidekick-cli
+## Quick Start
+
+Install Sidekick and Playwright:
+
 ```
-
-For the best fetching results, install the Playwright:
-
-```bash
+pip install sidekick-cli
 python -m playwright install
 ```
 
-### From Source
+Startup Sidekick and configure LLM providers:
 
-1. Clone the repository
-2. Install dependencies: `pip install .` (or `pip install -e .` for development)
-3. Install Playwright: `python -m playwright install`
+```
+sidekick
+```
 
 ## Configuration
 
-You'll need to set API keys for each of the providers you want to use.
-
-```bash
-# For OpenAI models
-OPENAI_API_KEY=your_openai_key
-
-# For Google Gemini models
-GOOGLE_API_KEY=your_google_key
-
-# For Anthropic Claude models
-ANTHROPIC_API_KEY=your_anthropic_key
-```
-
-You can either set these in your environment or create a `.env` file in your project directory.
-
-## Usage
-
-Start Sidekick by running:
-
-```bash
-sidekick
-```
+After initial setup, Sidekick saves a config file to `~/.config/sidekick.json`. You can open and 
+edit this file as needed. Future updates will make editing easier directly from within Sidekick.
 
 ### Available Commands
 
@@ -71,6 +56,33 @@ sidekick
 - `/model <num>` - Switch to a specific model (by index)
 - `/undo` - Undo most recent changes
 - `exit` - Exit the application
+
+
+## Cusomtomization
+
+Sidekick supports the use of a "guide". This is a `SIDEKICK.md` file in the project root that contains
+instructions for Sidekick. This is helpful for specifying tech stack, project structure, development
+preferences etc.
+
+## Installation
+
+### Using pip
+
+```bash
+pip install sidekick-cli
+```
+
+For the best web search and fetching results, install Playwright:
+
+```bash
+python -m playwright install
+```
+
+### From Source
+
+1. Clone the repository
+2. Install dependencies: `pip install .` (or `pip install -e .` for development)
+3. Install Playwright: `python -m playwright install`
 
 ## Development
 
