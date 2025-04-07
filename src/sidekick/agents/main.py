@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import UnexpectedModelBehavior
-from pydantic_ai.messages import ModelRequest, ToolReturnPart, UserPromptPart
+from pydantic_ai.messages import ModelRequest, SystemPromptPart, ToolReturnPart
 
 from sidekick import config, session
 from sidekick.tools import fetch, read_file, run_command, update_file, web_search, write_file
@@ -16,12 +16,6 @@ class MainAgent:
     def __init__(self):
         self.agent = None
         self.agent_tools = None
-
-    def _get_prompt(self, name: str) -> str:
-        package_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        filepath = os.path.join(package_dir, "prompts", f"{name}.txt")
-        with open(filepath, "r", encoding="utf-8") as f:
-            return f.read()
 
     def _get_model_settings(self):
         if session.current_model.startswith("anthropic"):
@@ -57,28 +51,54 @@ class MainAgent:
             )
         )
 
+    def _inject_prompt(self, name: str) -> str:
+        package_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        filepath = os.path.join(package_dir, "prompts", f"{name}.txt")
+        with open(filepath, "r", encoding="utf-8") as f:
+            system_prompt = f.read()
+            return SystemPromptPart(content=system_prompt)
+
+    def _inject_cwd(self):
+        return SystemPromptPart(content=f"Current working directory: {get_cwd()}")
+
+    def _inject_cwd_list(self):
+        return SystemPromptPart(content=f"Files in current directory:\n{list_cwd()}")
+
     def _inject_guide(self):
-        """
-        Loads SIDEKICK.md from dir root if available and adds to message history
-        for "JIT" style injection so the guide is always the last message
-        before a user request.
-        """
-        cwd = os.getcwd()
+        cwd = get_cwd()
         filepath = os.path.join(cwd, config.GUIDE_FILE)
         if os.path.exists(filepath):
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
-                return session.messages + [
-                    ModelRequest(
-                        parts=[
-                            UserPromptPart(
-                                content=content,
-                                timestamp=datetime.now(timezone.utc),
-                            )
-                        ]
-                    )
-                ]
-        return session.messages
+                content = (
+                    "The user has provided a guide below. "
+                    "It takes precedence over the previous system prompt:\n\n"
+                    f"{content}"
+                )
+                return SystemPromptPart(content=content)
+        return None
+
+    def _inject_prompts(self):
+        """
+        Inject system prompts and guide using a "JIT" style injection so the
+        prompts are always the last messages before a user request.
+        """
+        parts = [
+            self._inject_prompt("system"),
+            self._inject_cwd(),
+            self._inject_cwd_list(),
+        ]
+        guide_part = self._inject_guide()
+
+        if guide_part is not None:
+            parts.append(guide_part)
+
+        return session.messages + [
+            ModelRequest(
+                parts=parts,
+                kind="request",
+            )
+        ]
 
     def create_agent(self) -> Agent:
         return Agent(
@@ -92,11 +112,6 @@ class MainAgent:
                 write_file,
             ],
             model_settings=self._get_model_settings(),
-            system_prompt=[
-                self._get_prompt("system"),
-                f"Current working directory: {get_cwd()}",
-                f"Current directory contents:\n{list_cwd()}",
-            ],
             instrument=True,
         )
 
@@ -120,7 +135,8 @@ class MainAgent:
             if not self.agent:
                 self.agent = self.get_agent()
 
-            async with self.agent.iter(req, message_history=self._inject_guide()) as agent_run:
+            message_history = self._inject_prompts()
+            async with self.agent.iter(req, message_history=message_history) as agent_run:
                 async for node in agent_run:
                     if hasattr(node, "request"):
                         session.messages.append(node.request)
