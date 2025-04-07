@@ -1,7 +1,7 @@
 import fnmatch
 import os
-
-from .undo import get_session_dir
+import uuid
+from pathlib import Path
 
 # Default ignore patterns if .gitignore is not found
 DEFAULT_IGNORE_PATTERNS = {
@@ -31,6 +31,32 @@ DEFAULT_IGNORE_PATTERNS = {
     "*.swp",
     "*.swo",
 }
+
+
+def get_sidekick_home():
+    """
+    Get the path to the Sidekick home directory (~/.sidekick).
+    Creates it if it doesn't exist.
+
+    Returns:
+        Path: The path to the Sidekick home directory.
+    """
+    home = Path.home() / ".sidekick"
+    home.mkdir(exist_ok=True)
+    return home
+
+
+def get_session_dir():
+    """
+    Get the path to the current session directory.
+
+    Returns:
+        Path: The path to the current session directory.
+    """
+    from .. import session
+    session_dir = get_sidekick_home() / "sessions" / session.session_id
+    session_dir.mkdir(exist_ok=True, parents=True)
+    return session_dir
 
 
 def _load_gitignore_patterns(filepath=".gitignore"):
@@ -137,6 +163,39 @@ def _is_ignored(rel_path, name, patterns):
 def get_cwd():
     """Returns the current working directory."""
     return os.getcwd()
+
+
+def get_device_id():
+    """
+    Get the device ID from the ~/.sidekick/device_id file.
+    If the file doesn't exist, generate a new UUID and save it.
+
+    Returns:
+        str: The device ID as a string.
+    """
+    try:
+        # Get the ~/.sidekick directory
+        sidekick_home = get_sidekick_home()
+        device_id_file = sidekick_home / "device_id"
+
+        # If the file exists, read the device ID
+        if device_id_file.exists():
+            device_id = device_id_file.read_text().strip()
+            if device_id:
+                return device_id
+
+        # If we got here, either the file doesn't exist or is empty
+        # Generate a new device ID
+        device_id = str(uuid.uuid4())
+        
+        # Write the device ID to the file
+        device_id_file.write_text(device_id)
+        
+        return device_id
+    except Exception as e:
+        print(f"Error getting device ID: {e}")
+        # Return a temporary device ID if we couldn't get or save one
+        return str(uuid.uuid4())
 
 
 def cleanup_session():

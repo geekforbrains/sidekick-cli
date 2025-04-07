@@ -7,7 +7,7 @@ from prompt_toolkit.validation import ValidationError, Validator
 
 from sidekick import session
 from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
-from sidekick.utils import ui
+from sidekick.utils import ui, system
 
 
 class ModelValidator(Validator):
@@ -159,7 +159,11 @@ def setup():
     config and set environment variables.
 
     """
+    # Initialize device ID
+    session.device_id = system.get_device_id()
+
     # Load returns true if new config created (and requires onboarding)
     if _load_or_create_config():
         _onboarding()
+
     _set_environment_variables()
