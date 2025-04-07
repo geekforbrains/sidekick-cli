@@ -1,41 +1,10 @@
 import subprocess
 import time
-from pathlib import Path
 
 from pydantic_ai.messages import ModelResponse, TextPart
 
+from .system import get_session_dir
 from .. import session
-
-
-def get_sidekick_home():
-    """
-    Get the path to the Sidekick home directory (~/.sidekick).
-    Creates it if it doesn't exist.
-
-    Returns:
-        Path: The path to the Sidekick home directory.
-    """
-    home = Path.home() / ".sidekick"
-    home.mkdir(exist_ok=True)
-    return home
-
-
-def get_session_dir():
-    """
-    Get the path to the current session directory.
-
-    Returns:
-        Path: The path to the current session directory.
-    """
-    # Generate a new session ID if we don't have one
-    if session.session_id is None:
-        import uuid
-
-        session.session_id = str(uuid.uuid4())
-
-    session_dir = get_sidekick_home() / "sessions" / session.session_id
-    session_dir.mkdir(exist_ok=True, parents=True)
-    return session_dir
 
 
 def init_undo_system():

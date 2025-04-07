@@ -8,7 +8,7 @@ from pydantic_ai.messages import ModelRequest, SystemPromptPart, ToolReturnPart
 
 from sidekick import config, session
 from sidekick.tools import fetch, read_file, run_command, update_file, web_search, write_file
-from sidekick.utils import ui
+from sidekick.utils import ui, telemetry
 from sidekick.utils.system import get_cwd, list_cwd
 
 
@@ -153,8 +153,10 @@ class MainAgent:
         except ui.UserAbort:
             ui.status("Operation aborted.\n")
         except UnexpectedModelBehavior as e:
+            telemetry.capture_exception(e)
             ui.error(f"Model behavior error: {e.message}")
-        except Exception:
+        except Exception as e:
+            telemetry.capture_exception(e)
             ui.error(traceback.format_exc())
 
     def _calc_usage(self, agent_run):

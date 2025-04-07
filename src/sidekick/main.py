@@ -8,7 +8,7 @@ from prompt_toolkit.shortcuts import PromptSession
 
 from sidekick import config, session
 from sidekick.agents.main import MainAgent
-from sidekick.utils import ui
+from sidekick.utils import ui, telemetry
 from sidekick.utils.setup import setup
 from sidekick.utils.system import cleanup_session
 from sidekick.utils.undo import commit_for_undo, init_undo_system, perform_undo
@@ -123,31 +123,45 @@ async def interactive_shell():
 
 
 @app.command()
-def main(logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable Logfire tracing.")):
+def main(
+    logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable Logfire tracing."),
+    no_telemetry: bool = typer.Option(False, "--no-telemetry", help="Disable telemetry collection.")
+):
     """Main entry point for the Sidekick CLI."""
     ui.show_banner()
-    setup()
 
-    # Set the current model from user config
-    if not session.user_config.get("default_model"):
-        raise ValueError("No default model found in config at [bold]~/.config/sidekick.json")
-    session.current_model = session.user_config["default_model"]
-
-    if logfire_enabled:
-        logfire.configure(console=False)
-        ui.status("Logfire enabled.\n")
-
-    # Initialize undo system
-    session.undo_initialized = init_undo_system()
-    if session.undo_initialized:
-        # Create initial commit for user state
-        commit_for_undo("user")
+    if no_telemetry:
+        session.telemetry_enabled = False
+        ui.status("Telemetry disabled.\n")
+    else:
+        telemetry.setup()
 
     try:
-        asyncio.run(interactive_shell())
-    finally:
-        # Clean up session when CLI exits
-        cleanup_session()
+        setup()
+
+        # Set the current model from user config
+        if not session.user_config.get("default_model"):
+            raise ValueError("No default model found in config at [bold]~/.config/sidekick.json")
+        session.current_model = session.user_config["default_model"]
+
+        if logfire_enabled:
+            logfire.configure(console=False)
+            ui.status("Logfire enabled.\n")
+
+        # Initialize undo system
+        session.undo_initialized = init_undo_system()
+        if session.undo_initialized:
+            # Create initial commit for user state
+            commit_for_undo("user")
+
+        try:
+            asyncio.run(interactive_shell())
+        finally:
+            # Clean up session when CLI exits
+            cleanup_session()
+    except Exception as e:
+        telemetry.capture_exception(e)
+        raise e
 
 
 if __name__ == "__main__":
