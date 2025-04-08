@@ -1,3 +1,5 @@
+import json
+
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.padding import Padding
@@ -171,6 +173,30 @@ def _render_args(tool_name, args):
     return content.strip()
 
 
+def _parse_args(args):
+    """
+    Parse tool arguments from a JSON string or dictionary.
+
+    Args:
+        args (str or dict): A JSON-formatted string or a dictionary containing tool arguments.
+
+    Returns:
+        dict: The parsed arguments.
+
+    Raises:
+        ValueError: If 'args' is not a string or dictionary, or if the string is not valid JSON.
+    """
+    if isinstance(args, str):
+        try:
+            return json.loads(args)
+        except json.JSONDecodeError:
+            raise ValueError(f"Invalid JSON: {args}")
+    elif isinstance(args, dict):
+        return args
+    else:
+        raise ValueError(f"Invalid args type: {type(args)}")
+
+
 def confirm(tool_call, node):
     # If we're in yolo mode, skip all confirmations
     if session.yolo:
@@ -186,8 +212,9 @@ def confirm(tool_call, node):
 
     session.spinner.stop()
     title = f"Tool({tool_call.tool_name})"
-    content = _render_args(tool_call.tool_name, tool_call.args)
-    filepath = tool_call.args.get("filepath")
+    args = _parse_args(tool_call.args)
+    content = _render_args(tool_call.tool_name, args)
+    filepath = args.get("filepath")
 
     # Set bottom padding to 0 if filepath is not None
     bottom_padding = 0 if filepath else 1
