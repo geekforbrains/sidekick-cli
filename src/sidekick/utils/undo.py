@@ -9,23 +9,47 @@ from . import ui
 from .system import get_session_dir
 
 
+def is_in_git_project(directory=None):
+    """
+    Recursively check if the given directory is inside a git project.
+
+    Args:
+        directory (Path, optional): Directory to check. Defaults to current working directory.
+
+    Returns:
+        bool: True if in a git project, False otherwise
+    """
+    if directory is None:
+        directory = Path.cwd()
+
+    if (directory / ".git").exists():
+        return True
+
+    if directory == directory.parent:
+        return False
+
+    return is_in_git_project(directory.parent)
+
+
 def init_undo_system():
     """
     Initialize the undo system by creating a Git repository
     in the ~/.sidekick/sessions/<session-id> directory.
 
-    Skip initialization if running from home directory.
+    Skip initialization if running from home directory or not in a git project.
 
     Returns:
         bool: True if the undo system was initialized, False otherwise.
     """
-    # Get current working directory and home directory
     cwd = Path.cwd()
     home_dir = Path.home()
 
-    # Skip if we're in the home directory
     if cwd == home_dir:
-        ui.warning("Undo system disabled: Running from home directory")
+        ui.warning("Undo system disabled, running from home directory")
+        return False
+
+    if not is_in_git_project():
+        ui.warning("Undo system disable, not in a git project")
         return False
 
     # Get the session directory path
