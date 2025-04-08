@@ -8,7 +8,7 @@ from pydantic_ai.messages import ModelRequest, SystemPromptPart, ToolReturnPart
 
 from sidekick import config, session
 from sidekick.tools import fetch, read_file, run_command, update_file, web_search, write_file
-from sidekick.utils import ui, telemetry
+from sidekick.utils import telemetry, ui
 from sidekick.utils.system import get_cwd, list_cwd
 
 

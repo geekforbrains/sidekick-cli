@@ -1,5 +1,6 @@
 from pathlib import Path
 
+VERSION = "0.2.1"
 NAME = "Sidekick"
 GUIDE_FILE = f"{NAME.upper()}.md"
 MODELS = {

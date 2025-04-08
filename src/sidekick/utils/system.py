@@ -54,6 +54,7 @@ def get_session_dir():
         Path: The path to the current session directory.
     """
     from .. import session
+
     session_dir = get_sidekick_home() / "sessions" / session.session_id
     session_dir.mkdir(exist_ok=True, parents=True)
     return session_dir
@@ -187,10 +188,10 @@ def get_device_id():
         # If we got here, either the file doesn't exist or is empty
         # Generate a new device ID
         device_id = str(uuid.uuid4())
-        
+
         # Write the device ID to the file
         device_id_file.write_text(device_id)
-        
+
         return device_id
     except Exception as e:
         print(f"Error getting device ID: {e}")

@@ -1,6 +1,3 @@
-import re
-from pathlib import Path
-
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.padding import Padding
@@ -91,7 +88,7 @@ def show_usage(usage):
 def show_banner():
     console.clear()
     banner = Padding(BANNER, (1, 0, 0, 2))
-    version = Padding("v0.1.0", (0, 0, 0, 2))
+    version = Padding(f"v{config.VERSION}", (0, 0, 0, 2))
     commands = Padding("Esc + Enter to submit, /help for commands", (0, 0, 1, 2))
     print(banner, style=colors.primary)
     print(version, style=colors.muted)
@@ -100,42 +97,28 @@ def show_banner():
 
 def show_help():
     """
-    Display the available commands from the README.md file.
-    This function dynamically reads the README to ensure the help text
-    stays in sync with the documentation.
+    Display the available commands.
     """
-    # Find the project root directory
-    root_dir = Path(__file__).resolve().parents[3]
-    readme_path = root_dir / "README.md"
+    table = Table(show_header=False, box=None, padding=(0, 2, 0, 0))
+    table.add_column("Command", style="white", justify="right")
+    table.add_column("Description", style="white")
 
-    try:
-        with open(readme_path, "r") as f:
-            readme_content = f.read()
+    commands = [
+        ("/help", "Show this help message"),
+        ("/clear", "Clear the conversation history"),
+        ("/dump", "Show the current conversation history"),
+        ("/yolo", "Toggle confirmation prompts on/off"),
+        ("/undo", "Undo the last file change"),
+        ("/compact", "Summarize the conversation context"),
+        ("/model", "List available models"),
+        ("/model <name>", "Switch to a specific model"),
+        ("exit", "Exit the application"),
+    ]
 
-        # Extract the commands section
-        commands_match = re.search(r"### Available Commands\s+([\s\S]+?)(?=##|\Z)", readme_content)
+    for cmd, desc in commands:
+        table.add_row(cmd, desc)
 
-        if commands_match:
-            commands_text = commands_match.group(1).strip()
-            # Extract individual commands with their descriptions
-            command_pattern = r"`(.*?)`\s*-\s*(.*)"
-            command_matches = re.findall(command_pattern, commands_text)
-
-            # Create a table for nicer formatting
-            table = Table(show_header=False, box=None, padding=(0, 2, 0, 0))
-            table.add_column("Command", style="white", justify="right")
-            table.add_column("Description", style="white")
-
-            # Add each command to the table
-            for cmd, desc in command_matches:
-                table.add_row(cmd, desc)
-
-            # Create panel with title and the table
-            panel("Available Commands", table, border_style=colors.muted)
-        else:
-            warning("Could not find commands section in README.md")
-    except Exception as e:
-        error(f"Error reading commands from README: {str(e)}")
+    panel("Available Commands", table, border_style=colors.muted)
 
 
 def _create_code_block(filepath: str, content: str) -> Markdown:

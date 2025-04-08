@@ -3,8 +3,8 @@ import time
 
 from pydantic_ai.messages import ModelResponse, TextPart
 
-from .system import get_session_dir
 from .. import session
+from .system import get_session_dir
 
 
 def init_undo_system():

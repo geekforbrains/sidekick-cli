@@ -1,4 +1,4 @@
-.PHONY: install clean lint format test coverage build publish
+.PHONY: install clean lint format test coverage build
 
 install:
 	pip install -e ".[dev]"

@@ -8,7 +8,7 @@ from prompt_toolkit.shortcuts import PromptSession
 
 from sidekick import config, session
 from sidekick.agents.main import MainAgent
-from sidekick.utils import ui, telemetry
+from sidekick.utils import telemetry, ui
 from sidekick.utils.setup import setup
 from sidekick.utils.system import cleanup_session
 from sidekick.utils.undo import commit_for_undo, init_undo_system, perform_undo
@@ -125,7 +125,9 @@ async def interactive_shell():
 @app.command()
 def main(
     logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable Logfire tracing."),
-    no_telemetry: bool = typer.Option(False, "--no-telemetry", help="Disable telemetry collection.")
+    no_telemetry: bool = typer.Option(
+        False, "--no-telemetry", help="Disable telemetry collection."
+    ),
 ):
     """Main entry point for the Sidekick CLI."""
     ui.show_banner()

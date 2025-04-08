@@ -7,7 +7,7 @@ from prompt_toolkit.validation import ValidationError, Validator
 
 from sidekick import session
 from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
-from sidekick.utils import ui, system
+from sidekick.utils import system, ui
 
 
 class ModelValidator(Validator):
