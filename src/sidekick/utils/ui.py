@@ -91,9 +91,11 @@ def show_usage(usage):
 def show_banner():
     console.clear()
     banner = Padding(BANNER, (1, 0, 0, 2))
-    version = Padding("v0.1.0", (0, 0, 1, 2))
+    version = Padding("v0.1.0", (0, 0, 0, 2))
+    commands = Padding("Esc + Enter to submit, /help for commands", (0, 0, 1, 2))
     print(banner, style=colors.primary)
-    print(version, style=colors.secondary)
+    print(version, style=colors.muted)
+    print(commands, style=colors.muted)
 
 
 def show_help():

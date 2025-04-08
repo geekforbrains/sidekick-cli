@@ -13,6 +13,7 @@ Sidekick is currently in beta and under active development. I'd love your ideas 
 ## Features
 
 - No vendor lock-in. Use whichever LLM provider you prefer.
+- Use /undo when AI breaks things.
 - JIT-style system prompt injection ensures Sidekick doesn't lose the plot.
 - Per-project guide. Adjust Sidekick's behavior to suit your needs.
 - CLI-first design. Ditch the clunky IDE.
@@ -60,11 +61,20 @@ edit this file as needed. Future updates will make editing easier directly from 
 - `/dump` - Show current message history (for debugging)
 - `exit` - Exit the application
 
-## Cusomtomization
+## Customization
 
 Sidekick supports the use of a "guide". This is a `SIDEKICK.md` file in the project root that contains
 instructions for Sidekick. Helpful for specifying tech stack, project structure, development
 preferences etc.
+
+## Telemetry
+
+Sidekick uses [Sentry](https://sentry.io/) for error tracking and usage analytics. You can disable this by
+starting with the `--no-telemetry` flag.
+
+```
+sidekick --no-telemetry
+```
 
 ## Installation
 
