@@ -252,9 +252,7 @@ def list_cwd(max_depth=3):
     # Ensure max_depth is non-negative
     max_depth = max(0, max_depth)
 
-    for root, dirs, files in os.walk(
-        start_path, topdown=True, onerror=lambda e: print(f"Error walking: {e}")
-    ):
+    for root, dirs, files in os.walk(start_path, topdown=True):
         rel_root = os.path.relpath(root, start_path)
         # Handle root case where relpath is '.'
         if rel_root == ".":
