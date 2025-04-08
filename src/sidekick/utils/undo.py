@@ -14,7 +14,7 @@ def init_undo_system():
     Initialize the undo system by creating a Git repository
     in the ~/.sidekick/sessions/<session-id> directory.
 
-    Only initializes if current directory is in a git repository and not the home directory.
+    Skip initialization if running from home directory.
 
     Returns:
         bool: True if the undo system was initialized, False otherwise.
@@ -23,39 +23,9 @@ def init_undo_system():
     cwd = Path.cwd()
     home_dir = Path.home()
 
-    # Skip if we're in the home directory or its immediate subdirectories
+    # Skip if we're in the home directory
     if cwd == home_dir:
-        ui.warning("Undo system disabled, running from home directory")
-        return False
-
-    # Skip if we're in a subdirectory of the home directory that doesn't look like a project
-    # This helps avoid running in places like ~/Downloads, ~/Documents, etc.
-    if cwd.parent == home_dir and not (cwd / ".git").exists():
-        ui.warning("Undo system disabled, running from home subdirectory")
-        return False
-
-    # Check if current directory is in a git repository
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--is-inside-work-tree"],
-            cwd=str(cwd),
-            capture_output=True,
-            timeout=2,
-            text=True,
-        )
-
-        if result.returncode != 0 or "true" not in result.stdout.lower():
-            ui.warning("Undo system disabled: Current directory is not in a git repository")
-            return False
-
-    except subprocess.TimeoutExpired:
-        ui.warning("Undo system disabled, git command timed out")
-        return False
-    except FileNotFoundError:
-        ui.warning("Undo system disabled, git command not found")
-        return False
-    except Exception as e:
-        ui.warning(f"Undo system disabled: {str(e)}")
+        ui.warning("Undo system disabled: Running from home directory")
         return False
 
     # Get the session directory path
@@ -66,51 +36,21 @@ def init_undo_system():
     if sidekick_git_dir.exists():
         return True
 
-    # Initialize Git repository for undo system
+    # Initialize Git repository
     try:
-        # Initialize a new git repository in the session directory
         subprocess.run(
             ["git", "init", str(session_dir)], capture_output=True, check=True, timeout=5
         )
 
-        # Set up git parameters for this repo
+        # Make an initial commit
         git_dir_arg = f"--git-dir={sidekick_git_dir}"
-        work_tree_arg = f"--work-tree={session_dir}"
 
-        # Configure git identity for this repository
-        subprocess.run(
-            ["git", git_dir_arg, work_tree_arg, "config", "user.name", "Sidekick CLI"],
-            capture_output=True,
-            timeout=3,
-        )
-        subprocess.run(
-            ["git", git_dir_arg, work_tree_arg, "config", "user.email", "sidekick@example.com"],
-            capture_output=True,
-            timeout=3,
-        )
+        # Add all files
+        subprocess.run(["git", git_dir_arg, "add", "."], capture_output=True, check=True, timeout=5)
 
-        # Create a placeholder file to ensure there's something to commit
-        placeholder = session_dir / ".sidekick-undo"
-        placeholder.write_text("Sidekick undo system tracking file")
-
-        # Add the placeholder file
+        # Create initial commit
         subprocess.run(
-            ["git", git_dir_arg, work_tree_arg, "add", ".sidekick-undo"],
-            capture_output=True,
-            check=True,
-            timeout=5,
-        )
-
-        # Create initial commit with just the placeholder
-        subprocess.run(
-            [
-                "git",
-                git_dir_arg,
-                work_tree_arg,
-                "commit",
-                "-m",
-                "Initial commit for sidekick undo history",
-            ],
+            ["git", git_dir_arg, "commit", "-m", "Initial commit for sidekick undo history"],
             capture_output=True,
             check=True,
             timeout=5,
@@ -121,7 +61,7 @@ def init_undo_system():
         ui.warning("Undo system initialization timed out")
         return False
     except Exception as e:
-        ui.warning(f"Undo system initialization failed: {str(e)}")
+        ui.warning(f"Error initializing undo system: {e}")
         return False
 
 
@@ -135,8 +75,6 @@ def commit_for_undo(message_prefix="sidekick"):
     Returns:
         bool: True if the commit was successful, False otherwise.
     """
-    from . import ui
-
     # Get the session directory and git dir
     session_dir = get_session_dir()
     sidekick_git_dir = session_dir / ".git"
@@ -146,19 +84,16 @@ def commit_for_undo(message_prefix="sidekick"):
 
     try:
         git_dir_arg = f"--git-dir={sidekick_git_dir}"
-        work_tree_arg = f"--work-tree={session_dir}"
 
         # Add all files
-        subprocess.run(
-            ["git", git_dir_arg, work_tree_arg, "add", "."], capture_output=True, timeout=5
-        )
+        subprocess.run(["git", git_dir_arg, "add", "."], capture_output=True, timeout=5)
 
         # Create commit with timestamp
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
         commit_message = f"{message_prefix} - {timestamp}"
 
         result = subprocess.run(
-            ["git", git_dir_arg, work_tree_arg, "commit", "-m", commit_message],
+            ["git", git_dir_arg, "commit", "-m", commit_message],
             capture_output=True,
             text=True,
             timeout=5,
@@ -173,7 +108,7 @@ def commit_for_undo(message_prefix="sidekick"):
         ui.warning("Undo system commit timed out")
         return False
     except Exception as e:
-        ui.warning(f"Undo system commit failed: {str(e)}")
+        ui.warning(f"Error creating undo commit: {e}")
         return False
 
 
@@ -195,11 +130,10 @@ def perform_undo():
 
     try:
         git_dir_arg = f"--git-dir={sidekick_git_dir}"
-        work_tree_arg = f"--work-tree={session_dir}"
 
         # Get commit log to check if we have commits to undo
         result = subprocess.run(
-            ["git", git_dir_arg, work_tree_arg, "log", "--format=%H", "-n", "2"],
+            ["git", git_dir_arg, "log", "--format=%H", "-n", "2"],
             capture_output=True,
             text=True,
             check=True,
@@ -212,7 +146,7 @@ def perform_undo():
 
         # Get the commit message of the commit we're undoing for context
         commit_msg_result = subprocess.run(
-            ["git", git_dir_arg, work_tree_arg, "log", "--format=%B", "-n", "1"],
+            ["git", git_dir_arg, "log", "--format=%B", "-n", "1"],
             capture_output=True,
             text=True,
             check=True,
@@ -222,7 +156,7 @@ def perform_undo():
 
         # Perform reset to previous commit
         subprocess.run(
-            ["git", git_dir_arg, work_tree_arg, "reset", "--hard", "HEAD~1"],
+            ["git", git_dir_arg, "reset", "--hard", "HEAD~1"],
             capture_output=True,
             check=True,
             timeout=5,
