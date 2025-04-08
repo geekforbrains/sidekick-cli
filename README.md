@@ -6,9 +6,9 @@ Your agentic CLI developer.
 
 Sidekick is an agentic CLI-based AI tool inspired by Claude Code, Copilot, Windsurf and Cursor. It's meant
 to be an open source alternative to these tools, providing a similar experience but with the flexibility of
-using different LLM providers.
+using different LLM providers while keeping the agentic workflow.
 
-Sidekick is currently in beta and under active development. I'd love your help shaping it!
+Sidekick is currently in beta and under active development. I'd love your ideas and feedback.
 
 ## Features
 
@@ -19,12 +19,14 @@ Sidekick is currently in beta and under active development. I'd love your help s
 - Easily switch between models in the same session.
 - Cost and token tracking.
 - Web searching and fetching built-in.
+- Per command or per session confirmation skipping.
 
 ## Roadmap
 
+- Tests 😅
+- More LLM providers, including Ollama
 - Plugin system (custom tools and agents)
 - MCP Support
-- More LLM providers, including Ollama
 
 ## Quick Start
 
@@ -48,20 +50,20 @@ edit this file as needed. Future updates will make editing easier directly from 
 
 ### Available Commands
 
-- `/clear` - Clear message history
-- `/compact` - Compact and clear message history
-- `/dump` - Show current message history (for debugging)
 - `/help` - Show available commands
+- `/yolo` - Toggle "yolo" mode (skip tool confirmations)
+- `/clear` - Clear message history
+- `/compact` - Summarize message history and clear old messages
 - `/model` - List available models
 - `/model <num>` - Switch to a specific model (by index)
 - `/undo` - Undo most recent changes
+- `/dump` - Show current message history (for debugging)
 - `exit` - Exit the application
-
 
 ## Cusomtomization
 
 Sidekick supports the use of a "guide". This is a `SIDEKICK.md` file in the project root that contains
-instructions for Sidekick. This is helpful for specifying tech stack, project structure, development
+instructions for Sidekick. Helpful for specifying tech stack, project structure, development
 preferences etc.
 
 ## Installation
