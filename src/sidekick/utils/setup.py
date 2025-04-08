@@ -1,5 +1,7 @@
+import asyncio
 import json
 import os
+import subprocess
 import sys
 
 from prompt_toolkit import prompt
@@ -153,6 +155,56 @@ def _onboarding():
         json.dump(session.user_config, f, indent=4)
 
 
+def _check_playwright():
+    """
+    Check if Playwright is properly installed and configured.
+    Return True if installation is needed.
+    """
+    try:
+        # Check if the module is importable
+        # Try a simple browser launch to see if binaries are installed
+        from playwright.async_api import async_playwright
+
+        async def test_playwright():
+            try:
+                async with async_playwright() as p:
+                    # Just try to launch and close browser quickly
+                    browser = await p.chromium.launch(headless=True)
+                    await browser.close()
+                return True
+            except Exception:
+                return False
+
+        if not asyncio.run(test_playwright()):
+            message = (
+                "Playwright is installed but browser binaries are missing.\n"
+                "Would you like to install them now? (y/n)"
+            )
+            ui.panel("Playwright Setup", message, border_style=ui.colors.warning)
+            choice = prompt("  Install Playwright browsers? (y/n): ")
+            if choice.lower().startswith("y"):
+                ui.status("Installing Playwright browsers")
+                ui.line()
+                try:
+                    subprocess.run(
+                        [sys.executable, "-m", "playwright", "install", "chromium"], check=True
+                    )
+                    ui.line()
+                    ui.success("Playwright browsers installed successfully!")
+                except subprocess.CalledProcessError:
+                    ui.error(
+                        "Failed to install Playwright browsers. You may need to run this manually:"
+                    )
+                    ui.status("    playwright install")
+            else:
+                ui.warning("Fetch tool with JavaScript rendering will be unavailable.")
+
+    except ImportError:
+        ui.warning(
+            "Playwright not installed. Fetch tool will use httpx only (no JavaScript support)."
+        )
+
+
 def setup():
     """
     Setup user config file if needed, with onboarding questions. Load user
@@ -167,3 +219,6 @@ def setup():
         _onboarding()
 
     _set_environment_variables()
+
+    # Check Playwright installation
+    _check_playwright()

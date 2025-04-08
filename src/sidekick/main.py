@@ -2,7 +2,6 @@ import asyncio
 
 import logfire
 import typer
-from dotenv import load_dotenv
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.shortcuts import PromptSession
 
@@ -13,7 +12,6 @@ from sidekick.utils.setup import setup
 from sidekick.utils.system import cleanup_session
 from sidekick.utils.undo import commit_for_undo, init_undo_system, perform_undo
 
-load_dotenv()
 app = typer.Typer(help=config.NAME)
 agent = MainAgent()
 
@@ -134,11 +132,13 @@ def main(
 
     if no_telemetry:
         session.telemetry_enabled = False
-        ui.status("Telemetry disabled.\n")
+        ui.status("Telemetry disabled, skipping")
     else:
+        ui.status("Setting up telemetry")
         telemetry.setup()
 
     try:
+        ui.status("Setting up config")
         setup()
 
         # Set the current model from user config
@@ -148,18 +148,21 @@ def main(
 
         if logfire_enabled:
             logfire.configure(console=False)
-            ui.status("Logfire enabled.\n")
+            ui.status("Enabling Logfire tracing")
 
         # Initialize undo system
+        ui.status("Initializing undo system")
         session.undo_initialized = init_undo_system()
         if session.undo_initialized:
             # Create initial commit for user state
             commit_for_undo("user")
 
+        ui.status("Starting interactive shell")
+        ui.success("Go kick some ass\n")
+
         try:
             asyncio.run(interactive_shell())
         finally:
-            # Clean up session when CLI exits
             cleanup_session()
     except Exception as e:
         telemetry.capture_exception(e)

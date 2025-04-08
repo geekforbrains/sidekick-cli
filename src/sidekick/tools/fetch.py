@@ -14,26 +14,39 @@ from sidekick.utils import ui
 
 
 async def _playwright_fetch(url: str, timeout: int) -> str:
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
+    try:
+        async with async_playwright() as p:
+            try:
+                browser = await p.chromium.launch(headless=True)
+                page = await browser.new_page()
 
-        try:
-            await page.goto(
-                url,
-                timeout=timeout * 1000,
-                wait_until="networkidle",
-            )
-            return await page.content()
-        except PlaywrightTimeoutError:
-            err_msg = f"Playwright timed out after {timeout}s fetching '{url}'."
-            ui.error(err_msg)
-        except PlaywrightError as e:
-            err_msg = f"Playwright navigation/content error for '{url}': {e}"
-            ui.error(err_msg)
-        finally:
-            await page.close()
-            await browser.close()
+                try:
+                    await page.goto(
+                        url,
+                        timeout=timeout * 1000,
+                        wait_until="networkidle",
+                    )
+                    return await page.content()
+                except PlaywrightTimeoutError:
+                    err_msg = f"Playwright timed out after {timeout}s fetching '{url}'."
+                    ui.error(err_msg)
+                except PlaywrightError as e:
+                    err_msg = f"Playwright navigation/content error for '{url}': {e}"
+                    ui.error(err_msg)
+                finally:
+                    await page.close()
+                    await browser.close()
+            except Exception as e:
+                err_msg = f"Playwright browser launch error: {e}"
+                ui.error(err_msg)
+                ui.warning("Browser binaries may be missing. Try running 'playwright install'")
+                # Fall back to httpx
+                return await _httpx_fetch(url, timeout)
+    except Exception as e:
+        err_msg = f"Playwright initialization error: {e}"
+        ui.error(err_msg)
+        # Fall back to httpx
+        return await _httpx_fetch(url, timeout)
 
 
 async def _httpx_fetch(url: str, timeout: int, headers: dict = None) -> str:
@@ -92,12 +105,18 @@ async def fetch(
     #     f"use_playwright={use_playwright})"
     # )
 
-    if use_playwright:
-        res = await _playwright_fetch(url, timeout)
-    else:
-        res = await _httpx_fetch(url, timeout)
+    try:
+        if use_playwright:
+            res = await _playwright_fetch(url, timeout)
+        else:
+            res = await _httpx_fetch(url, timeout)
 
-    if extract_text:
-        return await _extract_text(res)
+        if extract_text:
+            return await _extract_text(res)
 
-    return res
+        return res
+    except Exception as e:
+        # Catch any unexpected errors and fall back to a simple message
+        err_msg = f"Error fetching {url}: {str(e)}"
+        ui.error(err_msg)
+        return f"Failed to fetch content from {url}. Error: {str(e)}"
