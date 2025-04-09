@@ -126,12 +126,17 @@ async def interactive_shell():
 
 @app.command()
 def main(
+    version: bool = typer.Option(False, "--version", "-v", help="Show version and exit."),
     logfire_enabled: bool = typer.Option(False, "--logfire", help="Enable Logfire tracing."),
     no_telemetry: bool = typer.Option(
         False, "--no-telemetry", help="Disable telemetry collection."
     ),
 ):
     """Main entry point for the Sidekick CLI."""
+    if version:
+        typer.echo(config.VERSION)
+        return
+
     ui.show_banner()
 
     has_update, latest_version, update_message = check_for_updates()
