@@ -91,7 +91,7 @@ async def start_mcp_servers():
         return
 
     if not session.mcp_servers:
-        ui.status("No MCP servers configured.")
+        ui.muted("No MCP servers configured.")
         return
 
     session.mcp_exit_stack = AsyncExitStack()

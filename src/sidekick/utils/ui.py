@@ -67,6 +67,10 @@ def warning(text: str):
     print(f"• {text}", style=colors.warning)
 
 
+def muted(text: str):
+    print(f"• {text}", style=colors.muted)
+
+
 def error(text: str):
     panel("Error", text, style=colors.error)
 
