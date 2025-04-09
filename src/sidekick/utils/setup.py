@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-import subprocess
 import sys
 
 from prompt_toolkit import prompt
@@ -9,7 +8,9 @@ from prompt_toolkit.validation import ValidationError, Validator
 
 from sidekick import session
 from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
-from sidekick.utils import system, ui
+from sidekick.utils import system, telemetry, ui
+from sidekick.utils.mcp import init_mcp_servers, start_mcp_servers
+from sidekick.utils.undo import init_undo_system
 
 
 class ModelValidator(Validator):
@@ -157,64 +158,20 @@ def _onboarding():
         json.dump(session.user_config, f, indent=4)
 
 
-def _check_playwright():
-    """
-    Check if Playwright is properly installed and configured.
-    Return True if installation is needed.
-    """
-    try:
-        # Check if the module is importable
-        # Try a simple browser launch to see if binaries are installed
-        from playwright.async_api import async_playwright
+def setup_telemetry():
+    """Setup telemetry for capturing exceptions and errors"""
+    if not session.telemetry_enabled:
+        ui.status("Telemetry disabled, skipping")
+        return
 
-        async def test_playwright():
-            try:
-                async with async_playwright() as p:
-                    # Just try to launch and close browser quickly
-                    browser = await p.chromium.launch(headless=True)
-                    await browser.close()
-                return True
-            except Exception:
-                return False
-
-        if not asyncio.run(test_playwright()):
-            message = (
-                "Playwright is installed but browser binaries are missing.\n"
-                "Would you like to install them now? (y/n)"
-            )
-            ui.panel("Playwright Setup", message, border_style=ui.colors.warning)
-            choice = prompt("  Install Playwright browsers? (y/n): ")
-            if choice.lower().startswith("y"):
-                ui.status("Installing Playwright browsers")
-                ui.line()
-                try:
-                    subprocess.run(
-                        [sys.executable, "-m", "playwright", "install", "chromium"], check=True
-                    )
-                    ui.line()
-                    ui.success("Playwright browsers installed successfully!")
-                except subprocess.CalledProcessError:
-                    ui.error(
-                        "Failed to install Playwright browsers. You may need to run this manually:"
-                    )
-                    ui.status("    playwright install")
-            else:
-                ui.warning("Fetch tool with JavaScript rendering will be unavailable.")
-
-    except ImportError:
-        ui.warning(
-            "Playwright not installed. Fetch tool will use httpx only (no JavaScript support)."
-        )
+    ui.status("Setting up telemetry")
+    telemetry.setup()
 
 
-def setup(agent=None):
-    """
-    Setup user config file if needed, with onboarding questions. Load user
-    config and set environment variables.
+def setup_config():
+    """Setup configuration and environment variables"""
+    ui.status("Setting up config")
 
-    Args:
-        agent: An optional MainAgent instance to initialize
-    """
     # Initialize device ID
     session.device_id = system.get_device_id()
 
@@ -224,16 +181,41 @@ def setup(agent=None):
 
     _set_environment_variables()
 
-    # Initialize MCP servers during setup
-    from sidekick.utils.mcp import init_mcp_servers
+    # Set the current model from user config
+    if not session.user_config.get("default_model"):
+        raise ValueError("No default model found in config at [bold]~/.config/sidekick.json")
+    session.current_model = session.user_config["default_model"]
 
-    ui.status("Initializing MCP servers")
+
+async def setup_mcp():
+    """Initialize and setup MCP servers"""
+    ui.status("Setting up MCP servers")
     session.mcp_servers = init_mcp_servers(session.user_config.get("mcpServers", {}))
+    await start_mcp_servers()
 
-    # Check Playwright installation
-    _check_playwright()
 
-    # Initialize the agent during setup phase
+def setup_undo():
+    """Initialize the undo system"""
+    ui.status("Initializing undo system")
+    session.undo_initialized = init_undo_system()
+
+
+def setup_agent(agent):
+    """Initialize the agent with the current model"""
     if agent is not None:
         ui.status(f"Initializing Agent({session.current_model})")
         agent.agent = agent.get_agent()
+
+
+async def setup(agent=None):
+    """
+    Setup Sidekick on startup.
+
+    Args:
+        agent: An optional MainAgent instance to initialize
+    """
+    setup_telemetry()
+    setup_config()
+    await setup_mcp()
+    setup_undo()
+    setup_agent(agent)

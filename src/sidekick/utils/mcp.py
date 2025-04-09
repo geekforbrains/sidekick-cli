@@ -71,14 +71,12 @@ def init_mcp_servers(config=None):
 
     for server_name, server_config in config.items():
         ui.status(f"Initializing MCP server: {server_name}")
-        # Extract command and arguments
         command = server_config.get("command")
         args = server_config.get("args", [])
 
         if not command:
             continue
 
-        # Handle environment variables if specified
         env_vars = server_config.get("env", {})
 
         # Initialize server using stdio transport
@@ -101,20 +99,13 @@ async def start_mcp_servers():
         ui.status("No MCP servers configured.")
         return
 
-    ui.status("Starting MCP servers...")
     session.mcp_exit_stack = AsyncExitStack()
 
-    # Start all servers
     for server in session.mcp_servers:
-        server_name = server.command if hasattr(server, "command") else "HTTP"
-        ui.status(f"Starting MCP server: {server_name}")
-
-        # Suppress all output from subprocesses by redirecting file descriptors
         with suppress_subprocess_output():
             await session.mcp_exit_stack.enter_async_context(server)
 
     session.mcp_servers_running = True
-    ui.status("All MCP servers started successfully")
 
 
 async def stop_mcp_servers():

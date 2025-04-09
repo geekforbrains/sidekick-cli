@@ -115,7 +115,6 @@ class MainAgent:
         )
 
     def get_agent(self):
-        ui.status(f"Agent({session.current_model})")
         if not hasattr(session.agents, session.current_model):
             session.agents[session.current_model] = self.create_agent()
         return session.agents[session.current_model]
@@ -125,7 +124,7 @@ class MainAgent:
             model_ids = list(config.MODELS.keys())
             session.current_model = model_ids[int(model_index)]
             self.agent = self.get_agent()
-            ui.agent(f"I'm now using model: {session.current_model}", bottom=1)
+            ui.agent(f"Now using {session.current_model}", bottom=1)
         except IndexError:
             ui.error(f"Invalid model index: {model_index}")
 

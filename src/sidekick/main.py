@@ -8,7 +8,7 @@ from prompt_toolkit.shortcuts import PromptSession
 from sidekick import config, session
 from sidekick.agents.main import MainAgent
 from sidekick.utils import telemetry, ui
-from sidekick.utils.mcp import start_mcp_servers, stop_mcp_servers
+from sidekick.utils.mcp import stop_mcp_servers
 from sidekick.utils.setup import setup
 from sidekick.utils.system import check_for_updates, cleanup_session
 from sidekick.utils.undo import commit_for_undo, init_undo_system, perform_undo
@@ -51,9 +51,6 @@ async def get_user_input():
 
 
 async def interactive_shell():
-    # Start MCP servers before beginning interactive shell
-    await start_mcp_servers()
-
     try:
         while True:
             # Need to use patched stdout to allow for multiline input
@@ -152,43 +149,33 @@ def main(
 
     if no_telemetry:
         session.telemetry_enabled = False
-        ui.status("Telemetry disabled, skipping")
-    else:
-        ui.status("Setting up telemetry")
-        telemetry.setup()
 
     try:
-        ui.status("Setting up config")
-        setup()
+        async def run_app():
+            # Setup all components in the specified order
+            await setup(agent)
 
-        # Set the current model from user config
-        if not session.user_config.get("default_model"):
-            raise ValueError("No default model found in config at [bold]~/.config/sidekick.json")
-        session.current_model = session.user_config["default_model"]
+            if logfire_enabled:
+                logfire.configure(console=False)
+                ui.status("Enabling Logfire tracing")
 
-        if logfire_enabled:
-            logfire.configure(console=False)
-            ui.status("Enabling Logfire tracing")
+            if session.undo_initialized:
+                # Create initial commit for user state
+                commit_for_undo("user")
 
-        # Initialize undo system
-        ui.status("Initializing undo system")
-        session.undo_initialized = init_undo_system()
-        if session.undo_initialized:
-            # Create initial commit for user state
-            commit_for_undo("user")
-
-        # Initialize the agent during setup phase
-        setup(agent)
-
-        ui.status("Starting interactive shell")
-        ui.success("Go kick some ass\n")
-
-        try:
-            asyncio.run(interactive_shell())
-        finally:
-            cleanup_session()
+            ui.status("Starting interactive shell")
+            ui.success("Go kick some ass\n")
+            
+            try:
+                await interactive_shell()
+            finally:
+                cleanup_session()
+                
+        # Run the async application
+        asyncio.run(run_app())
     except Exception as e:
-        telemetry.capture_exception(e)
+        if session.telemetry_enabled:
+            telemetry.capture_exception(e)
         raise e
 
 
