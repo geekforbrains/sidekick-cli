@@ -151,6 +151,7 @@ def main(
         session.telemetry_enabled = False
 
     try:
+
         async def run_app():
             # Setup all components in the specified order
             await setup(agent)
@@ -165,12 +166,12 @@ def main(
 
             ui.status("Starting interactive shell")
             ui.success("Go kick some ass\n")
-            
+
             try:
                 await interactive_shell()
             finally:
                 cleanup_session()
-                
+
         # Run the async application
         asyncio.run(run_app())
     except Exception as e:

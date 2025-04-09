@@ -2,13 +2,8 @@
 MCP (Model Context Protocol) integration utilities for Sidekick.
 """
 
-import asyncio
-import io
 import os
-import subprocess
-import sys
-import tempfile
-from contextlib import AsyncExitStack, contextmanager, redirect_stderr, redirect_stdout
+from contextlib import AsyncExitStack, contextmanager
 
 from pydantic_ai.mcp import MCPServerStdio
 
