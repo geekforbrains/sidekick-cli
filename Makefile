@@ -3,6 +3,9 @@
 install:
 	pip install -e ".[dev]"
 
+run:
+	env/bin/sidekick
+
 clean:
 	rm -rf build/
 	rm -rf dist/
