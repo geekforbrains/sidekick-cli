@@ -19,13 +19,13 @@ class DotDict(dict):
 def capture_stdout():
     """
     Context manager to capture stdout output.
-    
+
     Example:
         with capture_stdout() as stdout_capture:
             print("This will be captured")
-        
+
         captured_output = stdout_capture.getvalue()
-    
+
     Returns:
         StringIO object containing the captured output
     """

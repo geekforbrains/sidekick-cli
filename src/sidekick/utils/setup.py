@@ -226,12 +226,13 @@ def setup(agent=None):
 
     # Initialize MCP servers during setup
     from sidekick.utils.mcp import init_mcp_servers
+
     ui.status("Initializing MCP servers")
     session.mcp_servers = init_mcp_servers(session.user_config.get("mcpServers", {}))
 
     # Check Playwright installation
     _check_playwright()
-    
+
     # Initialize the agent during setup phase
     if agent is not None:
         ui.status(f"Initializing Agent({session.current_model})")

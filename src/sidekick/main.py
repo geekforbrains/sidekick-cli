@@ -8,6 +8,7 @@ from prompt_toolkit.shortcuts import PromptSession
 from sidekick import config, session
 from sidekick.agents.main import MainAgent
 from sidekick.utils import telemetry, ui
+from sidekick.utils.mcp import start_mcp_servers, stop_mcp_servers
 from sidekick.utils.setup import setup
 from sidekick.utils.system import check_for_updates, cleanup_session
 from sidekick.utils.undo import commit_for_undo, init_undo_system, perform_undo
@@ -50,78 +51,84 @@ async def get_user_input():
 
 
 async def interactive_shell():
-    while True:
-        # Need to use patched stdout to allow for multiline input
-        # while in async mode.
-        with patch_stdout():
-            res = await get_user_input()
+    # Start MCP servers before beginning interactive shell
+    await start_mcp_servers()
 
-        if res is None:
-            # Ensure cleanup happens on normal exit
-            cleanup_session()
-            break
+    try:
+        while True:
+            # Need to use patched stdout to allow for multiline input
+            # while in async mode.
+            with patch_stdout():
+                res = await get_user_input()
 
-        res = res.strip()
-        cmd = res.lower()
+            if res is None:
+                # Ensure cleanup happens on normal exit
+                cleanup_session()
+                break
 
-        if cmd == "exit":
-            break
+            res = res.strip()
+            cmd = res.lower()
 
-        if cmd == "/yolo":
-            session.yolo = not session.yolo
-            if session.yolo:
-                ui.success("Ooh shit, its YOLO time!\n")
-            else:
-                ui.status("Pfft, boring...\n")
-            continue
+            if cmd == "exit":
+                break
 
-        if cmd == "/dump":
-            ui.dump_messages()
-            continue
-
-        if cmd == "/clear":
-            ui.console.clear()
-            ui.show_banner()
-            session.messages = []
-            continue
-
-        if cmd == "/help":
-            ui.show_help()
-            continue
-
-        if cmd == "/undo":
-            success, message = perform_undo()
-            if success:
-                ui.success(message)
-            else:
-                ui.warning(message)
-            continue
-
-        if cmd == "/compact":
-            await process_request(
-                (
-                    "Summarize the context of this conversation into a concise "
-                    "breakdown, ensuring it contain's enough key details for "
-                    "future conversations."
-                ),
-                compact=True,
-            )
-            continue
-
-        if cmd.startswith("/model"):
-            try:
-                model = cmd.split(" ")[1]
-                agent.switch_model(model)
-                continue
-            except IndexError:
-                ui.show_models()
+            if cmd == "/yolo":
+                session.yolo = not session.yolo
+                if session.yolo:
+                    ui.success("Ooh shit, its YOLO time!\n")
+                else:
+                    ui.status("Pfft, boring...\n")
                 continue
 
-        # All output must be done after patched output otherwise
-        # ANSI escape sequences will be printed.
-        # Process only non-empty requests
-        if res:
-            await process_request(res)
+            if cmd == "/dump":
+                ui.dump_messages()
+                continue
+
+            if cmd == "/clear":
+                ui.console.clear()
+                ui.show_banner()
+                session.messages = []
+                continue
+
+            if cmd == "/help":
+                ui.show_help()
+                continue
+
+            if cmd == "/undo":
+                success, message = perform_undo()
+                if success:
+                    ui.success(message)
+                else:
+                    ui.warning(message)
+                continue
+
+            if cmd == "/compact":
+                await process_request(
+                    (
+                        "Summarize the context of this conversation into a concise "
+                        "breakdown, ensuring it contain's enough key details for "
+                        "future conversations."
+                    ),
+                    compact=True,
+                )
+                continue
+
+            if cmd.startswith("/model"):
+                try:
+                    model = cmd.split(" ")[1]
+                    agent.switch_model(model)
+                    continue
+                except IndexError:
+                    ui.show_models()
+                    continue
+
+            # All output must be done after patched output otherwise
+            # ANSI escape sequences will be printed.
+            # Process only non-empty requests
+            if res:
+                await process_request(res)
+    finally:
+        await stop_mcp_servers()
 
 
 @app.command()
@@ -169,10 +176,10 @@ def main(
         if session.undo_initialized:
             # Create initial commit for user state
             commit_for_undo("user")
-            
+
         # Initialize the agent during setup phase
         setup(agent)
-            
+
         ui.status("Starting interactive shell")
         ui.success("Go kick some ass\n")
 

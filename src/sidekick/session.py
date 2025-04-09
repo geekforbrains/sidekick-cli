@@ -1,4 +1,5 @@
 import uuid
+from contextlib import AsyncExitStack
 
 user_config = {}
 agents = {}
@@ -13,3 +14,5 @@ session_id = str(uuid.uuid4())  # Unique ID for the current session
 device_id = None  # Unique ID for the device, loaded during initialization
 telemetry_enabled = True
 mcp_servers = []  # Store initialized MCP servers
+mcp_exit_stack = None  # AsyncExitStack for managing MCP server lifecycles
+mcp_servers_running = False  # Track if MCP servers are running

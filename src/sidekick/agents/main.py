@@ -132,22 +132,20 @@ class MainAgent:
     async def process_request(self, req, compact=False):
         try:
             message_history = self._inject_prompts()
-            # Use run_mcp_servers context manager to start/stop MCP servers
-            async with self.agent.run_mcp_servers():
-                async with self.agent.iter(req, message_history=message_history) as agent_run:
-                    async for node in agent_run:
-                        if hasattr(node, "request"):
-                            session.messages.append(node.request)
-                        if hasattr(node, "model_response"):
-                            session.messages.append(node.model_response)
-                            self._check_for_confirmation(node, agent_run)
+            async with self.agent.iter(req, message_history=message_history) as agent_run:
+                async for node in agent_run:
+                    if hasattr(node, "request"):
+                        session.messages.append(node.request)
+                    if hasattr(node, "model_response"):
+                        session.messages.append(node.model_response)
+                        self._check_for_confirmation(node, agent_run)
 
-                    if compact:
-                        session.messages = [session.messages[-1]]
-                        ui.show_banner()
+                if compact:
+                    session.messages = [session.messages[-1]]
+                    ui.show_banner()
 
-                    ui.agent(agent_run.result.data)
-                    self._calc_usage(agent_run)
+                ui.agent(agent_run.result.data)
+                self._calc_usage(agent_run)
         except ui.UserAbort:
             ui.status("Operation aborted.\n")
         except UnexpectedModelBehavior as e:
