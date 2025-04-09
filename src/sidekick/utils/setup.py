@@ -95,6 +95,12 @@ def _key_to_title(key):
 
 
 def _step1():
+    # Check if any provider already has a non-empty value
+    providers = session.user_config["env"]["providers"]
+    for value in providers.values():
+        if value and isinstance(value, str) and value.strip():
+            return
+
     message = (
         "Welcome to Sidekick!\n"
         "Let's get you setup. First, we'll need to set some environment variables.\n"
@@ -112,6 +118,10 @@ def _step1():
 
 
 def _step2():
+    # Check if default_model is already set
+    if session.user_config.get("default_model", False):
+        return
+
     message = "Which model would you like to use by default?\n\n"
 
     model_ids = list(MODELS.keys())
@@ -142,17 +152,27 @@ def _step3():
         session.user_config["env"]["tools"]["BRAVE_SEARCH_API_KEY"] = brave_api_key
 
 
-def _onboarding():
+def _onboarding(is_first_time=False):
+    # Save initial config to compare later
+    initial_config = json.dumps(session.user_config, sort_keys=True)
+
     _step1()
     _step2()
-    _step3()
+    if is_first_time:
+        _step3()
 
-    message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
-    ui.panel("Finished", message, border_style=ui.colors.success)
+    # Compare configs to see if anything changed
+    current_config = json.dumps(session.user_config, sort_keys=True)
+    config_changed = initial_config != current_config
 
-    # Save the updated configs
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(session.user_config, f, indent=4)
+    if config_changed:
+        # Save the updated configs only if they've changed
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(session.user_config, f, indent=4)
+
+        if is_first_time:
+            message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
+            ui.panel("Finished", message, border_style=ui.colors.success)
 
 
 def _check_playwright():
@@ -214,9 +234,9 @@ def setup():
     # Initialize device ID
     session.device_id = system.get_device_id()
 
-    # Load returns true if new config created (and requires onboarding)
-    if _load_or_create_config():
-        _onboarding()
+    is_first_time = _load_or_create_config()
+
+    _onboarding(is_first_time)
 
     _set_environment_variables()
 
