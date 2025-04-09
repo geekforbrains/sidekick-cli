@@ -26,7 +26,7 @@ classifiers = [
 ]
 dependencies = [
     "prompt_toolkit==3.0.50",
-    "pydantic-ai[logfire]==0.0.49",
+    "pydantic-ai[logfire,mcp]",
     "pygments==2.19.1",
     "rich==14.0.0",
     "typer==0.15.2",

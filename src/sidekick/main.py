@@ -169,7 +169,10 @@ def main(
         if session.undo_initialized:
             # Create initial commit for user state
             commit_for_undo("user")
-
+            
+        # Initialize the agent during setup phase
+        setup(agent)
+            
         ui.status("Starting interactive shell")
         ui.success("Go kick some ass\n")
 

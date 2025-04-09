@@ -12,3 +12,4 @@ undo_initialized = False  # Whether the undo system has been initialized
 session_id = str(uuid.uuid4())  # Unique ID for the current session
 device_id = None  # Unique ID for the device, loaded during initialization
 telemetry_enabled = True
+mcp_servers = []  # Store initialized MCP servers

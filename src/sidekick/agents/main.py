@@ -7,7 +7,7 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.messages import ModelRequest, SystemPromptPart, ToolReturnPart
 
 from sidekick import config, session
-from sidekick.tools import fetch, read_file, run_command, update_file, web_search, write_file
+from sidekick.tools import read_file, run_command, update_file, write_file
 from sidekick.utils import telemetry, ui
 from sidekick.utils.system import get_cwd, list_cwd
 
@@ -104,15 +104,14 @@ class MainAgent:
         return Agent(
             model=session.current_model,
             tools=[
-                fetch,
                 read_file,
                 run_command,
                 update_file,
-                web_search,
                 write_file,
             ],
             model_settings=self._get_model_settings(),
             instrument=True,
+            mcp_servers=session.mcp_servers,
         )
 
     def get_agent(self):
@@ -132,24 +131,23 @@ class MainAgent:
 
     async def process_request(self, req, compact=False):
         try:
-            if not self.agent:
-                self.agent = self.get_agent()
-
             message_history = self._inject_prompts()
-            async with self.agent.iter(req, message_history=message_history) as agent_run:
-                async for node in agent_run:
-                    if hasattr(node, "request"):
-                        session.messages.append(node.request)
-                    if hasattr(node, "model_response"):
-                        session.messages.append(node.model_response)
-                        self._check_for_confirmation(node, agent_run)
+            # Use run_mcp_servers context manager to start/stop MCP servers
+            async with self.agent.run_mcp_servers():
+                async with self.agent.iter(req, message_history=message_history) as agent_run:
+                    async for node in agent_run:
+                        if hasattr(node, "request"):
+                            session.messages.append(node.request)
+                        if hasattr(node, "model_response"):
+                            session.messages.append(node.model_response)
+                            self._check_for_confirmation(node, agent_run)
 
-                if compact:
-                    session.messages = [session.messages[-1]]
-                    ui.show_banner()
+                    if compact:
+                        session.messages = [session.messages[-1]]
+                        ui.show_banner()
 
-                ui.agent(agent_run.result.data)
-                self._calc_usage(agent_run)
+                    ui.agent(agent_run.result.data)
+                    self._calc_usage(agent_run)
         except ui.UserAbort:
             ui.status("Operation aborted.\n")
         except UnexpectedModelBehavior as e:

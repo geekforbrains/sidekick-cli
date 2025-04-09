@@ -130,16 +130,18 @@ def _step2():
 
 
 def _step3():
-    """Setup tools"""
-    message = "Now lets setup tools. Skip any you don't want to use"
-    ui.panel("Tools", message, border_style=ui.colors.primary)
-
-    # At the moment, we only have Brave search
-    brave_api_key = prompt("  Brave Search API Key: ", is_password=True)
-    brave_api_key = brave_api_key.strip()
-
-    if brave_api_key:
-        session.user_config["env"]["tools"]["BRAVE_SEARCH_API_KEY"] = brave_api_key
+    """Setup MCP servers"""
+    message = (
+        "You can configure MCP servers in your ~/.config/sidekick.json file.\n"
+        "For example:\n\n"
+        '"mcpServers": {\n'
+        '  "fetch": {\n'
+        '    "command": "uvx",\n'
+        '    "args": ["mcp-server-fetch"]\n'
+        "  }\n"
+        "}"
+    )
+    ui.panel("MCP Servers", message, border_style=ui.colors.primary)
 
 
 def _onboarding():
@@ -205,11 +207,13 @@ def _check_playwright():
         )
 
 
-def setup():
+def setup(agent=None):
     """
     Setup user config file if needed, with onboarding questions. Load user
     config and set environment variables.
 
+    Args:
+        agent: An optional MainAgent instance to initialize
     """
     # Initialize device ID
     session.device_id = system.get_device_id()
@@ -220,5 +224,15 @@ def setup():
 
     _set_environment_variables()
 
+    # Initialize MCP servers during setup
+    from sidekick.utils.mcp import init_mcp_servers
+    ui.status("Initializing MCP servers")
+    session.mcp_servers = init_mcp_servers(session.user_config.get("mcpServers", {}))
+
     # Check Playwright installation
     _check_playwright()
+    
+    # Initialize the agent during setup phase
+    if agent is not None:
+        ui.status(f"Initializing Agent({session.current_model})")
+        agent.agent = agent.get_agent()

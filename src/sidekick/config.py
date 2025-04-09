@@ -65,4 +65,5 @@ DEFAULT_CONFIG = {
             "read_file",
         ],
     },
+    "mcpServers": {},
 }

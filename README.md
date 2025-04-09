@@ -29,7 +29,6 @@ Sidekick is currently in beta and under active development. I'd love your ideas 
 - Tests 😅
 - More LLM providers, including Ollama
 - Plugin system (custom tools and agents)
-- MCP Support
 
 ## Quick Start
 
@@ -50,6 +49,30 @@ sidekick
 
 After initial setup, Sidekick saves a config file to `~/.config/sidekick.json`. You can open and 
 edit this file as needed. Future updates will make editing easier directly from within Sidekick.
+
+### MCP Support
+
+Sidekick supports Model Context Protocol (MCP) servers. You can configure MCP servers in your `~/.config/sidekick.json` file:
+
+```json
+{
+  "mcpServers": {
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"
+      }
+    }
+  }
+}
+```
+
+MCP servers extend the capabilities of your AI assistant, allowing it to interact with additional tools and data sources. Learn more about MCP at [modelcontextprotocol.io](https://modelcontextprotocol.io/).
 
 ### Available Commands
 
