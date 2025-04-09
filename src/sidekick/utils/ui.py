@@ -225,11 +225,14 @@ def confirm(tool_call, node):
     if filepath:
         show_usage(f"File: {filepath}")
 
-    resp = input("  Continue? [Y/n/(i)gnore]: ").strip() or "y"
+    print("  1. Yes (default)")
+    print("  2. Yes, and don't ask again for commands like this")
+    print("  3. No, and tell Sidekick what to do differently")
+    resp = input("  Choose an option [1/2/3]: ").strip() or "1"
 
-    if resp.lower() == "i":
+    if resp == "2":
         session.tool_ignore.append(tool_call.tool_name)
-    elif resp.lower() != "y":
+    elif resp == "3":
         raise UserAbort("User aborted.")
 
     session.spinner.start()
