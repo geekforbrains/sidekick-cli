@@ -28,7 +28,11 @@ async def process_request(res, compact=False):
         commit_for_undo("user")
 
     try:
-        await agent.process_request(res, compact=compact)
+        try:
+            await agent.process_request(res, compact=compact)
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            ui.warning("Request cancelled")
+            ui.line()
 
         if session.undo_initialized:
             commit_for_undo("sidekick")
