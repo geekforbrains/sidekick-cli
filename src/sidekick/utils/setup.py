@@ -60,7 +60,7 @@ def _set_environment_variables():
     """
     if "env" in session.user_config and isinstance(session.user_config["env"], dict):
         env_dict = session.user_config["env"]
-        
+
         # Handle environment variables directly in env dict
         for key, value in env_dict.items():
             if not isinstance(value, str):

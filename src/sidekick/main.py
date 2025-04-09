@@ -151,6 +151,7 @@ def main(
         session.telemetry_enabled = False
 
     try:
+
         async def run_app():
             await setup(agent)
 
