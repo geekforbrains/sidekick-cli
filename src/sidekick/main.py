@@ -151,9 +151,7 @@ def main(
         session.telemetry_enabled = False
 
     try:
-
         async def run_app():
-            # Setup all components in the specified order
             await setup(agent)
 
             if logfire_enabled:

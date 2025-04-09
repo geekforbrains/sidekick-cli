@@ -40,20 +40,16 @@ def _load_or_create_config():
     creating it with defaults if missing.
     """
     config_created = False
-    try:
-        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
-        if CONFIG_FILE.is_file():
-            with open(CONFIG_FILE, "r") as f:
-                session.user_config = json.load(f)
-        else:
-            with open(CONFIG_FILE, "w") as f:
-                json.dump(DEFAULT_CONFIG, f, indent=4)
-            session.user_config = DEFAULT_CONFIG.copy()
-            config_created = True
-    except Exception as e:
-        # TODO handle UI error nicely
-        print(f"FATAL: Failed to initialize configuration system: {e}", file=sys.stderr)
+    if CONFIG_FILE.is_file():
+        with open(CONFIG_FILE, "r") as f:
+            session.user_config = json.load(f)
+    else:
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(DEFAULT_CONFIG, f, indent=4)
+        session.user_config = DEFAULT_CONFIG.copy()
+        config_created = True
     return config_created
 
 
