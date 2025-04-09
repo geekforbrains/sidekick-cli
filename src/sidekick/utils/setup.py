@@ -3,6 +3,7 @@ import os
 import sys
 
 from prompt_toolkit import prompt
+from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.validation import ValidationError, Validator
 
 from sidekick import session
@@ -59,24 +60,14 @@ def _set_environment_variables():
     """
     if "env" in session.user_config and isinstance(session.user_config["env"], dict):
         env_dict = session.user_config["env"]
-
-        # Handle provider keys
-        if "providers" in env_dict and isinstance(env_dict["providers"], dict):
-            for key, value in env_dict["providers"].items():
-                if not isinstance(value, str):
-                    raise ValueError(f"Invalid provider env value in config: {key}")
-                value = value.strip()
-                if value:
-                    os.environ[key] = value
-
-        # Handle tool keys
-        if "tools" in env_dict and isinstance(env_dict["tools"], dict):
-            for key, value in env_dict["tools"].items():
-                if not isinstance(value, str):
-                    raise ValueError(f"Invalid tool env value in config: {key}")
-                value = value.strip()
-                if value:
-                    os.environ[key] = value
+        
+        # Handle environment variables directly in env dict
+        for key, value in env_dict.items():
+            if not isinstance(value, str):
+                raise ValueError(f"Invalid env value in config: {key}")
+            value = value.strip()
+            if value:
+                os.environ[key] = value
     else:
         raise ValueError("Invalid env in config. Must be a dictionary.")
 
@@ -90,7 +81,7 @@ def _key_to_title(key):
     return " ".join(words).replace("Api", "API")
 
 
-def _step1():
+async def _step1():
     message = (
         "Welcome to Sidekick!\n"
         "Let's get you setup. First, we'll need to set some environment variables.\n"
@@ -98,16 +89,17 @@ def _step1():
     )
     ui.panel("Setup", message, top=0, border_style=ui.colors.primary)
 
-    provider_envs = session.user_config["env"]["providers"].copy()
-    for key, _ in provider_envs.items():
+    prompt_session = PromptSession()
+    env_keys = session.user_config["env"].copy()
+    for key in env_keys:
         provider = _key_to_title(key)
-        val = prompt(f"  {provider}: ", is_password=True)
+        val = await prompt_session.prompt_async(f"  {provider}: ", is_password=True)
         val = val.strip()
         if val:
-            session.user_config["env"]["providers"][key] = val
+            session.user_config["env"][key] = val
 
 
-def _step2():
+async def _step2():
     message = "Which model would you like to use by default?\n\n"
 
     model_ids = list(MODELS.keys())
@@ -116,8 +108,9 @@ def _step2():
     message = message.strip()
 
     ui.panel("Default Model", message, border_style=ui.colors.primary)
+    prompt_session = PromptSession()
     choice = int(
-        prompt(
+        await prompt_session.prompt_async(
             "  Default model (#): ",
             validator=ModelValidator(len(model_ids)),
         )
@@ -125,7 +118,7 @@ def _step2():
     session.user_config["default_model"] = model_ids[choice]
 
 
-def _step3():
+async def _step3():
     """Setup MCP servers"""
     message = (
         "You can configure MCP servers in your ~/.config/sidekick.json file.\n"
@@ -140,10 +133,10 @@ def _step3():
     ui.panel("MCP Servers", message, border_style=ui.colors.primary)
 
 
-def _onboarding():
-    _step1()
-    _step2()
-    _step3()
+async def _onboarding():
+    await _step1()
+    await _step2()
+    await _step3()
 
     message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
     ui.panel("Finished", message, border_style=ui.colors.success)
@@ -163,7 +156,7 @@ def setup_telemetry():
     telemetry.setup()
 
 
-def setup_config():
+async def setup_config():
     """Setup configuration and environment variables"""
     ui.status("Setting up config")
 
@@ -172,7 +165,7 @@ def setup_config():
 
     # Load returns true if new config created (and requires onboarding)
     if _load_or_create_config():
-        _onboarding()
+        await _onboarding()
 
     _set_environment_variables()
 
@@ -210,7 +203,7 @@ async def setup(agent=None):
         agent: An optional MainAgent instance to initialize
     """
     setup_telemetry()
-    setup_config()
+    await setup_config()
     await setup_mcp()
     setup_undo()
     setup_agent(agent)

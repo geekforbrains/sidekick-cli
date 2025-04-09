@@ -50,14 +50,9 @@ CONFIG_FILE = CONFIG_DIR / "sidekick.json"
 DEFAULT_CONFIG = {
     "default_model": "",
     "env": {
-        "providers": {
-            "ANTHROPIC_API_KEY": "",
-            "GEMINI_API_KEY": "",
-            "OPENAI_API_KEY": "",
-        },
-        "tools": {
-            "BRAVE_SEARCH_API_KEY": "",
-        },
+        "ANTHROPIC_API_KEY": "",
+        "GEMINI_API_KEY": "",
+        "OPENAI_API_KEY": "",
     },
     "settings": {
         "max_retries": 10,
