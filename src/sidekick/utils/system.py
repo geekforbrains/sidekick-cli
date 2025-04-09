@@ -1,7 +1,10 @@
 import fnmatch
 import os
+import subprocess
 import uuid
 from pathlib import Path
+
+from .. import config
 
 # Default ignore patterns if .gitignore is not found
 DEFAULT_IGNORE_PATTERNS = {
@@ -227,6 +230,51 @@ def cleanup_session():
     except Exception as e:
         print(f"Error cleaning up session: {e}")
         return False
+
+
+def check_for_updates():
+    """
+    Check if there's a newer version of sidekick-cli available on PyPI.
+
+    Returns:
+        tuple: (has_update, latest_version, update_message)
+            - has_update (bool): True if a newer version is available
+            - latest_version (str): The latest version available
+            - update_message (str): A message to display to the user
+    """
+
+    current_version = config.VERSION
+    try:
+        # Run pip to check the latest version available
+        result = subprocess.run(
+            ["pip", "index", "versions", "sidekick-cli"], capture_output=True, text=True, check=True
+        )
+        output = result.stdout
+
+        # Parse the output to find the latest version
+        if "Available versions:" in output:
+            versions_line = output.split("Available versions:")[1].strip()
+            versions = versions_line.split(", ")
+            latest_version = versions[0]
+
+            # Strip any whitespace and extra characters
+            latest_version = latest_version.strip()
+
+            # Compare versions (using simple string comparison for now)
+            if latest_version > current_version:
+                update_message = (
+                    f"A new version of Sidekick is available: {latest_version} "
+                    f"(you're on {current_version})\n"
+                    f"To update, run: pip install -U sidekick-cli"
+                )
+                return True, latest_version, update_message
+
+        # If we got here, either we're on the latest version or we couldn't parse the output
+        return False, current_version, ""
+
+    except Exception as e:
+        # If there's an error, don't interrupt the user experience
+        return False, current_version, f"Error checking for updates: {e}"
 
 
 def list_cwd(max_depth=3):

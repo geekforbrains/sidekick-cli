@@ -9,7 +9,7 @@ from sidekick import config, session
 from sidekick.agents.main import MainAgent
 from sidekick.utils import telemetry, ui
 from sidekick.utils.setup import setup
-from sidekick.utils.system import cleanup_session
+from sidekick.utils.system import check_for_updates, cleanup_session
 from sidekick.utils.undo import commit_for_undo, init_undo_system, perform_undo
 
 app = typer.Typer(help=config.NAME)
@@ -133,6 +133,10 @@ def main(
 ):
     """Main entry point for the Sidekick CLI."""
     ui.show_banner()
+
+    has_update, latest_version, update_message = check_for_updates()
+    if has_update:
+        ui.warning(update_message)
 
     if no_telemetry:
         session.telemetry_enabled = False
