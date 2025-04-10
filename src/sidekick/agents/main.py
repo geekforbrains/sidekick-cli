@@ -154,13 +154,12 @@ class MainAgent:
             telemetry.capture_exception(e)
             error_body = str(e.body) if hasattr(e, "body") else ""
 
-            if "google" in session.current_model.lower() and (
+            if "gemini" in session.current_model.lower() and (
                 "$schema" in error_body
                 or "exclusiveMaximum" in error_body
                 or "exclusiveMinimum" in error_body
             ):
-                ui.error("Gemini compatibility issue. Try a different model.")
-                ui.muted("This model has compatibility issues with some tool definitions.")
+                ui.error(f"Gemini compatibility issue. Try a different model.\n\n{str(e)}")
             elif e.status_code == 429:
                 ui.error(
                     (
