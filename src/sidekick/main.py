@@ -7,7 +7,7 @@ from prompt_toolkit.shortcuts import PromptSession
 
 from sidekick import config, session
 from sidekick.agents.main import MainAgent
-from sidekick.utils import telemetry, ui
+from sidekick.utils import telemetry, ui, user_config
 from sidekick.utils.mcp import stop_mcp_servers
 from sidekick.utils.setup import setup
 from sidekick.utils.system import check_for_updates, cleanup_session
@@ -111,10 +111,29 @@ async def interactive_shell():
                 continue
 
             if cmd.startswith("/model"):
+                parts = cmd.split(" ")
                 try:
-                    model = cmd.split(" ")[1]
-                    agent.switch_model(model)
-                    continue
+                    if len(parts) == 1:
+                        ui.show_models()
+                        continue
+
+                    model_index = parts[1]
+
+                    if len(parts) > 2 and parts[2].lower() == "default":
+                        # Set as default model
+                        model_ids = list(config.MODELS.keys())
+                        try:
+                            model_name = model_ids[int(model_index)]
+                            if user_config.set_default_model(model_name):
+                                ui.agent(f"Default model set to {model_name}", bottom=1)
+                            else:
+                                ui.error("Failed to save default model setting")
+                        except IndexError:
+                            ui.error(f"Invalid model index: {model_index}")
+                        continue
+                    else:
+                        agent.switch_model(model_index)
+                        continue
                 except IndexError:
                     ui.show_models()
                     continue
