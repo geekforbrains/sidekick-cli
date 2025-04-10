@@ -100,6 +100,10 @@ async def _step1():
 
 
 async def _step2():
+    # Check if default_model is already set
+    if session.user_config.get("default_model", False):
+        return
+
     message = "Which model would you like to use by default?\n\n"
 
     model_ids = list(MODELS.keys())
@@ -133,17 +137,27 @@ async def _step3():
     ui.panel("MCP Servers", message, border_style=ui.colors.primary)
 
 
-async def _onboarding():
+async def _onboarding(is_first_time=False):
+    # Save initial config to compare later
+    initial_config = json.dumps(session.user_config, sort_keys=True)
+
     await _step1()
     await _step2()
-    await _step3()
+    if is_first_time:
+        await _step3()
 
-    message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
-    ui.panel("Finished", message, top=0, border_style=ui.colors.success)
+    # Compare configs to see if anything changed
+    current_config = json.dumps(session.user_config, sort_keys=True)
+    config_changed = initial_config != current_config
 
-    # Save the updated configs
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(session.user_config, f, indent=4)
+    if config_changed:
+        # Save the updated configs only if they've changed
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(session.user_config, f, indent=4)
+
+        if is_first_time:
+            message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
+            ui.panel("Finished", message, border_style=ui.colors.success)
 
 
 def setup_telemetry():
@@ -162,11 +176,8 @@ async def setup_config():
 
     # Initialize device ID
     session.device_id = system.get_device_id()
-
-    # Load returns true if new config created (and requires onboarding)
-    if _load_or_create_config():
-        await _onboarding()
-
+    is_first_time = _load_or_create_config()
+    await _onboarding(is_first_time)
     _set_environment_variables()
 
     # Set the current model from user config
