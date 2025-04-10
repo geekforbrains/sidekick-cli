@@ -118,7 +118,8 @@ def show_help():
         ("/undo", "Undo the last file change"),
         ("/compact", "Summarize the conversation context"),
         ("/model", "List available models"),
-        ("/model <name>", "Switch to a specific model"),
+        ("/model <n>", "Switch to a specific model"),
+        ("/model <n> default", "Set a model as the default"),
         ("exit", "Exit the application"),
     ]
 
