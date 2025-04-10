@@ -15,8 +15,6 @@ class ModelValidator(Validator):
     """Validate default provider selection"""
 
     def __init__(self, index):
-        # index is the range (non-zero) of the provider list
-        # to test against
         self.index = index
 
     def validate(self, document):
@@ -33,29 +31,45 @@ class ModelValidator(Validator):
                 )
 
 
+def _config_exists():
+    """Check if a valid config already exists."""
+    if not CONFIG_FILE.is_file():
+        return False
+
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            config = json.load(f)
+
+        # Check if at least one API key is set
+        env = config.get("env", {})
+        has_api_key = any(key.endswith("_API_KEY") and env.get(key) for key in env)
+        has_default_model = bool(config.get("default_model"))
+
+        return has_api_key and has_default_model
+    except Exception:
+        return False
+
+
 def _load_or_create_config():
     """
     Load user config from ~/.config/sidekick.json,
     creating it with defaults if missing.
     """
-    config_created = False
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
     if CONFIG_FILE.is_file():
         with open(CONFIG_FILE, "r") as f:
             session.user_config = json.load(f)
+        return False
     else:
         with open(CONFIG_FILE, "w") as f:
             json.dump(DEFAULT_CONFIG, f, indent=4)
         session.user_config = DEFAULT_CONFIG.copy()
-        config_created = True
-    return config_created
+        return True
 
 
 def _set_environment_variables():
-    """
-    Set environment variables from the config file.
-    """
+    """Set environment variables from the config file."""
     if "env" not in session.user_config or not isinstance(session.user_config["env"], dict):
         session.user_config["env"] = {}
 
@@ -70,13 +84,7 @@ def _set_environment_variables():
 
 
 def _key_to_title(key):
-    """
-    Convert a provider env key to a title string.
-    Makes for nicer display in the UI.
-
-    Example:
-        ANTHROPIC_API_KEY -> Anthropic API Key
-    """
+    """Convert a provider env key to a title string."""
     words = [word.title() for word in key.split("_")]
     return " ".join(words).replace("Api", "API")
 
@@ -100,10 +108,6 @@ async def _step1():
 
 
 async def _step2():
-    # Check if default_model is already set
-    if session.user_config.get("default_model", False):
-        return
-
     message = "Which model would you like to use by default?\n\n"
 
     model_ids = list(MODELS.keys())
@@ -137,27 +141,32 @@ async def _step3():
     ui.panel("MCP Servers", message, border_style=ui.colors.primary)
 
 
-async def _onboarding(is_first_time=False):
-    # Save initial config to compare later
+async def _onboarding():
     initial_config = json.dumps(session.user_config, sort_keys=True)
 
     await _step1()
-    await _step2()
-    if is_first_time:
+
+    # Only continue if at least one API key was provided
+    env = session.user_config.get("env", {})
+    has_api_key = any(key.endswith("_API_KEY") and env.get(key) for key in env)
+
+    if has_api_key:
+        if not session.user_config.get("default_model"):
+            await _step2()
         await _step3()
 
-    # Compare configs to see if anything changed
-    current_config = json.dumps(session.user_config, sort_keys=True)
-    config_changed = initial_config != current_config
+        # Compare configs to see if anything changed
+        current_config = json.dumps(session.user_config, sort_keys=True)
+        if initial_config != current_config:
+            with open(CONFIG_FILE, "w") as f:
+                json.dump(session.user_config, f, indent=4)
 
-    if config_changed:
-        # Save the updated configs only if they've changed
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(session.user_config, f, indent=4)
-
-        if is_first_time:
             message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
-            ui.panel("Finished", message, border_style=ui.colors.success)
+            ui.panel("Finished", message, top=0, border_style=ui.colors.success)
+    else:
+        ui.panel(
+            "Setup canceled", "At least one API key is required.", border_style=ui.colors.warning
+        )
 
 
 def setup_telemetry():
@@ -174,13 +183,18 @@ async def setup_config():
     """Setup configuration and environment variables"""
     ui.status("Setting up config")
 
-    # Initialize device ID
     session.device_id = system.get_device_id()
-    is_first_time = _load_or_create_config()
-    await _onboarding(is_first_time)
+
+    if _config_exists():
+        ui.status("Found existing configuration, loading")
+        _load_or_create_config()
+    else:
+        ui.muted("No valid configuration found, running setup")
+        _load_or_create_config()
+        await _onboarding()
+
     _set_environment_variables()
 
-    # Set the current model from user config
     if not session.user_config.get("default_model"):
         raise ValueError("No default model found in config at [bold]~/.config/sidekick.json")
     session.current_model = session.user_config["default_model"]

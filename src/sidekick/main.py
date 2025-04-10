@@ -11,7 +11,7 @@ from sidekick.utils import telemetry, ui
 from sidekick.utils.mcp import stop_mcp_servers
 from sidekick.utils.setup import setup
 from sidekick.utils.system import check_for_updates, cleanup_session
-from sidekick.utils.undo import commit_for_undo, init_undo_system, perform_undo
+from sidekick.utils.undo import commit_for_undo, perform_undo
 
 app = typer.Typer(help=config.NAME)
 agent = MainAgent()
