@@ -18,12 +18,15 @@ MODELS = {
             "output": 0.40,
         }
     },
-    "google-gla:gemini-2.5-pro-exp-03-25": {
-        # No public pricing yet, so use 2.0-flash numbers
+    "google-gla:gemini-2.5-pro-preview-03-25": {
+        # Pricing per 1M tokens (API pricing, UI is free)
+        # Tier: <= 200K tokens. Input: $1.25, Output: $10.00
+        # Tier: > 200K tokens. Input: $2.50, Output: $15.00
+        # Current config uses lower tier pricing as structure doesn't support tiers.
         "pricing": {
-            "input": 0.10,
-            "cached_input": 0.025,
-            "output": 0.40,
+            "input": 1.25,  # Using <=200k tier
+            "cached_input": 0.025,  # No price defined for cached input, using input price
+            "output": 10.00,  # Using <=200k tier
         }
     },
     "openai:gpt-4o": {
