@@ -22,7 +22,7 @@ test:
 	pytest
 
 coverage:
-	pytest --cov=src/sidekick --cov-report=term --cov-report=html
+	pytest --cov=src/sidekick --cov-report=term
 
 build:
 	python -m build
