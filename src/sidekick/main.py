@@ -7,11 +7,12 @@ from prompt_toolkit.shortcuts import PromptSession
 
 from sidekick import config, session
 from sidekick.agents.main import MainAgent
+from sidekick.commands import CommandHandler
 from sidekick.utils import telemetry, ui
 from sidekick.utils.mcp import stop_mcp_servers
 from sidekick.utils.setup import setup
 from sidekick.utils.system import check_for_updates, cleanup_session
-from sidekick.utils.undo import commit_for_undo, perform_undo
+from sidekick.utils.undo import commit_for_undo
 
 app = typer.Typer(help=config.NAME)
 agent = MainAgent()
@@ -51,6 +52,7 @@ async def get_user_input():
 
 
 async def interactive_shell():
+    command_handler = CommandHandler(agent, process_request)
     try:
         while True:
             # Need to use patched stdout to allow for multiline input
@@ -59,71 +61,22 @@ async def interactive_shell():
                 res = await get_user_input()
 
             if res is None:
-                # Ensure cleanup happens on normal exit
-                cleanup_session()
                 break
 
             res = res.strip()
-            cmd = res.lower()
 
-            if cmd == "exit":
+            if res.lower() == "exit":
                 break
 
-            if cmd == "/yolo":
-                session.yolo = not session.yolo
-                if session.yolo:
-                    ui.success("Ooh shit, its YOLO time!\n")
-                else:
-                    ui.status("Pfft, boring...\n")
-                continue
-
-            if cmd == "/dump":
-                ui.dump_messages()
-                continue
-
-            if cmd == "/clear":
-                ui.console.clear()
-                ui.show_banner()
-                session.messages = []
-                continue
-
-            if cmd == "/help":
-                ui.show_help()
-                continue
-
-            if cmd == "/undo":
-                success, message = perform_undo()
-                if success:
-                    ui.success(message)
-                else:
-                    ui.warning(message)
-                continue
-
-            if cmd == "/compact":
-                await process_request(
-                    (
-                        "Summarize the context of this conversation into a concise "
-                        "breakdown, ensuring it contain's enough key details for "
-                        "future conversations."
-                    ),
-                    compact=True,
-                )
-                continue
-
-            if cmd.startswith("/model"):
-                try:
-                    model = cmd.split(" ")[1]
-                    agent.switch_model(model)
-                    continue
-                except IndexError:
-                    ui.show_models()
+            # Check if it's a command handled by CommandHandler
+            if res.startswith("/"):
+                command_handled = await command_handler.handle(res)
+                if command_handled:
                     continue
 
             # All output must be done after patched output otherwise
             # ANSI escape sequences will be printed.
-            # Process only non-empty requests
-            if res:
-                await process_request(res)
+            await process_request(res)
     finally:
         await stop_mcp_servers()
 
