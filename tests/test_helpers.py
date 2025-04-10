@@ -1,6 +1,13 @@
+import sys
+
 from rich.text import Text
 
-from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
+from sidekick.utils.helpers import (
+    capture_stdout,
+    ext_to_lang,
+    key_to_title,
+    render_file_diff,
+)
 
 
 # Tests for key_to_title
@@ -116,3 +123,65 @@ def test_render_file_diff_empty_patch():
     patch = ""
     expected = Text("- old line1\n- old line2\n")
     assert render_file_diff(target, patch).plain == expected.plain
+
+
+# Tests for capture_stdout
+def test_capture_stdout_captures_print():
+    original_stdout = sys.stdout
+    try:
+        with capture_stdout() as stdout_capture:
+            print("Hello, world!")
+        captured_output = stdout_capture.getvalue()
+        assert captured_output == "Hello, world!\n"
+    finally:
+        sys.stdout = original_stdout
+
+
+def test_capture_stdout_multiple_prints():
+    original_stdout = sys.stdout
+    try:
+        with capture_stdout() as stdout_capture:
+            print("First line.")
+            print("Second line.")
+        captured_output = stdout_capture.getvalue()
+        assert captured_output == "First line.\nSecond line.\n"
+    finally:
+        sys.stdout = original_stdout
+
+
+def test_capture_stdout_no_output():
+    original_stdout = sys.stdout
+    try:
+        with capture_stdout() as stdout_capture:
+            pass  # No output
+        captured_output = stdout_capture.getvalue()
+        assert captured_output == ""
+    finally:
+        sys.stdout = original_stdout
+
+
+def test_capture_stdout_restores_stdout():
+    original_stdout = sys.stdout
+    with capture_stdout():
+        print("This goes to the capture")
+    # After the context manager, sys.stdout should be restored
+    assert sys.stdout == original_stdout
+    # Just to be safe, explicitly restore if the assert fails somehow before finally
+    sys.stdout = original_stdout
+
+
+def test_capture_stdout_exception_handling():
+    original_stdout = sys.stdout
+    try:
+        with capture_stdout() as stdout_capture:
+            print("Before exception")
+            raise ValueError("Test exception")
+    except ValueError:
+        # Check that stdout is restored even if an exception occurs
+        assert sys.stdout == original_stdout
+        # Check that the output up to the exception was captured
+        captured_output = stdout_capture.getvalue()
+        assert captured_output == "Before exception\n"
+    finally:
+        # Ensure restoration even if the test logic itself had an error
+        sys.stdout = original_stdout
