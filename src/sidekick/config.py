@@ -59,3 +59,11 @@ DEFAULT_CONFIG = {
     },
     "mcpServers": {},
 }
+
+# For filtering tool calls, showing statuses etc.
+INTERNAL_TOOLS = [
+    "read_file",
+    "run_command",
+    "update_file",
+    "write_file",
+]
