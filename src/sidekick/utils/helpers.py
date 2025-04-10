@@ -42,16 +42,21 @@ def key_to_title(key):
     """
     Convert key to title, replacing underscores with spaces and capitalizing words.
 
-    Replace words found in `CAPITALIZE` with uppercase.
+    Replace words found in `UPPERCASE_WORDS` with their uppercase version.
     """
-    UPPERCASE = ["Api", "Id", "Url"]
+    UPPERCASE_WORDS = {"api", "id", "url"}
     words = key.split("_")
-    for i, word in enumerate(words):
-        if word in UPPERCASE:
-            words[i] = word.upper()
+    result_words = []
+    for word in words:
+        lower_word = word.lower()
+        if lower_word in UPPERCASE_WORDS:
+            result_words.append(lower_word.upper())
+        elif word:
+            result_words.append(word[0].upper() + word[1:].lower())
         else:
-            words[i] = word.title()
-    return " ".join(words)
+            result_words.append("")
+
+    return " ".join(result_words)
 
 
 def ext_to_lang(path):

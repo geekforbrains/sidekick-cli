@@ -14,15 +14,15 @@ clean:
 	find . -type f -name "*.pyc" -delete
 
 lint:
-	black src/
-	isort src/
-	flake8 src/
+	black src/ tests/
+	isort src/ tests/
+	flake8 src/ tests/
 
 test:
 	pytest
 
 coverage:
-	pytest --cov=src/sidekick --cov-report=term --cov-report=html
+	pytest --cov=src/sidekick --cov-report=term
 
 build:
 	python -m build

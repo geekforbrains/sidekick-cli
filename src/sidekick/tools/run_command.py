@@ -30,10 +30,12 @@ def run_command(command: str) -> str:
 
         # Raise retry if the output is too long to prevent issues
         # Reduced limit as it's often better to be concise
-        if len(resp) > 4000:
+        if len(resp) > 5000:
             ui.warning("Command output too long, returning truncated.")
-            # Truncate instead of immediate retry, let LLM decide if it needs more
-            truncated_resp = resp[:4000] + "... (truncated)"
+            # Include both the beginning and end of the output
+            start_part = resp[:2500]
+            end_part = resp[-1000:] if len(resp) > 3500 else resp[2500:]
+            truncated_resp = start_part + "\n...\n[truncated]\n...\n" + end_part
             return truncated_resp
 
         return resp
