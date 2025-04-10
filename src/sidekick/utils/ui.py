@@ -203,16 +203,7 @@ def _parse_args(args):
 
 
 def _log_mcp(title, args):
-    """
-    Checks if the tool call is an MCP and displays it's information.
-
-    Returns a list of args as a string
-
-    Example: {"foo": "bar", "baz": "qux"} => foo: bar, baz: qux
-
-    Args:
-        args (dict): The arguments for the tool call.
-    """
+    """Display MCP tool with its arguments."""
     if not args:
         return
 
