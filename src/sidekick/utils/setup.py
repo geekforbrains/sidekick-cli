@@ -6,7 +6,7 @@ from prompt_toolkit.validation import ValidationError, Validator
 
 from sidekick import session
 from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
-from sidekick.utils import system, telemetry, ui
+from sidekick.utils import system, telemetry, ui, user_config
 from sidekick.utils.mcp import init_mcp_servers, start_mcp_servers
 from sidekick.utils.undo import init_undo_system
 
@@ -31,25 +31,6 @@ class ModelValidator(Validator):
                 )
 
 
-def _config_exists():
-    """Check if a valid config already exists."""
-    if not CONFIG_FILE.is_file():
-        return False
-
-    try:
-        with open(CONFIG_FILE, "r") as f:
-            config = json.load(f)
-
-        # Check if at least one API key is set
-        env = config.get("env", {})
-        has_api_key = any(key.endswith("_API_KEY") and env.get(key) for key in env)
-        has_default_model = bool(config.get("default_model"))
-
-        return has_api_key and has_default_model
-    except Exception:
-        return False
-
-
 def _load_or_create_config():
     """
     Load user config from ~/.config/sidekick.json,
@@ -57,14 +38,13 @@ def _load_or_create_config():
     """
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
-    if CONFIG_FILE.is_file():
-        with open(CONFIG_FILE, "r") as f:
-            session.user_config = json.load(f)
+    loaded_config = user_config.load_config()
+    if loaded_config:
+        session.user_config = loaded_config
         return False
     else:
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(DEFAULT_CONFIG, f, indent=4)
         session.user_config = DEFAULT_CONFIG.copy()
+        user_config.save_config()
         return True
 
 
@@ -158,11 +138,11 @@ async def _onboarding():
         # Compare configs to see if anything changed
         current_config = json.dumps(session.user_config, sort_keys=True)
         if initial_config != current_config:
-            with open(CONFIG_FILE, "w") as f:
-                json.dump(session.user_config, f, indent=4)
-
-            message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
-            ui.panel("Finished", message, top=0, border_style=ui.colors.success)
+            if user_config.save_config():
+                message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
+                ui.panel("Finished", message, top=0, border_style=ui.colors.success)
+            else:
+                ui.error("Failed to save configuration.")
     else:
         ui.panel(
             "Setup canceled", "At least one API key is required.", border_style=ui.colors.warning
@@ -185,12 +165,14 @@ async def setup_config():
 
     session.device_id = system.get_device_id()
 
-    if _config_exists():
+    loaded_config = user_config.load_config()
+    if loaded_config:
         ui.status("Found existing configuration, loading")
-        _load_or_create_config()
+        session.user_config = loaded_config
     else:
         ui.muted("No valid configuration found, running setup")
-        _load_or_create_config()
+        session.user_config = DEFAULT_CONFIG.copy()
+        user_config.save_config() # Save the default config initially
         await _onboarding()
 
     _set_environment_variables()
