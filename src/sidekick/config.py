@@ -42,9 +42,6 @@ MODELS = {
     },
 }
 
-# For backward compatibility
-MODEL_PRICING = {model_id: data["pricing"] for model_id, data in MODELS.items()}
-
 CONFIG_DIR = Path.home() / ".config"
 CONFIG_FILE = CONFIG_DIR / "sidekick.json"
 DEFAULT_CONFIG = {

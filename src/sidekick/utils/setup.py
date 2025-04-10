@@ -1,8 +1,6 @@
 import json
 import os
-import sys
 
-from prompt_toolkit import prompt
 from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.validation import ValidationError, Validator
 
@@ -58,24 +56,26 @@ def _set_environment_variables():
     """
     Set environment variables from the config file.
     """
-    if "env" in session.user_config and isinstance(session.user_config["env"], dict):
-        env_dict = session.user_config["env"]
+    if "env" not in session.user_config or not isinstance(session.user_config["env"], dict):
+        session.user_config["env"] = {}
 
-        # Handle environment variables directly in env dict
-        for key, value in env_dict.items():
-            if not isinstance(value, str):
-                raise ValueError(f"Invalid env value in config: {key}")
-            value = value.strip()
-            if value:
-                os.environ[key] = value
-    else:
-        raise ValueError("Invalid env in config. Must be a dictionary.")
+    env_dict = session.user_config["env"]
+    for key, value in env_dict.items():
+        if not isinstance(value, str):
+            ui.warning(f"Invalid env value in config: {key}")
+            continue
+        value = value.strip()
+        if value:
+            os.environ[key] = value
 
 
 def _key_to_title(key):
     """
     Convert a provider env key to a title string.
     Makes for nicer display in the UI.
+
+    Example:
+        ANTHROPIC_API_KEY -> Anthropic API Key
     """
     words = [word.title() for word in key.split("_")]
     return " ".join(words).replace("Api", "API")
@@ -87,7 +87,7 @@ async def _step1():
         "Let's get you setup. First, we'll need to set some environment variables.\n"
         "Skip the ones you don't need."
     )
-    ui.panel("Setup", message, top=0, border_style=ui.colors.primary)
+    ui.panel("Setup", message, border_style=ui.colors.primary)
 
     prompt_session = PromptSession()
     env_keys = session.user_config["env"].copy()
@@ -121,7 +121,7 @@ async def _step2():
 async def _step3():
     """Setup MCP servers"""
     message = (
-        "You can configure MCP servers in your ~/.config/sidekick.json file.\n"
+        "You can configure MCP servers in your ~/.config/sidekick.json file.\n\n"
         "For example:\n\n"
         '"mcpServers": {\n'
         '  "fetch": {\n'
@@ -139,7 +139,7 @@ async def _onboarding():
     await _step3()
 
     message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
-    ui.panel("Finished", message, border_style=ui.colors.success)
+    ui.panel("Finished", message, top=0, border_style=ui.colors.success)
 
     # Save the updated configs
     with open(CONFIG_FILE, "w") as f:
