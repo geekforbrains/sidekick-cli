@@ -7,7 +7,7 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.messages import ModelRequest, SystemPromptPart, ToolReturnPart
 
 from sidekick import config, session
-from sidekick.tools import fetch, read_file, run_command, update_file, web_search, write_file
+from sidekick.tools import read_file, run_command, update_file, write_file
 from sidekick.utils import telemetry, ui
 from sidekick.utils.system import get_cwd, list_cwd
 
@@ -104,19 +104,17 @@ class MainAgent:
         return Agent(
             model=session.current_model,
             tools=[
-                fetch,
                 read_file,
                 run_command,
                 update_file,
-                web_search,
                 write_file,
             ],
             model_settings=self._get_model_settings(),
             instrument=True,
+            mcp_servers=session.mcp_servers,
         )
 
     def get_agent(self):
-        ui.status(f"Agent({session.current_model})")
         if not hasattr(session.agents, session.current_model):
             session.agents[session.current_model] = self.create_agent()
         return session.agents[session.current_model]
@@ -126,15 +124,12 @@ class MainAgent:
             model_ids = list(config.MODELS.keys())
             session.current_model = model_ids[int(model_index)]
             self.agent = self.get_agent()
-            ui.agent(f"I'm now using model: {session.current_model}", bottom=1)
+            ui.agent(f"Now using {session.current_model}", bottom=1)
         except IndexError:
             ui.error(f"Invalid model index: {model_index}")
 
     async def process_request(self, req, compact=False):
         try:
-            if not self.agent:
-                self.agent = self.get_agent()
-
             message_history = self._inject_prompts()
             async with self.agent.iter(req, message_history=message_history) as agent_run:
                 async for node in agent_run:

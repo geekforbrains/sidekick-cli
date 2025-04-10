@@ -1,23 +1,20 @@
-import asyncio
 import json
 import os
-import subprocess
-import sys
 
-from prompt_toolkit import prompt
+from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.validation import ValidationError, Validator
 
 from sidekick import session
 from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
-from sidekick.utils import system, ui
+from sidekick.utils import system, telemetry, ui
+from sidekick.utils.mcp import init_mcp_servers, start_mcp_servers
+from sidekick.utils.undo import init_undo_system
 
 
 class ModelValidator(Validator):
     """Validate default provider selection"""
 
     def __init__(self, index):
-        # index is the range (non-zero) of the provider list
-        # to test against
         self.index = index
 
     def validate(self, document):
@@ -34,94 +31,83 @@ class ModelValidator(Validator):
                 )
 
 
+def _config_exists():
+    """Check if a valid config already exists."""
+    if not CONFIG_FILE.is_file():
+        return False
+
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            config = json.load(f)
+
+        # Check if at least one API key is set
+        env = config.get("env", {})
+        has_api_key = any(key.endswith("_API_KEY") and env.get(key) for key in env)
+        has_default_model = bool(config.get("default_model"))
+
+        return has_api_key and has_default_model
+    except Exception:
+        return False
+
+
 def _load_or_create_config():
     """
     Load user config from ~/.config/sidekick.json,
     creating it with defaults if missing.
     """
-    config_created = False
-    try:
-        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
-        if CONFIG_FILE.is_file():
-            with open(CONFIG_FILE, "r") as f:
-                session.user_config = json.load(f)
-        else:
-            with open(CONFIG_FILE, "w") as f:
-                json.dump(DEFAULT_CONFIG, f, indent=4)
-            session.user_config = DEFAULT_CONFIG.copy()
-            config_created = True
-    except Exception as e:
-        # TODO handle UI error nicely
-        print(f"FATAL: Failed to initialize configuration system: {e}", file=sys.stderr)
-    return config_created
+    if CONFIG_FILE.is_file():
+        with open(CONFIG_FILE, "r") as f:
+            session.user_config = json.load(f)
+        return False
+    else:
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(DEFAULT_CONFIG, f, indent=4)
+        session.user_config = DEFAULT_CONFIG.copy()
+        return True
 
 
 def _set_environment_variables():
-    """
-    Set environment variables from the config file.
-    """
-    if "env" in session.user_config and isinstance(session.user_config["env"], dict):
-        env_dict = session.user_config["env"]
+    """Set environment variables from the config file."""
+    if "env" not in session.user_config or not isinstance(session.user_config["env"], dict):
+        session.user_config["env"] = {}
 
-        # Handle provider keys
-        if "providers" in env_dict and isinstance(env_dict["providers"], dict):
-            for key, value in env_dict["providers"].items():
-                if not isinstance(value, str):
-                    raise ValueError(f"Invalid provider env value in config: {key}")
-                value = value.strip()
-                if value:
-                    os.environ[key] = value
-
-        # Handle tool keys
-        if "tools" in env_dict and isinstance(env_dict["tools"], dict):
-            for key, value in env_dict["tools"].items():
-                if not isinstance(value, str):
-                    raise ValueError(f"Invalid tool env value in config: {key}")
-                value = value.strip()
-                if value:
-                    os.environ[key] = value
-    else:
-        raise ValueError("Invalid env in config. Must be a dictionary.")
+    env_dict = session.user_config["env"]
+    for key, value in env_dict.items():
+        if not isinstance(value, str):
+            ui.warning(f"Invalid env value in config: {key}")
+            continue
+        value = value.strip()
+        if value:
+            os.environ[key] = value
 
 
 def _key_to_title(key):
-    """
-    Convert a provider env key to a title string.
-    Makes for nicer display in the UI.
-    """
+    """Convert a provider env key to a title string."""
     words = [word.title() for word in key.split("_")]
     return " ".join(words).replace("Api", "API")
 
 
-def _step1():
-    # Check if any provider already has a non-empty value
-    providers = session.user_config["env"]["providers"]
-    for value in providers.values():
-        if value and isinstance(value, str) and value.strip():
-            return
-
+async def _step1():
     message = (
         "Welcome to Sidekick!\n"
         "Let's get you setup. First, we'll need to set some environment variables.\n"
         "Skip the ones you don't need."
     )
-    ui.panel("Setup", message, top=0, border_style=ui.colors.primary)
+    ui.panel("Setup", message, border_style=ui.colors.primary)
 
-    provider_envs = session.user_config["env"]["providers"].copy()
-    for key, _ in provider_envs.items():
+    prompt_session = PromptSession()
+    env_keys = session.user_config["env"].copy()
+    for key in env_keys:
         provider = _key_to_title(key)
-        val = prompt(f"  {provider}: ", is_password=True)
+        val = await prompt_session.prompt_async(f"  {provider}: ", is_password=True)
         val = val.strip()
         if val:
-            session.user_config["env"]["providers"][key] = val
+            session.user_config["env"][key] = val
 
 
-def _step2():
-    # Check if default_model is already set
-    if session.user_config.get("default_model", False):
-        return
-
+async def _step2():
     message = "Which model would you like to use by default?\n\n"
 
     model_ids = list(MODELS.keys())
@@ -130,8 +116,9 @@ def _step2():
     message = message.strip()
 
     ui.panel("Default Model", message, border_style=ui.colors.primary)
+    prompt_session = PromptSession()
     choice = int(
-        prompt(
+        await prompt_session.prompt_async(
             "  Default model (#): ",
             validator=ModelValidator(len(model_ids)),
         )
@@ -139,106 +126,109 @@ def _step2():
     session.user_config["default_model"] = model_ids[choice]
 
 
-def _step3():
-    """Setup tools"""
-    message = "Now lets setup tools. Skip any you don't want to use"
-    ui.panel("Tools", message, border_style=ui.colors.primary)
+async def _step3():
+    """Setup MCP servers"""
+    message = (
+        "You can configure MCP servers in your ~/.config/sidekick.json file.\n\n"
+        "For example:\n\n"
+        '"mcpServers": {\n'
+        '  "fetch": {\n'
+        '    "command": "uvx",\n'
+        '    "args": ["mcp-server-fetch"]\n'
+        "  }\n"
+        "}"
+    )
+    ui.panel("MCP Servers", message, border_style=ui.colors.primary)
 
-    # At the moment, we only have Brave search
-    brave_api_key = prompt("  Brave Search API Key: ", is_password=True)
-    brave_api_key = brave_api_key.strip()
 
-    if brave_api_key:
-        session.user_config["env"]["tools"]["BRAVE_SEARCH_API_KEY"] = brave_api_key
-
-
-def _onboarding(is_first_time=False):
-    # Save initial config to compare later
+async def _onboarding():
     initial_config = json.dumps(session.user_config, sort_keys=True)
 
-    _step1()
-    _step2()
-    if is_first_time:
-        _step3()
+    await _step1()
 
-    # Compare configs to see if anything changed
-    current_config = json.dumps(session.user_config, sort_keys=True)
-    config_changed = initial_config != current_config
+    # Only continue if at least one API key was provided
+    env = session.user_config.get("env", {})
+    has_api_key = any(key.endswith("_API_KEY") and env.get(key) for key in env)
 
-    if config_changed:
-        # Save the updated configs only if they've changed
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(session.user_config, f, indent=4)
+    if has_api_key:
+        if not session.user_config.get("default_model"):
+            await _step2()
+        await _step3()
 
-        if is_first_time:
+        # Compare configs to see if anything changed
+        current_config = json.dumps(session.user_config, sort_keys=True)
+        if initial_config != current_config:
+            with open(CONFIG_FILE, "w") as f:
+                json.dump(session.user_config, f, indent=4)
+
             message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
-            ui.panel("Finished", message, border_style=ui.colors.success)
-
-
-def _check_playwright():
-    """
-    Check if Playwright is properly installed and configured.
-    Return True if installation is needed.
-    """
-    try:
-        # Check if the module is importable
-        # Try a simple browser launch to see if binaries are installed
-        from playwright.async_api import async_playwright
-
-        async def test_playwright():
-            try:
-                async with async_playwright() as p:
-                    # Just try to launch and close browser quickly
-                    browser = await p.chromium.launch(headless=True)
-                    await browser.close()
-                return True
-            except Exception:
-                return False
-
-        if not asyncio.run(test_playwright()):
-            message = (
-                "Playwright is installed but browser binaries are missing.\n"
-                "Would you like to install them now? (y/n)"
-            )
-            ui.panel("Playwright Setup", message, border_style=ui.colors.warning)
-            choice = prompt("  Install Playwright browsers? (y/n): ")
-            if choice.lower().startswith("y"):
-                ui.status("Installing Playwright browsers")
-                ui.line()
-                try:
-                    subprocess.run(
-                        [sys.executable, "-m", "playwright", "install", "chromium"], check=True
-                    )
-                    ui.line()
-                    ui.success("Playwright browsers installed successfully!")
-                except subprocess.CalledProcessError:
-                    ui.error(
-                        "Failed to install Playwright browsers. You may need to run this manually:"
-                    )
-                    ui.status("    playwright install")
-            else:
-                ui.warning("Fetch tool with JavaScript rendering will be unavailable.")
-
-    except ImportError:
-        ui.warning(
-            "Playwright not installed. Fetch tool will use httpx only (no JavaScript support)."
+            ui.panel("Finished", message, top=0, border_style=ui.colors.success)
+    else:
+        ui.panel(
+            "Setup canceled", "At least one API key is required.", border_style=ui.colors.warning
         )
 
 
-def setup():
-    """
-    Setup user config file if needed, with onboarding questions. Load user
-    config and set environment variables.
+def setup_telemetry():
+    """Setup telemetry for capturing exceptions and errors"""
+    if not session.telemetry_enabled:
+        ui.status("Telemetry disabled, skipping")
+        return
 
-    """
-    # Initialize device ID
+    ui.status("Setting up telemetry")
+    telemetry.setup()
+
+
+async def setup_config():
+    """Setup configuration and environment variables"""
+    ui.status("Setting up config")
+
     session.device_id = system.get_device_id()
 
-    is_first_time = _load_or_create_config()
-
-    _onboarding(is_first_time)
+    if _config_exists():
+        ui.status("Found existing configuration, loading")
+        _load_or_create_config()
+    else:
+        ui.muted("No valid configuration found, running setup")
+        _load_or_create_config()
+        await _onboarding()
 
     _set_environment_variables()
 
-    # Check Playwright installation
-    _check_playwright()
+    if not session.user_config.get("default_model"):
+        raise ValueError("No default model found in config at [bold]~/.config/sidekick.json")
+    session.current_model = session.user_config["default_model"]
+
+
+async def setup_mcp():
+    """Initialize and setup MCP servers"""
+    ui.status("Setting up MCP servers")
+    session.mcp_servers = init_mcp_servers(session.user_config.get("mcpServers", {}))
+    await start_mcp_servers()
+
+
+def setup_undo():
+    """Initialize the undo system"""
+    ui.status("Initializing undo system")
+    session.undo_initialized = init_undo_system()
+
+
+def setup_agent(agent):
+    """Initialize the agent with the current model"""
+    if agent is not None:
+        ui.status(f"Initializing Agent({session.current_model})")
+        agent.agent = agent.get_agent()
+
+
+async def setup(agent=None):
+    """
+    Setup Sidekick on startup.
+
+    Args:
+        agent: An optional MainAgent instance to initialize
+    """
+    setup_telemetry()
+    await setup_config()
+    await setup_mcp()
+    setup_undo()
+    setup_agent(agent)
