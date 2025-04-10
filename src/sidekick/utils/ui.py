@@ -67,8 +67,9 @@ def warning(text: str):
     print(f"• {text}", style=colors.warning)
 
 
-def muted(text: str):
-    print(f"• {text}", style=colors.muted)
+def muted(text: str, spaces=0):
+    # print(f"• {text}", style=colors.muted)
+    print(f"{' ' * spaces}• {text}", style=colors.muted)
 
 
 def error(text: str):
@@ -201,22 +202,44 @@ def _parse_args(args):
         raise ValueError(f"Invalid args type: {type(args)}")
 
 
+def _log_mcp(title, args):
+    """Display MCP tool with its arguments."""
+    if not args:
+        return
+
+    status(title)
+    for key, value in args.items():
+        if isinstance(value, list):
+            value = ", ".join(value)
+        muted(f"{key}: {value}", spaces=4)
+
+
+def _get_tool_title(tool_name):
+    """
+    Checks if the tool exists within this system. If it does
+    it return "Tool" otherwise assumed to be an MCP so returns "MCP"
+    """
+    if tool_name in config.INTERNAL_TOOLS:
+        return f"Tool({tool_name})"
+    else:
+        return f"MCP({tool_name})"
+
+
 def confirm(tool_call, node):
-    # If we're in yolo mode, skip all confirmations
-    if session.yolo:
-        return
+    title = _get_tool_title(tool_call.tool_name)
+    args = _parse_args(tool_call.args)
 
-    # If tool in session ignore list, skip confirmation
-    if tool_call.tool_name in session.tool_ignore:
-        return
-
-    # If tool in user config ignore list, skip confirmation
-    if tool_call.tool_name in session.user_config["settings"]["tool_ignore"]:
+    # If we're skipping confirmation on this tool, log its output if MCP
+    if (
+        session.yolo
+        or tool_call.tool_name in session.tool_ignore
+        or tool_call.tool_name in session.user_config["settings"]["tool_ignore"]
+    ):
+        if tool_call.tool_name not in config.INTERNAL_TOOLS:
+            _log_mcp(title, args)
         return
 
     session.spinner.stop()
-    title = f"Tool({tool_call.tool_name})"
-    args = _parse_args(tool_call.args)
     content = _render_args(tool_call.tool_name, args)
     filepath = args.get("filepath")
 
