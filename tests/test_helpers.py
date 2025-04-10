@@ -2,12 +2,7 @@ import sys
 
 from rich.text import Text
 
-from sidekick.utils.helpers import (
-    capture_stdout,
-    ext_to_lang,
-    key_to_title,
-    render_file_diff,
-)
+from sidekick.utils.helpers import capture_stdout, ext_to_lang, key_to_title, render_file_diff
 
 
 # Tests for key_to_title
