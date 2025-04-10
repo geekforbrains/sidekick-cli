@@ -33,7 +33,6 @@ def write_file(filepath: str, content: str) -> str:
         # Create directories if they don't exist
         dirpath = os.path.dirname(filepath)
         if dirpath and not os.path.exists(dirpath):
-            ui.debug(f"Creating directory: {dirpath}")
             os.makedirs(dirpath, exist_ok=True)
 
         with open(filepath, "w", encoding="utf-8") as file:
