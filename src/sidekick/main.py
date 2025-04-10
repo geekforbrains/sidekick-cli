@@ -154,9 +154,6 @@ def main(
         ui.status("Setting up config")
         setup()
 
-        # Set the current model from user config
-        if not session.user_config.get("default_model"):
-            raise ValueError("No default model found in config at [bold]~/.config/sidekick.json")
         session.current_model = session.user_config["default_model"]
 
         if logfire_enabled:
