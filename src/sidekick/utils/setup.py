@@ -5,7 +5,7 @@ from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.validation import ValidationError, Validator
 
 from sidekick import session
-from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
+from sidekick.config import CONFIG_DIR, DEFAULT_CONFIG, MODELS
 from sidekick.utils import system, telemetry, ui, user_config
 from sidekick.utils.mcp import init_mcp_servers, start_mcp_servers
 from sidekick.utils.undo import init_undo_system
@@ -172,7 +172,7 @@ async def setup_config():
     else:
         ui.muted("No valid configuration found, running setup")
         session.user_config = DEFAULT_CONFIG.copy()
-        user_config.save_config() # Save the default config initially
+        user_config.save_config()  # Save the default config initially
         await _onboarding()
 
     _set_environment_variables()
