@@ -3,7 +3,7 @@ import traceback
 from datetime import datetime, timezone
 
 from pydantic_ai import Agent
-from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
 from pydantic_ai.messages import ModelRequest, SystemPromptPart, ToolReturnPart
 
 from sidekick import config, session
@@ -150,6 +150,26 @@ class MainAgent:
         except UnexpectedModelBehavior as e:
             telemetry.capture_exception(e)
             ui.error(f"Model behavior error: {e.message}")
+        except ModelHTTPError as e:
+            telemetry.capture_exception(e)
+            error_body = str(e.body) if hasattr(e, "body") else ""
+
+            if "google" in session.current_model.lower() and (
+                "$schema" in error_body
+                or "exclusiveMaximum" in error_body
+                or "exclusiveMinimum" in error_body
+            ):
+                ui.error("Gemini compatibility issue. Try a different model.")
+                ui.muted("This model has compatibility issues with some tool definitions.")
+            elif e.status_code == 429:
+                ui.error(
+                    (
+                        f"Rate limit exceeded (429) for {session.current_model}.\n\n"
+                        f"API Response:\n\n{str(e).strip()}"
+                    )
+                )
+            else:
+                ui.error(f"Model API error: {e.status_code}\n\n{str(e)}")
         except Exception as e:
             telemetry.capture_exception(e)
             ui.error(traceback.format_exc())

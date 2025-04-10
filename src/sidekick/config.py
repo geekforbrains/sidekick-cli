@@ -18,7 +18,7 @@ MODELS = {
             "output": 0.40,
         }
     },
-    "google-gla:gemini-2.5-pro-exp-03-25": {
+    "google-gla:gemini-2.5-pro-preview-03-25": {
         # No public pricing yet, so use 2.0-flash numbers
         "pricing": {
             "input": 0.10,
