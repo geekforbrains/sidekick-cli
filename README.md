@@ -1,6 +1,6 @@
 # Sidekick (Beta)
 
-![Sidekick Demo](sidekick.gif)
+![Sidekick Demo](screenshot.gif)
 
 Your agentic CLI developer.
 
