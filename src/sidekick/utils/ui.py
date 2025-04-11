@@ -1,5 +1,6 @@
 import json
 
+from prompt_toolkit.formatted_text import HTML
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.padding import Padding
@@ -72,6 +73,10 @@ def muted(text: str, spaces=0):
     print(f"{' ' * spaces}• {text}", style=colors.muted)
 
 
+def formatted_text(text: str):
+    return HTML(text)
+
+
 def error(text: str):
     panel("Error", text, style=colors.error)
 
@@ -95,11 +100,9 @@ def show_usage(usage):
 def show_banner():
     console.clear()
     banner = Padding(BANNER, (1, 0, 0, 2))
-    version = Padding(f"v{config.VERSION}", (0, 0, 0, 2))
-    commands = Padding("Esc + Enter to submit, /help for commands", (0, 0, 1, 2))
+    version = Padding(f"v{config.VERSION}", (0, 0, 1, 2))
     print(banner, style=colors.primary)
     print(version, style=colors.muted)
-    print(commands, style=colors.muted)
 
 
 def show_help():
@@ -263,4 +266,5 @@ def confirm(tool_call, node):
     elif resp == "3":
         raise UserAbort("User aborted.")
 
+    line()  # Add line after user input
     session.spinner.start()
