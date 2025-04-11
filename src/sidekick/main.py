@@ -2,6 +2,7 @@ import asyncio
 
 import logfire
 import typer
+from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.shortcuts import PromptSession
 
@@ -14,7 +15,20 @@ from sidekick.utils.system import check_for_updates, cleanup_session
 from sidekick.utils.undo import commit_for_undo, perform_undo
 
 app = typer.Typer(help=config.NAME)
+kb = KeyBindings()
 agent = MainAgent()
+
+
+@kb.add("escape", "enter")
+def _newline(event):
+    """Insert a newline character."""
+    event.current_buffer.insert_text("\n")
+
+
+@kb.add("enter")
+def _submit(event):
+    """Submit the current buffer."""
+    event.current_buffer.validate_and_handle()
 
 
 async def process_request(res, compact=False):
@@ -42,9 +56,18 @@ async def process_request(res, compact=False):
 
 
 async def get_user_input():
-    session = PromptSession("λ ")
+    placeholder = ui.formatted_text(
+        (
+            "<darkgrey>"
+            "<bold>Enter</bold> to submit, "
+            "<bold>Esc + Enter</bold> for new line, "
+            "<bold>/help</bold> for commands"
+            "</darkgrey>"
+        )
+    )
+    session = PromptSession("λ ", placeholder=placeholder)
     try:
-        res = await session.prompt_async(multiline=True)
+        res = await session.prompt_async(key_bindings=kb, multiline=True)
         return res.strip()
     except (EOFError, KeyboardInterrupt):
         return
