@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sidekick-cli"
-version = "0.3.0"
+version = "0.3.1"
 description = "Your agentic CLI developer."
 keywords = ["cli", "agent", "development", "automation"]
 readme = "README.md"
@@ -26,12 +26,10 @@ classifiers = [
 ]
 dependencies = [
     "prompt_toolkit==3.0.50",
-    "pydantic-ai[logfire,mcp]",
+    "pydantic-ai[logfire]==0.0.55",
     "pygments==2.19.1",
     "rich==14.0.0",
     "typer==0.15.2",
-    "httpx[http2]==0.28.1",
-    "beautifulsoup4==4.13.3",
     "sentry_sdk==2.25.1",
 ]
 
