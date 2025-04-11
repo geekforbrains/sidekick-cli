@@ -8,11 +8,12 @@ from prompt_toolkit.shortcuts import PromptSession
 
 from sidekick import config, session
 from sidekick.agents.main import MainAgent
-from sidekick.utils import telemetry, ui, user_config
+from sidekick.commands import CommandHandler
+from sidekick.utils import telemetry, ui
 from sidekick.utils.mcp import stop_mcp_servers
 from sidekick.utils.setup import setup
 from sidekick.utils.system import check_for_updates, cleanup_session
-from sidekick.utils.undo import commit_for_undo, perform_undo
+from sidekick.utils.undo import commit_for_undo
 
 app = typer.Typer(help=config.NAME)
 kb = KeyBindings()
@@ -74,6 +75,7 @@ async def get_user_input():
 
 
 async def interactive_shell():
+    command_handler = CommandHandler(agent, process_request)
     try:
         while True:
             # Need to use patched stdout to allow for multiline input
@@ -82,90 +84,22 @@ async def interactive_shell():
                 res = await get_user_input()
 
             if res is None:
-                # Ensure cleanup happens on normal exit
-                cleanup_session()
                 break
 
             res = res.strip()
-            cmd = res.lower()
 
-            if cmd == "exit":
+            if res.lower() == "exit":
                 break
 
-            if cmd == "/yolo":
-                session.yolo = not session.yolo
-                if session.yolo:
-                    ui.success("Ooh shit, its YOLO time!\n")
-                else:
-                    ui.status("Pfft, boring...\n")
-                continue
-
-            if cmd == "/dump":
-                ui.dump_messages()
-                continue
-
-            if cmd == "/clear":
-                ui.console.clear()
-                ui.show_banner()
-                session.messages = []
-                continue
-
-            if cmd == "/help":
-                ui.show_help()
-                continue
-
-            if cmd == "/undo":
-                success, message = perform_undo()
-                if success:
-                    ui.success(message)
-                else:
-                    ui.warning(message)
-                continue
-
-            if cmd == "/compact":
-                await process_request(
-                    (
-                        "Summarize the context of this conversation into a concise "
-                        "breakdown, ensuring it contain's enough key details for "
-                        "future conversations."
-                    ),
-                    compact=True,
-                )
-                continue
-
-            if cmd.startswith("/model"):
-                parts = cmd.split(" ")
-                try:
-                    if len(parts) == 1:
-                        ui.show_models()
-                        continue
-
-                    model_index = parts[1]
-
-                    if len(parts) > 2 and parts[2].lower() == "default":
-                        # Set as default model
-                        model_ids = list(config.MODELS.keys())
-                        try:
-                            model_name = model_ids[int(model_index)]
-                            if user_config.set_default_model(model_name):
-                                ui.agent(f"Default model set to {model_name}", bottom=1)
-                            else:
-                                ui.error("Failed to save default model setting")
-                        except IndexError:
-                            ui.error(f"Invalid model index: {model_index}")
-                        continue
-                    else:
-                        agent.switch_model(model_index)
-                        continue
-                except IndexError:
-                    ui.show_models()
+            # Check if it's a command handled by CommandHandler
+            if res.startswith("/"):
+                command_handled = await command_handler.handle(res)
+                if command_handled:
                     continue
 
             # All output must be done after patched output otherwise
             # ANSI escape sequences will be printed.
-            # Process only non-empty requests
-            if res:
-                await process_request(res)
+            await process_request(res)
     finally:
         await stop_mcp_servers()
 
