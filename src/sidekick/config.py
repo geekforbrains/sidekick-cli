@@ -59,6 +59,7 @@ DEFAULT_CONFIG = {
         "tool_ignore": [
             "read_file",
         ],
+        "guide_file": "SIDEKICK.md",
     },
     "mcpServers": {},
 }

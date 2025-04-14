@@ -66,7 +66,21 @@ class MainAgent:
 
     def _inject_guide(self):
         cwd = get_cwd()
-        filepath = os.path.join(cwd, config.GUIDE_FILE)
+        
+        # Check for a custom guide file path in the settings
+        custom_guide_file = session.user_config.get("settings", {}).get("guide_file", "")
+        
+        if custom_guide_file:
+            # Use the custom guide file if specified
+            # Check if it's an absolute path, if not make it relative to cwd
+            if os.path.isabs(custom_guide_file):
+                filepath = custom_guide_file
+            else:
+                filepath = os.path.join(cwd, custom_guide_file)
+        else:
+            # Use the default guide file
+            filepath = os.path.join(cwd, config.GUIDE_FILE)
+            
         if os.path.exists(filepath):
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
