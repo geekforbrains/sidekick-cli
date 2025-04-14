@@ -29,6 +29,13 @@ MODELS = {
             "output": 10.00,  # Using <=200k tier
         }
     },
+    "openai:gpt-4.1": {
+        "pricing": {
+            "input": 2.00,
+            "cached_input": 0.50,
+            "output": 8.00,
+        }
+    },
     "openai:gpt-4o": {
         "pricing": {
             "input": 2.50,
