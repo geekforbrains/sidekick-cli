@@ -22,6 +22,11 @@ def save_config():
         return False
 
 
+def get_mcp_servers():
+    """Retrieve MCP server configurations from user config"""
+    return session.user_config.get("mcpServers", [])
+
+
 def set_default_model(model_name):
     """Set the default model in the user config and save"""
     session.user_config["default_model"] = model_name

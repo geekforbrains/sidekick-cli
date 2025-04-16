@@ -4,11 +4,12 @@ from datetime import datetime, timezone
 
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
+from pydantic_ai.mcp import MCPServerStdio
 from pydantic_ai.messages import ModelRequest, SystemPromptPart, ToolReturnPart
 
 from sidekick import config, session
 from sidekick.tools import read_file, run_command, update_file, write_file
-from sidekick.utils import telemetry, ui
+from sidekick.utils import telemetry, ui, user_config
 from sidekick.utils.system import get_cwd, list_cwd
 
 
@@ -66,10 +67,10 @@ class MainAgent:
 
     def _inject_guide(self):
         cwd = get_cwd()
-        
+
         # Check for a custom guide file path in the settings
         custom_guide_file = session.user_config.get("settings", {}).get("guide_file", "")
-        
+
         if custom_guide_file:
             # Use the custom guide file if specified
             # Check if it's an absolute path, if not make it relative to cwd
@@ -80,7 +81,7 @@ class MainAgent:
         else:
             # Use the default guide file
             filepath = os.path.join(cwd, config.GUIDE_FILE)
-            
+
         if os.path.exists(filepath):
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -114,7 +115,25 @@ class MainAgent:
             )
         ]
 
+    def _create_mcp_servers(self):
+        """Create MCP server instances from user config"""
+        mcp_servers = []
+        server_configs = user_config.get_mcp_servers()
+
+        for name, data in server_configs.items():
+            command = data.get("command")
+            args = data.get("args", [])
+            env = data.get("env", {})
+
+            if name:
+                server = MCPServerStdio(command, args=args, env=env)
+                mcp_servers.append(server)
+
+        return mcp_servers
+
     def create_agent(self) -> Agent:
+        mcp_servers = self._create_mcp_servers()
+
         return Agent(
             model=session.current_model,
             tools=[
@@ -125,7 +144,7 @@ class MainAgent:
             ],
             model_settings=self._get_model_settings(),
             instrument=True,
-            mcp_servers=session.mcp_servers,
+            mcp_servers=mcp_servers,
         )
 
     def get_agent(self):
@@ -145,20 +164,21 @@ class MainAgent:
     async def process_request(self, req, compact=False):
         try:
             message_history = self._inject_prompts()
-            async with self.agent.iter(req, message_history=message_history) as agent_run:
-                async for node in agent_run:
-                    if hasattr(node, "request"):
-                        session.messages.append(node.request)
-                    if hasattr(node, "model_response"):
-                        session.messages.append(node.model_response)
-                        self._check_for_confirmation(node, agent_run)
+            async with self.agent.run_mcp_servers():
+                async with self.agent.iter(req, message_history=message_history) as agent_run:
+                    async for node in agent_run:
+                        if hasattr(node, "request"):
+                            session.messages.append(node.request)
+                        if hasattr(node, "model_response"):
+                            session.messages.append(node.model_response)
+                            self._check_for_confirmation(node, agent_run)
 
-                if compact:
-                    session.messages = [session.messages[-1]]
-                    ui.show_banner()
+                    if compact:
+                        session.messages = [session.messages[-1]]
+                        ui.show_banner()
 
-                ui.agent(agent_run.result.data)
-                self._calc_usage(agent_run)
+                    ui.agent(agent_run.result.data)
+                    self._calc_usage(agent_run)
         except ui.UserAbort:
             ui.status("Operation aborted.\n")
         except UnexpectedModelBehavior as e:

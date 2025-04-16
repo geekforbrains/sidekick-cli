@@ -10,7 +10,6 @@ from sidekick import config, session
 from sidekick.agents.main import MainAgent
 from sidekick.commands import CommandHandler
 from sidekick.utils import telemetry, ui
-from sidekick.utils.mcp import stop_mcp_servers
 from sidekick.utils.setup import setup
 from sidekick.utils.system import check_for_updates, cleanup_session
 from sidekick.utils.undo import commit_for_undo
@@ -46,12 +45,11 @@ async def process_request(res, compact=False):
     try:
         try:
             await agent.process_request(res, compact=compact)
+            if session.undo_initialized:
+                commit_for_undo("sidekick")
         except (KeyboardInterrupt, asyncio.CancelledError):
             ui.warning("Request cancelled")
             ui.line()
-
-        if session.undo_initialized:
-            commit_for_undo("sidekick")
     finally:
         session.spinner.stop()
 
@@ -76,32 +74,29 @@ async def get_user_input():
 
 async def interactive_shell():
     command_handler = CommandHandler(agent, process_request)
-    try:
-        while True:
-            # Need to use patched stdout to allow for multiline input
-            # while in async mode.
-            with patch_stdout():
-                res = await get_user_input()
+    while True:
+        # Need to use patched stdout to allow for multiline input
+        # while in async mode.
+        with patch_stdout():
+            res = await get_user_input()
 
-            if res is None:
-                break
+        if res is None:
+            break
 
-            res = res.strip()
+        res = res.strip()
 
-            if res.lower() == "exit":
-                break
+        if res.lower() == "exit":
+            break
 
-            # Check if it's a command handled by CommandHandler
-            if res.startswith("/"):
-                command_handled = await command_handler.handle(res)
-                if command_handled:
-                    continue
+        # Check if it's a command handled by CommandHandler
+        if res.startswith("/"):
+            command_handled = await command_handler.handle(res)
+            if command_handled:
+                continue
 
-            # All output must be done after patched output otherwise
-            # ANSI escape sequences will be printed.
-            await process_request(res)
-    finally:
-        await stop_mcp_servers()
+        # All output must be done after patched output otherwise
+        # ANSI escape sequences will be printed.
+        await process_request(res)
 
 
 @app.command()

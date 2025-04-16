@@ -7,7 +7,6 @@ from prompt_toolkit.validation import ValidationError, Validator
 from sidekick import session
 from sidekick.config import CONFIG_DIR, DEFAULT_CONFIG, MODELS
 from sidekick.utils import system, telemetry, ui, user_config
-from sidekick.utils.mcp import init_mcp_servers, start_mcp_servers
 from sidekick.utils.undo import init_undo_system
 
 
@@ -106,21 +105,6 @@ async def _step2():
     session.user_config["default_model"] = model_ids[choice]
 
 
-async def _step3():
-    """Setup MCP servers"""
-    message = (
-        "You can configure MCP servers in your ~/.config/sidekick.json file.\n\n"
-        "For example:\n\n"
-        '"mcpServers": {\n'
-        '  "fetch": {\n'
-        '    "command": "uvx",\n'
-        '    "args": ["mcp-server-fetch"]\n'
-        "  }\n"
-        "}"
-    )
-    ui.panel("MCP Servers", message, border_style=ui.colors.primary)
-
-
 async def _onboarding():
     initial_config = json.dumps(session.user_config, sort_keys=True)
 
@@ -133,7 +117,6 @@ async def _onboarding():
     if has_api_key:
         if not session.user_config.get("default_model"):
             await _step2()
-        await _step3()
 
         # Compare configs to see if anything changed
         current_config = json.dumps(session.user_config, sort_keys=True)
@@ -182,13 +165,6 @@ async def setup_config():
     session.current_model = session.user_config["default_model"]
 
 
-async def setup_mcp():
-    """Initialize and setup MCP servers"""
-    ui.status("Setting up MCP servers")
-    session.mcp_servers = init_mcp_servers(session.user_config.get("mcpServers", {}))
-    await start_mcp_servers()
-
-
 def setup_undo():
     """Initialize the undo system"""
     ui.status("Initializing undo system")
@@ -211,6 +187,5 @@ async def setup(agent=None):
     """
     setup_telemetry()
     await setup_config()
-    await setup_mcp()
     setup_undo()
     setup_agent(agent)
