@@ -36,6 +36,20 @@ MODELS = {
             "output": 8.00,
         }
     },
+    "openai:gpt-4.1-mini": {
+        "pricing": {
+            "input": 0.40,
+            "cached_input": 0.10,
+            "output": 1.60,
+        }
+    },
+    "openai:gpt-4.1-nano": {
+        "pricing": {
+            "input": 0.10,
+            "cached_input": 0.025,
+            "output": 0.40,
+        }
+    },
     "openai:gpt-4o": {
         "pricing": {
             "input": 2.50,
