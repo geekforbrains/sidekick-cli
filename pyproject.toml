@@ -34,7 +34,7 @@ dependencies = [
 ]
 
 [project.scripts]
-sidekick = "sidekick.main:app"
+sidekick = "sidekick.cli:app"
 
 [project.optional-dependencies]
 dev = [

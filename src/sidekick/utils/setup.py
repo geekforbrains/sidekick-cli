@@ -4,9 +4,9 @@ import os
 from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.validation import ValidationError, Validator
 
-from sidekick import session
+from sidekick import session, ui
 from sidekick.config import CONFIG_DIR, DEFAULT_CONFIG, MODELS
-from sidekick.utils import system, telemetry, ui, user_config
+from sidekick.utils import system, telemetry, user_config
 from sidekick.utils.undo import init_undo_system
 
 

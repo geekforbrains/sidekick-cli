@@ -2,7 +2,15 @@ import os
 
 from pydantic_ai.exceptions import ModelRetry
 
-from sidekick.utils import ui
+from sidekick import ui
+
+
+message_handler = None
+
+
+def _msg(type: str, message: str):
+    if message_handler:
+        message_handler(type, message)
 
 
 def write_file(filepath: str, content: str) -> str:

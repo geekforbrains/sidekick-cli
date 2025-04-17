@@ -105,6 +105,11 @@ def show_banner():
     print(version, style=colors.muted)
 
 
+def show_update_message(latest_version):
+    warning(f"Update available: v{latest_version}")
+    muted("Exit, and run: [bold]pip install --upgrade sidekick-cli")
+
+
 def show_help():
     """
     Display the available commands.

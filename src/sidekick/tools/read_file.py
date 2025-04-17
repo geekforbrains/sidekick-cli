@@ -1,6 +1,6 @@
 import os
 
-from sidekick.utils import ui
+from sidekick import ui
 
 
 def read_file(filepath: str) -> str:
