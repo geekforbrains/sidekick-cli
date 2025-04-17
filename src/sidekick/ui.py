@@ -242,7 +242,7 @@ def confirm(tool_call, node):
     if (
         session.yolo
         or tool_call.tool_name in session.tool_ignore
-        or tool_call.tool_name in session.user_config["settings"]["tool_ignore"]
+        # or tool_call.tool_name in session.user_config["settings"]["tool_ignore"]
     ):
         if tool_call.tool_name not in config.INTERNAL_TOOLS:
             _log_mcp(title, args)

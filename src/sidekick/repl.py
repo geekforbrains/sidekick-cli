@@ -1,10 +1,12 @@
 import asyncio
+from datetime import datetime, timezone
 from asyncio.exceptions import CancelledError
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.key_binding import KeyBindings
+from pydantic_ai.messages import ModelRequest, SystemPromptPart, ToolReturnPart
 
 from sidekick import session, ui
 from sidekick.agents import main as agent
@@ -59,8 +61,36 @@ def _newline(event):
     event.current_buffer.insert_text("\n")
 
 
-def _tool_handler(part, node):
+def _patch_tool_message(tool_name, tool_call_id):
+    """
+    If a tool is cancelled, we need to patch a response otherwise
+    some models will throw an error.
+    """
+    session.messages.append(
+        ModelRequest(
+            parts=[
+                ToolReturnPart(
+                    tool_name=tool_name,
+                    content="Operation aborted by user.",
+                    tool_call_id=tool_call_id,
+                    timestamp=datetime.now(timezone.utc),
+                    part_kind="tool-return",
+                )
+            ],
+            kind="request",
+        )
+    )
+
+
+async def _tool_handler(part, node):
     _print("info", f"Tool({part.tool_name})")
+    session.spinner.stop()
+    try:
+        await run_in_terminal(lambda: ui.confirm(part, node))
+    except ui.UserAbort:
+        _patch_tool_message(part.tool_name, part.tool_call_id)
+        raise  # Let caller handle cancellation
+    session.spinner.start()
 
 
 async def process_request(text: str):
@@ -78,6 +108,8 @@ async def process_request(text: str):
         _print("agent", res.result.output)
     except CancelledError:
         _print("muted", "Request cancelled")
+    except ui.UserAbort:
+        _print("muted", "Operation aborted.")
     finally:
         session.spinner.stop()
         session.current_task = None

@@ -36,7 +36,7 @@ servers = [
 ]
 
 
-def _process_node(node, tool_callback):
+async def _process_node(node, tool_callback):
     if hasattr(node, "request"):
         session.messages.append(node.request)
 
@@ -44,7 +44,7 @@ def _process_node(node, tool_callback):
         session.messages.append(node.model_response)
         for part in node.model_response.parts:
             if part.part_kind == "tool-call" and tool_callback:
-                tool_callback(part, node)
+                await tool_callback(part, node)
 
 
 def get_or_create_agent(model):
@@ -67,5 +67,5 @@ async def process_request(model: str, message: str, tool_callback: callable = No
     mh = session.messages.copy()
     async with agent.iter(message, message_history=mh) as agent_run:
         async for node in agent_run:
-            _process_node(node, tool_callback)
+            await _process_node(node, tool_callback)
         return agent_run
