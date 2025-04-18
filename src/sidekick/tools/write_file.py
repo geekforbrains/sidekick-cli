@@ -4,7 +4,6 @@ from pydantic_ai.exceptions import ModelRetry
 
 from sidekick import ui
 
-
 message_handler = None
 
 

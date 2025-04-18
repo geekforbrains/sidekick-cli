@@ -5,17 +5,15 @@
 from pydantic_ai import Agent
 
 from sidekick import session
-
-# from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
-# from pydantic_ai.mcp import MCPServerStdio
-# from pydantic_ai.messages import ModelRequest, SystemPromptPart, ToolReturnPart
-
-
 # from sidekick.tools import read_file, run_command, update_file, write_file
 # from sidekick.utils import telemetry, ui, user_config
 # from sidekick.utils.system import get_cwd, list_cwd
 from sidekick.tools.run_command import run_command
 from sidekick.utils.mcp import QuietMCPServer
+
+# from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
+# from pydantic_ai.mcp import MCPServerStdio
+# from pydantic_ai.messages import ModelRequest, SystemPromptPart, ToolReturnPart
 
 
 servers = [
