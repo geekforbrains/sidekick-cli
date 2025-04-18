@@ -11,6 +11,7 @@ from pydantic_ai.messages import ModelRequest, ToolReturnPart
 
 from sidekick import config, session, ui
 from sidekick.agents import main as agent
+from sidekick.commands import handle_command
 from sidekick.exceptions import SidekickAbort
 from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
 
@@ -159,7 +160,6 @@ def _render_args(tool_name, args):
         else:
             # If string length is over 200 characters
             # split to new line
-            # content += f"{key.title()}:\n{value}\n\n"
             value = str(value)
             content += f"{key_to_title(key)}:"
             if len(value) > 200:
@@ -267,11 +267,18 @@ async def repl():
                 # Ensure prompt is displayed correctly even after async output
                 await run_in_terminal(lambda: ps.app.invalidate())
                 line = await ps.prompt_async(key_bindings=kb, multiline=True)
+                line = line.strip()
             except (EOFError, KeyboardInterrupt):
-                _print("info", "Thanks for all the fish...")
                 break
 
-            if not line.strip():
+            if not line:
+                continue
+
+            if line.lower() in ["exit", "quit"]:
+                break
+
+            if line.startswith("/"):
+                handle_command(line)
                 continue
 
             # Check if another task is already running
@@ -280,3 +287,5 @@ async def repl():
                 continue
 
             session.current_task = get_app().create_background_task(process_request(line))
+
+    _print("info", "Thanks for all the fish.")
