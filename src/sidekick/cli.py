@@ -32,7 +32,7 @@ def main(
         session.telemetry_enabled = False
 
     asyncio.run(setup())
-    # asyncio.run(repl())
+    asyncio.run(repl())
 
 
 if __name__ == "__main__":

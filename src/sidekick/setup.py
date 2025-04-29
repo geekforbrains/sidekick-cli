@@ -151,7 +151,7 @@ async def _setup_config():
     loaded_config = user_config.load_config()
 
     if loaded_config:
-        ui.muted("Found existing user configuration, loading")
+        ui.muted(f"Loading config from: {CONFIG_FILE}")
         session.user_config = loaded_config
     else:
         ui.muted("No user configuration found, running setup")
@@ -186,8 +186,6 @@ async def setup():
         _setup_telemetry()
         await _setup_config()
         _set_environment_variables()
-
-        # setup_undo()
-        # setup_agent(agent)
+        _setup_undo()
     except SidekickError as e:
         ui.error(str(e))

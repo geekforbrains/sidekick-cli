@@ -1,5 +1,6 @@
-from sidekick import session, ui
+from sidekick import session, ui, config
 from sidekick.utils.undo import perform_undo
+from sidekick.utils import user_config
 
 
 def handle_command(command: str) -> bool:
@@ -12,18 +13,15 @@ def handle_command(command: str) -> bool:
     Returns:
         True if the command was handled, False otherwise.
     """
-    ui.warning(f"Command: {command}")
-    # cmd_lower = command.lower()
-    # parts = cmd_lower.split()
-    # base_command = parts[0]
-    #
-    # if base_command in self.commands:
-    #     await self.commands[base_command](command)
-    #     return True
-    # return False
+    cmd_lower = command.lower()
+    parts = cmd_lower.split()
+    base_command = parts[0]
+
+    if base_command in COMMANDS:
+        COMMANDS[base_command](*parts[1:])
 
 
-def _toggle_yolo(self, command: str):
+def _toggle_yolo():
     session.yolo = not session.yolo
     if session.yolo:
         ui.success("Ooh shit, its YOLO time!\n")
@@ -31,21 +29,21 @@ def _toggle_yolo(self, command: str):
         ui.status("Pfft, boring...\n")
 
 
-def _dump_messages(self, command: str):
+def _dump_messages():
     ui.dump_messages()
 
 
-def _clear_screen(self, command: str):
+def _clear_screen():
     ui.console.clear()
     ui.show_banner()
     session.messages = []
 
 
-def _show_help(self, command: str):
+def _show_help():
     ui.show_help()
 
 
-def _perform_undo(self, command: str):
+def _perform_undo():
     success, message = perform_undo()
     if success:
         ui.success(message)
@@ -53,15 +51,19 @@ def _perform_undo(self, command: str):
         ui.warning(message)
 
 
-def _compact_context(self, command: str):
+def _compact_context():
     raise Exception("not implemented")
 
 
-def _handle_model_command(self, command: str):
-    parts = command.split()
-    if len(parts) > 1:
-        model = parts[1]
-        self.agent.switch_model(model)
+def _handle_model_command(model_index: int = None, action: str = None):
+    if model_index:
+        models = list(config.MODELS.keys())
+        model = models[int(model_index)]
+        session.current_model = model
+        ui.success(f"Model changed to [bold]{model}[/bold]")
+        if action == 'default':
+            user_config.set_default_model(model)
+            ui.muted("Model is now default")
     else:
         ui.show_models()
 

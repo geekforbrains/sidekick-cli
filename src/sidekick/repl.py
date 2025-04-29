@@ -243,7 +243,7 @@ async def process_request(text: str):
 
     try:
         res = await agent.process_request(
-            "openai:gpt-4o",
+            session.current_model,
             text,
             tool_callback=_tool_handler,
         )
@@ -252,15 +252,17 @@ async def process_request(text: str):
         _print("muted", "Request cancelled")
     except SidekickAbort:
         _print("muted", "Operation aborted.")
+    except Exception as e:
+        _print("error", str(e))
     finally:
         session.spinner.stop()
         session.current_task = None
 
 
 async def repl():
-    _print("info", "Starting up.")
     instance = agent.get_or_create_agent(session.current_model)
-    _print("info", "Booting MPC servers...")
+    _print("info", f"Using default model: {session.current_model}")
+    _print("info", "Booting MPC servers")
     async with instance.run_mcp_servers():
         while True:
             try:
