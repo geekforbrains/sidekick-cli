@@ -5,6 +5,7 @@ from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.validation import ValidationError, Validator
 
 from sidekick import session, ui
+from sidekick.exceptions import SidekickConfigError
 from sidekick.config import CONFIG_DIR, DEFAULT_CONFIG, MODELS
 from sidekick.utils import system, telemetry, user_config
 from sidekick.utils.undo import init_undo_system
@@ -132,7 +133,7 @@ async def _onboarding():
         )
 
 
-def setup_telemetry():
+def _setup_telemetry():
     """Setup telemetry for capturing exceptions and errors"""
     if not session.telemetry_enabled:
         ui.status("Telemetry disabled, skipping")
@@ -142,7 +143,7 @@ def setup_telemetry():
     telemetry.setup()
 
 
-async def setup_config():
+async def _setup_config():
     """Setup configuration and environment variables"""
     ui.status("Setting up config")
 
@@ -150,10 +151,10 @@ async def setup_config():
 
     loaded_config = user_config.load_config()
     if loaded_config:
-        ui.status("Found existing configuration, loading")
+        ui.muted("Found existing user configuration, loading")
         session.user_config = loaded_config
     else:
-        ui.muted("No valid configuration found, running setup")
+        ui.muted("No user configuration found, running setup")
         session.user_config = DEFAULT_CONFIG.copy()
         user_config.save_config()  # Save the default config initially
         await _onboarding()
@@ -161,31 +162,26 @@ async def setup_config():
     _set_environment_variables()
 
     if not session.user_config.get("default_model"):
-        raise ValueError("No default model found in config at [bold]~/.config/sidekick.json")
+        raise SidekickConfigError("No default model found in config at [bold]~/.config/sidekick.json")
     session.current_model = session.user_config["default_model"]
 
 
-def setup_undo():
+def _setup_undo():
     """Initialize the undo system"""
     ui.status("Initializing undo system")
     session.undo_initialized = init_undo_system()
 
 
-def setup_agent(agent):
+def _setup_agent(agent):
     """Initialize the agent with the current model"""
     if agent is not None:
         ui.status(f"Initializing Agent({session.current_model})")
         agent.agent = agent.get_agent()
 
 
-async def setup(agent=None):
-    """
-    Setup Sidekick on startup.
-
-    Args:
-        agent: An optional MainAgent instance to initialize
-    """
-    setup_telemetry()
-    await setup_config()
-    setup_undo()
-    setup_agent(agent)
+async def setup():
+    """Setup Sidekick on startup."""
+    _setup_telemetry()
+    await _setup_config()
+    # setup_undo()
+    # setup_agent(agent)

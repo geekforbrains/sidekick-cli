@@ -3,6 +3,7 @@ import asyncio
 import typer
 
 from sidekick import config, session, ui
+from sidekick.setup import setup
 from sidekick.repl import repl
 from sidekick.utils.system import check_for_updates
 
@@ -30,7 +31,8 @@ def main(
     if no_telemetry:
         session.telemetry_enabled = False
 
-    asyncio.run(repl())
+    asyncio.run(setup())
+    # asyncio.run(repl())
 
 
 if __name__ == "__main__":
