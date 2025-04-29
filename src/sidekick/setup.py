@@ -5,8 +5,8 @@ from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.validation import ValidationError, Validator
 
 from sidekick import session, ui
-from sidekick.exceptions import SidekickConfigError
-from sidekick.config import CONFIG_DIR, DEFAULT_CONFIG, MODELS
+from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
+from sidekick.exceptions import SidekickConfigError, SidekickError
 from sidekick.utils import system, telemetry, user_config
 from sidekick.utils.undo import init_undo_system
 
@@ -123,7 +123,7 @@ async def _onboarding():
         current_config = json.dumps(session.user_config, sort_keys=True)
         if initial_config != current_config:
             if user_config.save_config():
-                message = "Config saved to: [bold]~/.config/sidekick.json[/bold]"
+                message = f"Config saved to: [bold]{CONFIG_FILE}[/bold]"
                 ui.panel("Finished", message, top=0, border_style=ui.colors.success)
             else:
                 ui.error("Failed to save configuration.")
@@ -148,8 +148,8 @@ async def _setup_config():
     ui.status("Setting up config")
 
     session.device_id = system.get_device_id()
-
     loaded_config = user_config.load_config()
+
     if loaded_config:
         ui.muted("Found existing user configuration, loading")
         session.user_config = loaded_config
@@ -159,10 +159,11 @@ async def _setup_config():
         user_config.save_config()  # Save the default config initially
         await _onboarding()
 
-    _set_environment_variables()
-
     if not session.user_config.get("default_model"):
-        raise SidekickConfigError("No default model found in config at [bold]~/.config/sidekick.json")
+        raise SidekickConfigError(
+            "No default model found in config at [bold]~/.config/sidekick.json"
+        )
+
     session.current_model = session.user_config["default_model"]
 
 
@@ -181,7 +182,12 @@ def _setup_agent(agent):
 
 async def setup():
     """Setup Sidekick on startup."""
-    _setup_telemetry()
-    await _setup_config()
-    # setup_undo()
-    # setup_agent(agent)
+    try:
+        _setup_telemetry()
+        await _setup_config()
+        _set_environment_variables()
+
+        # setup_undo()
+        # setup_agent(agent)
+    except SidekickError as e:
+        ui.error(str(e))

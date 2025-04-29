@@ -1,6 +1,8 @@
 import json
+from json import JSONDecodeError
 
 from sidekick import config, session
+from sidekick.exceptions import SidekickConfigError
 
 
 def load_config():
@@ -8,8 +10,12 @@ def load_config():
     try:
         with open(config.CONFIG_FILE, "r") as f:
             return json.load(f)
-    except Exception:
+    except FileNotFoundError:
         return None
+    except JSONDecodeError:
+        raise SidekickConfigError(f"Invalid JSON in config file at {config.CONFIG_FILE}")
+    except Exception as e:
+        raise SidekickConfigError(e)
 
 
 def save_config():
