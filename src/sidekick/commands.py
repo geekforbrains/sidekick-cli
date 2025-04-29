@@ -1,6 +1,6 @@
-from sidekick import session, ui, config
-from sidekick.utils.undo import perform_undo
+from sidekick import config, session, ui
 from sidekick.utils import user_config
+from sidekick.utils.undo import perform_undo
 
 
 def handle_command(command: str) -> bool:
@@ -61,7 +61,7 @@ def _handle_model_command(model_index: int = None, action: str = None):
         model = models[int(model_index)]
         session.current_model = model
         ui.success(f"Model changed to [bold]{model}[/bold]")
-        if action == 'default':
+        if action == "default":
             user_config.set_default_model(model)
             ui.muted("Model is now default")
     else:
