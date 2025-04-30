@@ -11,9 +11,10 @@ from pydantic_ai.messages import ModelRequest, ToolReturnPart
 
 from sidekick import config, session, ui
 from sidekick.agents import main as agent
-from sidekick.commands import handle_command
 from sidekick.exceptions import SidekickAbort
+from sidekick.utils import user_config
 from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
+from sidekick.utils.undo import perform_undo
 
 kb = KeyBindings()
 placeholder = ui.formatted_text(
@@ -34,6 +35,8 @@ def _print(message_type: str, message: str):
     """Handle messages from the agent."""
     if message_type in ["info", "status"]:
         run_in_terminal(lambda: ui.status(message))
+    elif message_type == "success":
+        run_in_terminal(lambda: ui.success(message))
     elif message_type == "warning":
         run_in_terminal(lambda: ui.warning(message))
     elif message_type == "error":
@@ -233,7 +236,90 @@ async def _tool_handler(part, node):
     session.spinner.start()
 
 
-async def process_request(text: str):
+def _toggle_yolo():
+    session.yolo = not session.yolo
+    if session.yolo:
+        ui.success("Ooh shit, its YOLO time!\n")
+    else:
+        ui.status("Pfft, boring...\n")
+
+
+def _dump_messages():
+    ui.dump_messages()
+
+
+def _clear_screen():
+    ui.console.clear()
+    ui.show_banner()
+    session.messages = []
+
+
+def _show_help():
+    ui.show_help()
+
+
+def _perform_undo():
+    success, message = perform_undo()
+    if success:
+        ui.success(message)
+    else:
+        ui.warning(message)
+
+
+async def _compact_context():
+    """Get the current agent, create a summary of contenxt, and trim message history"""
+    await process_request("Summarize the conversation so far", output=False)
+    _print("success", "Context history has been summarized and truncated.")
+    session.messages = session.messages[-2:]
+
+
+def _handle_model_command(model_index: int = None, action: str = None):
+    if model_index:
+        models = list(config.MODELS.keys())
+        model = models[int(model_index)]
+        session.current_model = model
+        ui.success(f"Model changed to [bold]{model}[/bold]")
+        if action == "default":
+            user_config.set_default_model(model)
+            ui.muted("Model is now default")
+    else:
+        ui.show_models()
+
+
+async def _handle_command(command: str) -> bool:
+    """
+    Handles a command string.
+
+    Args:
+        command: The command string entered by the user.
+
+    Returns:
+        True if the command was handled, False otherwise.
+    """
+    cmd_lower = command.lower()
+    parts = cmd_lower.split()
+    base_command = parts[0]
+
+    COMMANDS = {
+        "/yolo": _toggle_yolo,
+        "/dump": _dump_messages,
+        "/clear": _clear_screen,
+        "/help": _show_help,
+        "/undo": _perform_undo,
+        "/compact": _compact_context,
+        "/model": _handle_model_command,
+    }
+
+    if base_command in COMMANDS:
+        if base_command == "/compact":
+            await _compact_context()
+        else:
+            COMMANDS[base_command](*parts[1:])
+    else:
+        _print("error", f"Unknown command: {command}")
+
+
+async def process_request(text: str, output: bool = True):
     """Process input using the agent, handling cancellation safely."""
     msg = "[bold green]Thinking..."
     # Track spinner in session so we can start/stop
@@ -247,7 +333,8 @@ async def process_request(text: str):
             text,
             tool_callback=_tool_handler,
         )
-        _print("agent", res.result.output)
+        if output:
+            _print("agent", res.result.output)
     except CancelledError:
         _print("muted", "Request cancelled")
     except SidekickAbort:
@@ -280,7 +367,7 @@ async def repl():
                 break
 
             if line.startswith("/"):
-                handle_command(line)
+                await _handle_command(line)
                 continue
 
             # Check if another task is already running
