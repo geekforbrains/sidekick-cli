@@ -262,7 +262,7 @@ async def process_request(text: str):
 async def repl():
     instance = agent.get_or_create_agent(session.current_model)
     _print("info", f"Using default model: {session.current_model}")
-    _print("info", "Booting MPC servers")
+    _print("info", "Booting MCP servers")
     async with instance.run_mcp_servers():
         while True:
             try:

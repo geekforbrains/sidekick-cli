@@ -17,6 +17,7 @@ def main(
     no_telemetry: bool = typer.Option(
         False, "--no-telemetry", help="Disable telemetry collection."
     ),
+    run_setup: bool = typer.Option(False, "--setup", help="Run setup process."),
 ):
     if version:
         typer.echo(config.VERSION)
@@ -31,8 +32,11 @@ def main(
     if no_telemetry:
         session.telemetry_enabled = False
 
-    asyncio.run(setup())
-    asyncio.run(repl())
+    try:
+        asyncio.run(setup(run_setup))
+        asyncio.run(repl())
+    except Exception as e:
+        ui.error(str(e))
 
 
 if __name__ == "__main__":

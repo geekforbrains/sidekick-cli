@@ -6,7 +6,7 @@ from prompt_toolkit.validation import ValidationError, Validator
 
 from sidekick import session, ui
 from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
-from sidekick.exceptions import SidekickConfigError, SidekickError
+from sidekick.exceptions import SidekickConfigError
 from sidekick.utils import system, telemetry, user_config
 from sidekick.utils.undo import init_undo_system
 
@@ -143,25 +143,31 @@ def _setup_telemetry():
     telemetry.setup()
 
 
-async def _setup_config():
+async def _setup_config(run_setup):
     """Setup configuration and environment variables"""
     ui.status("Setting up config")
 
     session.device_id = system.get_device_id()
     loaded_config = user_config.load_config()
 
-    if loaded_config:
+    if loaded_config and not run_setup:
         ui.muted(f"Loading config from: {CONFIG_FILE}")
         session.user_config = loaded_config
     else:
-        ui.muted("No user configuration found, running setup")
+        if run_setup:
+            ui.muted("Running setup process, resetting config")
+        else:
+            ui.muted("No user configuration found, running setup")
         session.user_config = DEFAULT_CONFIG.copy()
         user_config.save_config()  # Save the default config initially
         await _onboarding()
 
     if not session.user_config.get("default_model"):
         raise SidekickConfigError(
-            "No default model found in config at [bold]~/.config/sidekick.json"
+            (
+                f"No default model found in config at [bold]{CONFIG_FILE}[/bold]\n\n"
+                "Run [code]sidekick --setup[/code] to rerun the setup process."
+            )
         )
 
     session.current_model = session.user_config["default_model"]
@@ -180,12 +186,14 @@ def _setup_agent(agent):
         agent.agent = agent.get_agent()
 
 
-async def setup():
-    """Setup Sidekick on startup."""
-    try:
-        _setup_telemetry()
-        await _setup_config()
-        _set_environment_variables()
-        _setup_undo()
-    except SidekickError as e:
-        ui.error(str(e))
+async def setup(run_setup):
+    """
+    Setup Sidekick on startup.
+
+    Args:
+        run_setup (bool): If True, force run the setup process, resetting current config.
+    """
+    _setup_telemetry()
+    await _setup_config(run_setup)
+    _set_environment_variables()
+    _setup_undo()
