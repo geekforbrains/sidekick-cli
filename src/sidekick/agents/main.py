@@ -1,37 +1,8 @@
-# import os
-# import traceback
-# from datetime import datetime, timezone
-
 from pydantic_ai import Agent
 
 from sidekick import session
-# from sidekick.tools import read_file, run_command, update_file, write_file
-# from sidekick.utils import telemetry, ui, user_config
-# from sidekick.utils.system import get_cwd, list_cwd
 from sidekick.tools.run_command import run_command
-from sidekick.utils.mcp import QuietMCPServer
-
-# from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
-# from pydantic_ai.mcp import MCPServerStdio
-# from pydantic_ai.messages import ModelRequest, SystemPromptPart, ToolReturnPart
-
-
-servers = [
-    QuietMCPServer(
-        command="uvx",
-        args=["mcp-server-fetch"],
-    ),
-    QuietMCPServer(
-        command="uvx",
-        args=[
-            "chroma-mcp",
-            "--client-type",
-            "persistent",
-            "--data-dir",
-            "/Users/gavin/.chroma",
-        ],
-    ),
-]
+from sidekick.utils.mcp import get_mcp_servers
 
 
 async def _process_node(node, tool_callback):
@@ -55,7 +26,7 @@ def get_or_create_agent(model):
                 # update_file,
                 # write_file,
             ],
-            mcp_servers=servers,
+            mcp_servers=get_mcp_servers(),
         )
     return session.agents[model]
 

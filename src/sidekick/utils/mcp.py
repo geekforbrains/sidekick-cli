@@ -1,6 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 
+from sidekick import session
 from pydantic_ai.mcp import MCPServerStdio
 
 
@@ -35,3 +36,18 @@ class QuietMCPServer(MCPServerStdio):
                 write_stream,
             ):
                 yield read_stream, write_stream
+
+
+def get_mcp_servers():
+    mcp_servers = session.user_config.get("mcpServers", {})
+    loaded_servers = []
+    MCPServerStdio.log_level = "critical"
+
+    for conf in mcp_servers.values():
+        # loaded_servers.append(QuietMCPServer(**conf))
+        mcp_instance = MCPServerStdio(**conf)
+        # mcp_instance.log_level = "critical"
+        loaded_servers.append(mcp_instance)
+
+    print(loaded_servers)
+    return loaded_servers
