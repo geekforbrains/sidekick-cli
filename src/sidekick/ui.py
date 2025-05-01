@@ -7,6 +7,7 @@ from rich.pretty import Pretty
 from rich.table import Table
 
 from sidekick import config, session
+from sidekick.events import Event, subscribe
 from sidekick.utils.helpers import DotDict
 
 BANNER = """\
@@ -58,8 +59,8 @@ def status(text: str):
     print(f"• {text}", style=colors.primary)
 
 
-def success(text: str):
-    print(f"• {text}", style=colors.success)
+def success(message: str):
+    print(f"• {message}", style=colors.success)
 
 
 def warning(text: str):
@@ -137,3 +138,7 @@ def show_help():
         table.add_row(cmd, desc)
 
     panel("Available Commands", table, border_style=colors.muted)
+
+
+def subscribe_to_events():
+    subscribe(Event.SUCCESS, success)
