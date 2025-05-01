@@ -17,7 +17,7 @@ async def _process_node(node, tool_callback):
 
 
 def get_or_create_agent(model):
-    if not hasattr(session.agents, model):
+    if model not in session.agents:
         session.agents[model] = Agent(
             model=model,
             tools=[
