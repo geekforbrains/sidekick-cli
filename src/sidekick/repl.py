@@ -278,10 +278,10 @@ def _handle_model_command(model_index: int = None, action: str = None):
         models = list(config.MODELS.keys())
         model = models[int(model_index)]
         session.current_model = model
-        ui.success(f"Model changed to [bold]{model}[/bold]")
         if action == "default":
             user_config.set_default_model(model)
-            ui.muted("Model is now default")
+            ui.muted("Updating default model")
+        return "restart"
     else:
         ui.show_models()
 
@@ -312,9 +312,9 @@ async def _handle_command(command: str) -> bool:
 
     if base_command in COMMANDS:
         if base_command == "/compact":
-            await _compact_context()
+            return await _compact_context()
         else:
-            COMMANDS[base_command](*parts[1:])
+            return COMMANDS[base_command](*parts[1:])
     else:
         _print("error", f"Unknown command: {command}")
 
@@ -347,9 +347,12 @@ async def process_request(text: str, output: bool = True):
 
 
 async def repl():
+    action = None
+
+    _print("info", f"Using model {session.current_model}")
     instance = agent.get_or_create_agent(session.current_model)
-    _print("info", f"Using default model: {session.current_model}")
-    _print("info", "Booting MCP servers")
+
+    _print("info", "Attaching MCP servers")
     async with instance.run_mcp_servers():
         while True:
             try:
@@ -367,7 +370,9 @@ async def repl():
                 break
 
             if line.startswith("/"):
-                await _handle_command(line)
+                action = await _handle_command(line)
+                if action == "restart":
+                    break
                 continue
 
             # Check if another task is already running
@@ -377,4 +382,7 @@ async def repl():
 
             session.current_task = get_app().create_background_task(process_request(line))
 
-    _print("info", "Thanks for all the fish.")
+    if action == "restart":
+        await repl()
+    else:
+        _print("info", "Thanks for all the fish.")

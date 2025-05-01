@@ -1,8 +1,9 @@
 import os
 from contextlib import asynccontextmanager
 
-from sidekick import session
 from pydantic_ai.mcp import MCPServerStdio
+
+from sidekick import session
 
 
 class QuietMCPServer(MCPServerStdio):
@@ -49,5 +50,4 @@ def get_mcp_servers():
         # mcp_instance.log_level = "critical"
         loaded_servers.append(mcp_instance)
 
-    print(loaded_servers)
     return loaded_servers
