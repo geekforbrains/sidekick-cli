@@ -1,7 +1,10 @@
 from pydantic_ai import Agent
 
 from sidekick import session
+from sidekick.tools.read_file import read_file
 from sidekick.tools.run_command import run_command
+from sidekick.tools.update_file import update_file
+from sidekick.tools.write_file import write_file
 from sidekick.utils.mcp import get_mcp_servers
 
 
@@ -21,10 +24,10 @@ def get_or_create_agent(model):
         session.agents[model] = Agent(
             model=model,
             tools=[
-                # read_file,
+                read_file,
                 run_command,
-                # update_file,
-                # write_file,
+                update_file,
+                write_file,
             ],
             mcp_servers=get_mcp_servers(),
         )
