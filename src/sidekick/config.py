@@ -57,6 +57,13 @@ MODELS = {
             "output": 10.00,
         }
     },
+    "openai:o3": {
+        "pricing": {
+            "input": 10.00,
+            "cached_input": 2.50,
+            "output": 40.00,
+        }
+    },
     "openai:o3-mini": {
         "pricing": {
             "input": 1.10,

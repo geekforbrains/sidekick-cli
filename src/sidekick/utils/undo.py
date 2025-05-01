@@ -4,9 +4,8 @@ from pathlib import Path
 
 from pydantic_ai.messages import ModelResponse, TextPart
 
-from .. import session
-from . import ui
-from .system import get_session_dir
+from sidekick import session, ui
+from sidekick.utils.system import get_session_dir
 
 
 def is_in_git_project(directory=None):

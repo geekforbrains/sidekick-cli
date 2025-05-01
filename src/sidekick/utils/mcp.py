@@ -1,121 +1,53 @@
-"""
-MCP (Model Context Protocol) integration utilities for Sidekick.
-"""
-
 import os
-from contextlib import AsyncExitStack, contextmanager
+from contextlib import asynccontextmanager
 
 from pydantic_ai.mcp import MCPServerStdio
 
 from sidekick import session
 
-from . import ui
 
+class QuietMCPServer(MCPServerStdio):
+    """A version of ``MCPServerStdio`` that suppresses *all* output coming from the
+    MCP server's **stderr** stream.
 
-@contextmanager
-def suppress_subprocess_output():
+    We can't just redirect the server's *stdout* because that is where the JSON‑RPC
+    protocol messages are sent.  Instead we override ``client_streams`` so we can
+    hand our own ``errlog`` (``os.devnull``) to ``mcp.client.stdio.stdio_client``.
     """
-    Context manager to suppress output from subprocesses by redirecting
-    the actual file descriptors for stdout and stderr to /dev/null.
-    This captures output even from child processes that write directly to fd 1 and 2.
-    """
-    # Create temporary files for the original stdout and stderr
-    saved_stdout_fd = None
-    saved_stderr_fd = None
-    null_fd = None
 
-    try:
-        # Save the original file descriptors
-        saved_stdout_fd = os.dup(1)  # stdout
-        saved_stderr_fd = os.dup(2)  # stderr
+    @asynccontextmanager
+    async def client_streams(self):  # type: ignore[override]
+        """Start the subprocess exactly like the parent class but silence *stderr*."""
+        # Local import to avoid cycles
+        from mcp.client.stdio import StdioServerParameters, stdio_client
 
-        # Open /dev/null for writing
-        null_fd = os.open(os.devnull, os.O_WRONLY)
+        server_params = StdioServerParameters(
+            command=self.command,
+            args=list(self.args),
+            env=self.env or os.environ,
+        )
 
-        # Redirect stdout and stderr to /dev/null
-        os.dup2(null_fd, 1)  # Redirect stdout
-        os.dup2(null_fd, 2)  # Redirect stderr
-
-        yield
-    finally:
-        # Restore original file descriptors
-        if saved_stdout_fd is not None:
-            os.dup2(saved_stdout_fd, 1)
-            os.close(saved_stdout_fd)
-        if saved_stderr_fd is not None:
-            os.dup2(saved_stderr_fd, 2)
-            os.close(saved_stderr_fd)
-        if null_fd is not None:
-            os.close(null_fd)
+        # Open ``/dev/null`` for the lifetime of the subprocess so anything the
+        # server writes to *stderr* is discarded.
+        #
+        # This is to help with noisy MCP's that have options for verbosity
+        with open(os.devnull, "w", encoding=server_params.encoding) as devnull:
+            async with stdio_client(server=server_params, errlog=devnull) as (
+                read_stream,
+                write_stream,
+            ):
+                yield read_stream, write_stream
 
 
-def init_mcp_servers(config=None):
-    """
-    Initialize MCP servers from the user configuration.
+def get_mcp_servers():
+    mcp_servers = session.user_config.get("mcpServers", {})
+    loaded_servers = []
+    MCPServerStdio.log_level = "critical"
 
-    Args:
-        config: Dictionary of MCP server configurations from user config
+    for conf in mcp_servers.values():
+        # loaded_servers.append(QuietMCPServer(**conf))
+        mcp_instance = MCPServerStdio(**conf)
+        # mcp_instance.log_level = "critical"
+        loaded_servers.append(mcp_instance)
 
-    Returns:
-        List of initialized MCP server objects
-    """
-    if not config:
-        return []
-
-    mcp_servers = []
-
-    for server_name, server_config in config.items():
-        ui.status(f"Initializing MCP server: {server_name}")
-        command = server_config.get("command")
-        args = server_config.get("args", [])
-
-        if not command:
-            continue
-
-        env_vars = server_config.get("env", {})
-
-        # Initialize server using stdio transport
-        # Note: Currently only stdio is supported
-        # TODO: Add support for other transports (e.g., HTTP)
-        server = MCPServerStdio(command=command, args=args, env=env_vars)
-        mcp_servers.append(server)
-
-    return mcp_servers
-
-
-async def start_mcp_servers():
-    """
-    Start all MCP servers at application startup.
-    """
-    if session.mcp_servers_running:
-        return
-
-    if not session.mcp_servers:
-        ui.muted("No MCP servers configured.")
-        return
-
-    session.mcp_exit_stack = AsyncExitStack()
-
-    for server in session.mcp_servers:
-        with suppress_subprocess_output():
-            await session.mcp_exit_stack.enter_async_context(server)
-
-    session.mcp_servers_running = True
-
-
-async def stop_mcp_servers():
-    """
-    Stop all running MCP servers.
-    """
-    if not session.mcp_servers_running or not session.mcp_exit_stack:
-        return
-
-    ui.status("Stopping MCP servers...")
-
-    # Suppress output during server shutdown by redirecting file descriptors
-    with suppress_subprocess_output():
-        await session.mcp_exit_stack.aclose()
-
-    session.mcp_exit_stack = None
-    session.mcp_servers_running = False
-    ui.status("All MCP servers stopped")
+    return loaded_servers

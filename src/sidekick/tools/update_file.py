@@ -2,7 +2,7 @@ import os
 
 from pydantic_ai.exceptions import ModelRetry
 
-from sidekick.utils import ui
+from sidekick import ui
 
 
 def update_file(filepath: str, target: str, patch: str) -> str:

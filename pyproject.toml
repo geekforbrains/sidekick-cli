@@ -26,7 +26,7 @@ classifiers = [
 ]
 dependencies = [
     "prompt_toolkit==3.0.50",
-    "pydantic-ai[logfire]==0.1.1",
+    "pydantic-ai[logfire]==0.1.8",
     "pygments==2.19.1",
     "rich==14.0.0",
     "typer==0.15.2",
@@ -34,7 +34,7 @@ dependencies = [
 ]
 
 [project.scripts]
-sidekick = "sidekick.main:app"
+sidekick = "sidekick.cli:app"
 
 [project.optional-dependencies]
 dev = [
