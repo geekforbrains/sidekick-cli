@@ -1,34 +1,11 @@
 import json
 import os
 
-from prompt_toolkit.shortcuts import PromptSession
-from prompt_toolkit.validation import ValidationError, Validator
-
 from sidekick import session, ui
 from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
 from sidekick.exceptions import SidekickConfigError
 from sidekick.utils import system, telemetry, user_config
 from sidekick.utils.undo import init_undo_system
-
-
-class ModelValidator(Validator):
-    """Validate default provider selection"""
-
-    def __init__(self, index):
-        self.index = index
-
-    def validate(self, document):
-        text = document.text.strip()
-        if not text:
-            raise ValidationError(message="Provider number cannot be empty")
-        elif text and not text.isdigit():
-            raise ValidationError(message="Invalid provider number")
-        elif text.isdigit():
-            number = int(text)
-            if number < 0 or number >= self.index:
-                raise ValidationError(
-                    message="Invalid provider number",
-                )
 
 
 def _load_or_create_config():
@@ -76,12 +53,10 @@ async def _step1():
         "Skip the ones you don't need."
     )
     ui.panel("Setup", message, border_style=ui.colors.primary)
-
-    prompt_session = PromptSession()
     env_keys = session.user_config["env"].copy()
     for key in env_keys:
         provider = _key_to_title(key)
-        val = await prompt_session.prompt_async(f"  {provider}: ", is_password=True)
+        val = await ui.input(session="step1", pretext=f"  {provider}: ", is_password=True)
         val = val.strip()
         if val:
             session.user_config["env"][key] = val
@@ -96,12 +71,10 @@ async def _step2():
     message = message.strip()
 
     ui.panel("Default Model", message, border_style=ui.colors.primary)
-    prompt_session = PromptSession()
-    choice = int(
-        await prompt_session.prompt_async(
-            "  Default model (#): ",
-            validator=ModelValidator(len(model_ids)),
-        )
+    choice = await ui.input(
+        session="step2",
+        pretext="  Default model (#): ",
+        validator=ui.ModelValidator(len(model_ids)),
     )
     session.user_config["default_model"] = model_ids[choice]
 

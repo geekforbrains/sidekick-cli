@@ -1,4 +1,6 @@
 from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.shortcuts import PromptSession
+from prompt_toolkit.validation import ValidationError, Validator
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.padding import Padding
@@ -7,7 +9,6 @@ from rich.pretty import Pretty
 from rich.table import Table
 
 from sidekick import config, session
-from sidekick.events import Event, subscribe
 from sidekick.utils.helpers import DotDict
 
 BANNER = """\
@@ -33,8 +34,46 @@ colors = DotDict(
 )
 
 
+# =============================================================================
+# CLASSES & UTILS
+# =============================================================================
+
+
 class UserAbort(Exception):
     pass
+
+
+class ModelValidator(Validator):
+    """Validate default provider selection"""
+
+    def __init__(self, index):
+        self.index = index
+
+    def validate(self, document):
+        text = document.text.strip()
+        if not text:
+            raise ValidationError(message="Provider number cannot be empty")
+        elif text and not text.isdigit():
+            raise ValidationError(message="Invalid provider number")
+        elif text.isdigit():
+            number = int(text)
+            if number < 0 or number >= self.index:
+                raise ValidationError(
+                    message="Invalid provider number",
+                )
+
+
+def line():
+    console.line()
+
+
+def formatted_text(text: str):
+    return HTML(text)
+
+
+# =============================================================================
+# PANELS
+# =============================================================================
 
 
 def panel(title: str, text: str, top=1, right=0, bottom=1, left=1, border_style=None, **kwargs):
@@ -43,45 +82,12 @@ def panel(title: str, text: str, top=1, right=0, bottom=1, left=1, border_style=
     print(Padding(panel, (top, right, bottom, left)), **kwargs)
 
 
-def line():
-    console.line()
-
-
-def print(text: str, **kwargs):
-    console.print(text, **kwargs)
-
-
 def agent(text: str, bottom=0):
     panel("Sidekick", Markdown(text), bottom=bottom, border_style=colors.primary)
 
 
-def status(text: str):
-    print(f"• {text}", style=colors.primary)
-
-
-def success(message: str):
-    print(f"• {message}", style=colors.success)
-
-
-def warning(text: str):
-    print(f"• {text}", style=colors.warning)
-
-
-def muted(text: str, spaces=0):
-    # print(f"• {text}", style=colors.muted)
-    print(f"{' ' * spaces}• {text}", style=colors.muted)
-
-
-def formatted_text(text: str):
-    return HTML(text)
-
-
 def error(text: str):
     panel("Error", text, style=colors.error)
-
-
-def markdown(text: str):
-    return Markdown(text)
 
 
 def dump_messages():
@@ -89,31 +95,14 @@ def dump_messages():
     panel("Message History", messages, style=colors.muted)
 
 
-def show_models():
+def models():
     model_ids = list(config.MODELS.keys())
     model_list = "\n".join([f"{index} - {model}" for index, model in enumerate(model_ids)])
     text = f"Current model: {session.current_model}\n\n{model_list}"
     panel("Models", text, border_style=colors.muted)
 
 
-def show_usage(usage):
-    print(Padding(usage, (0, 0, 1, 2)), style=colors.muted)
-
-
-def show_banner():
-    console.clear()
-    banner = Padding(BANNER, (1, 0, 0, 2))
-    version = Padding(f"v{config.VERSION}", (0, 0, 1, 2))
-    print(banner, style=colors.primary)
-    print(version, style=colors.muted)
-
-
-def show_update_message(latest_version):
-    warning(f"Update available: v{latest_version}")
-    muted("Exit, and run: [bold]pip install --upgrade sidekick-cli")
-
-
-def show_help():
+def help():
     """
     Display the available commands.
     """
@@ -140,5 +129,91 @@ def show_help():
     panel("Available Commands", table, border_style=colors.muted)
 
 
-def subscribe_to_events():
-    subscribe(Event.SUCCESS, success)
+# =============================================================================
+# PRINTS
+# =============================================================================
+
+
+def print(text: str, **kwargs):
+    console.print(text, **kwargs)
+
+
+def status(text: str):
+    print(f"• {text}", style=colors.primary)
+
+
+def success(message: str):
+    print(f"• {message}", style=colors.success)
+
+
+def warning(text: str):
+    print(f"• {text}", style=colors.warning)
+
+
+def muted(text: str, spaces=0):
+    print(f"{' ' * spaces}• {text}", style=colors.muted)
+
+
+def markdown(text: str):
+    return Markdown(text)
+
+
+def usage(usage):
+    print(Padding(usage, (0, 0, 1, 2)), style=colors.muted)
+
+
+def version():
+    status(f"Sidekick CLI {config.VERSION}")
+
+
+def banner():
+    console.clear()
+    banner = Padding(BANNER, (1, 0, 0, 2))
+    version = Padding(f"v{config.VERSION}", (0, 0, 1, 2))
+    print(banner, style=colors.primary)
+    print(version, style=colors.muted)
+
+
+def update_available(latest_version):
+    warning(f"Update available: v{latest_version}")
+    muted("Exit, and run: [bold]pip install --upgrade sidekick-cli")
+
+
+# =============================================================================
+# I/O
+# =============================================================================
+
+
+async def input(
+    session: str,
+    pretext: str = "",
+    is_password: bool = False,
+    validator: Validator = None,
+):
+    """
+    Prompt for user input. Creates session for given key if it doesn't already exist.
+
+    Args:
+        session (str): The session name for the prompt.
+        pretext (str): The text to display before the input prompt.
+        is_password (bool): Whether to mask the input.
+
+    """
+    if session not in session.input_sessions:
+        session.input_sessions[session] = PromptSession()
+
+    prompt_session = session.input_sessions[session]
+
+    try:
+        resp = await prompt_session.prompt_async(
+            pretext,
+            is_password=is_password,
+            validator=validator,
+        )
+        if isinstance(resp, str):
+            resp = resp.strip()
+        return resp
+    except KeyboardInterrupt:
+        raise UserAbort
+    except EOFError:
+        raise UserAbort

@@ -2,7 +2,7 @@ import asyncio
 
 import typer
 
-from sidekick import config, session, ui, events
+from sidekick import config, session, ui
 from sidekick.repl import repl
 from sidekick.setup import setup
 from sidekick.utils.system import check_for_updates
@@ -20,12 +20,10 @@ def main(
     run_setup: bool = typer.Option(False, "--setup", help="Run setup process."),
 ):
     if version:
-        typer.echo(config.VERSION)
+        ui.version()
         return
 
-    ui.subscribe_to_events()
-    ui.show_banner()
-    events.success("Testing")
+    ui.banner()
 
     has_update, latest_version = check_for_updates()
     if has_update:

@@ -13,4 +13,4 @@ session_id = str(uuid.uuid4())  # Unique ID for the current session
 device_id = None  # Unique ID for the device, loaded during initialization
 telemetry_enabled = True
 current_task = None
-event_handlers = {}
+input_sessions = {}  # Track prompt-toolkit sessions
