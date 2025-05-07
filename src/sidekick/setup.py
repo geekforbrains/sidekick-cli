@@ -109,16 +109,16 @@ async def _onboarding():
 def _setup_telemetry():
     """Setup telemetry for capturing exceptions and errors"""
     if not session.telemetry_enabled:
-        ui.status("Telemetry disabled, skipping")
+        ui.info("Telemetry disabled, skipping")
         return
 
-    ui.status("Setting up telemetry")
+    ui.info("Setting up telemetry")
     telemetry.setup()
 
 
 async def _setup_config(run_setup):
     """Setup configuration and environment variables"""
-    ui.status("Setting up config")
+    ui.info("Setting up config")
 
     session.device_id = system.get_device_id()
     loaded_config = user_config.load_config()
@@ -148,14 +148,14 @@ async def _setup_config(run_setup):
 
 def _setup_undo():
     """Initialize the undo system"""
-    ui.status("Initializing undo system")
+    ui.info("Initializing undo system")
     session.undo_initialized = init_undo_system()
 
 
 def _setup_agent(agent):
     """Initialize the agent with the current model"""
     if agent is not None:
-        ui.status(f"Initializing Agent({session.current_model})")
+        ui.info(f"Initializing Agent({session.current_model})")
         agent.agent = agent.get_agent()
 
 

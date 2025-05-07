@@ -1,4 +1,6 @@
+from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.validation import ValidationError, Validator
 from rich.console import Console
@@ -21,7 +23,6 @@ BANNER = """\
 
 
 console = Console()
-spinner = "star2"
 colors = DotDict(
     {
         "primary": "medium_purple1",
@@ -32,6 +33,34 @@ colors = DotDict(
         "muted": "grey62",
     }
 )
+
+
+# =============================================================================
+# KEY BINDINGS
+# =============================================================================
+
+
+kb = KeyBindings()
+
+
+@kb.add("escape", eager=True)
+def _cancel(event):
+    """Kill the running agent task, if any."""
+    if session.current_task and not session.current_task.done():
+        session.current_task.cancel()
+        event.app.invalidate()
+
+
+@kb.add("enter")
+def _submit(event):
+    """Submit the current buffer."""
+    event.current_buffer.validate_and_handle()
+
+
+@kb.add("c-o")  # ctrl+o
+def _newline(event):
+    """Insert a newline character."""
+    event.current_buffer.insert_text("\n")
 
 
 # =============================================================================
@@ -69,6 +98,20 @@ def line():
 
 def formatted_text(text: str):
     return HTML(text)
+
+
+async def spinner(show=True):
+    icon = "star2"
+    message = "[bold green]Thinking..."
+
+    if not session.spinner:
+        session.spinner = await run_in_terminal(lambda: console.status(message, spinner=icon))
+
+    if show:
+        session.spinner.start()
+    else:
+        session.spinner.stop()
+        session.spinner = None
 
 
 # =============================================================================
@@ -138,7 +181,7 @@ def print(text: str, **kwargs):
     console.print(text, **kwargs)
 
 
-def status(text: str):
+def info(text: str):
     print(f"• {text}", style=colors.primary)
 
 
@@ -163,7 +206,7 @@ def usage(usage):
 
 
 def version():
-    status(f"Sidekick CLI {config.VERSION}")
+    info(f"Sidekick CLI {config.VERSION}")
 
 
 def banner():
@@ -185,10 +228,14 @@ def update_available(latest_version):
 
 
 async def input(
-    session: str,
+    session_key: str,
     pretext: str = "",
     is_password: bool = False,
     validator: Validator = None,
+    multiline=False,
+    key_bindings=None,
+    placeholder=None,
+    timeoutlen=0.05,
 ):
     """
     Prompt for user input. Creates session for given key if it doesn't already exist.
@@ -199,12 +246,18 @@ async def input(
         is_password (bool): Whether to mask the input.
 
     """
-    if session not in session.input_sessions:
-        session.input_sessions[session] = PromptSession()
+    if session_key not in session.input_sessions:
+        session.input_sessions[session_key] = PromptSession(
+            "λ ",
+            key_bindings=key_bindings,
+            placeholder=placeholder,
+        )
 
-    prompt_session = session.input_sessions[session]
+    prompt_session = session.input_sessions[session_key]
 
     try:
+        # Ensure prompt is displayed correctly even after async output
+        await run_in_terminal(lambda: prompt_session.app.invalidate())
         resp = await prompt_session.prompt_async(
             pretext,
             is_password=is_password,
@@ -217,3 +270,32 @@ async def input(
         raise UserAbort
     except EOFError:
         raise UserAbort
+
+
+async def multiline_input():
+    placeholder = formatted_text(
+        (
+            "<darkgrey>"
+            "<bold>Enter</bold> to submit, "
+            "<bold>Esc + Enter</bold> for new line, "
+            "<bold>/help</bold> for commands"
+            "</darkgrey>"
+        )
+    )
+    return await input("multiline", key_bindings=kb, multiline=True, placeholder=placeholder)
+
+
+# def _print(message_type: str, message: str):
+#     """Handle messages from the agent."""
+#     if message_type in ["info", "status"]:
+#         run_in_terminal(lambda: ui.status(message))
+#     elif message_type == "success":
+#         run_in_terminal(lambda: ui.success(message))
+#     elif message_type == "warning":
+#         run_in_terminal(lambda: ui.warning(message))
+#     elif message_type == "error":
+#         run_in_terminal(lambda: ui.error(message))
+#     elif message_type == "agent":
+#         run_in_terminal(lambda: ui.agent(message))
+#     else:
+#         run_in_terminal(lambda: ui.muted(message))

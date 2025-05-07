@@ -35,7 +35,7 @@ def write_file(filepath: str, content: str) -> str:
 
         # Confirmation should be handled by the LLM/user interaction layer before calling.
         # This tool assumes confirmation was obtained if required by the overall process.
-        ui.status(f"Write({filepath})")
+        ui.info(f"Write({filepath})")
 
         # Create directories if they don't exist
         dirpath = os.path.dirname(filepath)

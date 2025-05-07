@@ -37,6 +37,7 @@ def main(
         asyncio.run(repl())
     except Exception as e:
         ui.error(str(e))
+        raise e
 
 
 if __name__ == "__main__":

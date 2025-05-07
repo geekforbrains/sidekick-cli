@@ -25,7 +25,7 @@ def update_file(filepath: str, target: str, patch: str) -> str:
                 "Verify the filepath or use `write_file` if it's a new file."
             )
 
-        ui.status(f"Update({filepath})")
+        ui.info(f"Update({filepath})")
         with open(filepath, "r", encoding="utf-8") as f:
             original = f.read()
 

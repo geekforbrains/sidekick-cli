@@ -1,12 +1,9 @@
-import asyncio
 import json
 from asyncio.exceptions import CancelledError
 from datetime import datetime, timezone
 
-from prompt_toolkit import PromptSession
 from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.application.current import get_app
-from prompt_toolkit.key_binding import KeyBindings
 from pydantic_ai.messages import ModelRequest, ToolReturnPart
 
 from sidekick import config, session, ui
@@ -15,56 +12,6 @@ from sidekick.exceptions import SidekickAbort
 from sidekick.utils import user_config
 from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
 from sidekick.utils.undo import perform_undo
-
-kb = KeyBindings()
-placeholder = ui.formatted_text(
-    (
-        "<darkgrey>"
-        "<bold>Enter</bold> to submit, "
-        "<bold>Esc + Enter</bold> for new line, "
-        "<bold>/help</bold> for commands"
-        "</darkgrey>"
-    )
-)
-ps = PromptSession("λ ", key_bindings=kb, placeholder=placeholder)
-ps.app.ttimeoutlen = 0.05  # Shorten escape sequence timeout
-session.current_task: asyncio.Task | None = None
-
-
-def _print(message_type: str, message: str):
-    """Handle messages from the agent."""
-    if message_type in ["info", "status"]:
-        run_in_terminal(lambda: ui.status(message))
-    elif message_type == "success":
-        run_in_terminal(lambda: ui.success(message))
-    elif message_type == "warning":
-        run_in_terminal(lambda: ui.warning(message))
-    elif message_type == "error":
-        run_in_terminal(lambda: ui.error(message))
-    elif message_type == "agent":
-        run_in_terminal(lambda: ui.agent(message))
-    else:
-        run_in_terminal(lambda: ui.muted(message))
-
-
-@kb.add("escape", eager=True)
-def _cancel(event):
-    """Kill the running agent task, if any."""
-    if session.current_task and not session.current_task.done():
-        session.current_task.cancel()
-        event.app.invalidate()
-
-
-@kb.add("enter")
-def _submit(event):
-    """Submit the current buffer."""
-    event.current_buffer.validate_and_handle()
-
-
-@kb.add("c-o")  # ctrl+o
-def _newline(event):
-    """Insert a newline character."""
-    event.current_buffer.insert_text("\n")
 
 
 def _patch_tool_message(tool_name, tool_call_id):
@@ -177,7 +124,7 @@ def _log_mcp(title, args):
     if not args:
         return
 
-    ui.status(title)
+    ui.info(title)
     for key, value in args.items():
         if isinstance(value, list):
             value = ", ".join(value)
@@ -191,7 +138,7 @@ def _tool_confirm(tool_call, node):
     # If we're skipping confirmation on this tool, log its output if MCP
     if (
         session.yolo
-        or tool_call.tool_name in session.tool_ignore
+        or tprintool_call.tool_name in session.tool_ignore
         # or tool_call.tool_name in session.user_config["settings"]["tool_ignore"]
     ):
         if tool_call.tool_name not in config.INTERNAL_TOOLS:
@@ -226,7 +173,7 @@ def _tool_confirm(tool_call, node):
 
 
 async def _tool_handler(part, node):
-    _print("info", f"Tool({part.tool_name})")
+    ui.info(f"Tool({part.tool_name})")
     session.spinner.stop()
     try:
         await run_in_terminal(lambda: _tool_confirm(part, node))
@@ -241,7 +188,7 @@ def _toggle_yolo():
     if session.yolo:
         ui.success("Ooh shit, its YOLO time!\n")
     else:
-        ui.status("Pfft, boring...\n")
+        ui.info("Pfft, boring...\n")
 
 
 def _dump_messages():
@@ -255,7 +202,7 @@ def _clear_screen():
 
 
 def _show_help():
-    ui.show_help()
+    ui.help()
 
 
 def _perform_undo():
@@ -269,7 +216,7 @@ def _perform_undo():
 async def _compact_context():
     """Get the current agent, create a summary of contenxt, and trim message history"""
     await process_request("Summarize the conversation so far", output=False)
-    _print("success", "Context history has been summarized and truncated.")
+    ui.success("Context history has been summarized and truncated.")
     session.messages = session.messages[-2:]
 
 
@@ -316,17 +263,12 @@ async def _handle_command(command: str) -> bool:
         else:
             return COMMANDS[base_command](*parts[1:])
     else:
-        _print("error", f"Unknown command: {command}")
+        ui.errro(f"Unknown command: {command}")
 
 
 async def process_request(text: str, output: bool = True):
     """Process input using the agent, handling cancellation safely."""
-    msg = "[bold green]Thinking..."
-    # Track spinner in session so we can start/stop
-    # during confirmation steps
-    session.spinner = await run_in_terminal(lambda: ui.console.status(msg, spinner=ui.spinner))
-    session.spinner.start()
-
+    await ui.spinner(True)
     try:
         res = await agent.process_request(
             session.current_model,
@@ -334,32 +276,29 @@ async def process_request(text: str, output: bool = True):
             tool_callback=_tool_handler,
         )
         if output:
-            _print("agent", res.result.output)
+            ui.agent(res.result.output)
     except CancelledError:
-        _print("muted", "Request cancelled")
+        ui.muted("Request cancelled")
     except SidekickAbort:
-        _print("muted", "Operation aborted.")
+        ui.muted("Operation aborted.")
     except Exception as e:
-        _print("error", str(e))
+        ui.muted(str(e))
     finally:
-        session.spinner.stop()
+        await ui.spinner(False)
         session.current_task = None
 
 
 async def repl():
     action = None
 
-    _print("info", f"Using model {session.current_model}")
+    ui.info(f"Using model {session.current_model}")
     instance = agent.get_or_create_agent(session.current_model)
 
-    _print("info", "Attaching MCP servers")
+    ui.info("Attaching MCP servers")
     async with instance.run_mcp_servers():
         while True:
             try:
-                # Ensure prompt is displayed correctly even after async output
-                await run_in_terminal(lambda: ps.app.invalidate())
-                line = await ps.prompt_async(key_bindings=kb, multiline=True)
-                line = line.strip()
+                line = await ui.multiline_input()
             except (EOFError, KeyboardInterrupt):
                 break
 
@@ -377,7 +316,7 @@ async def repl():
 
             # Check if another task is already running
             if session.current_task and not session.current_task.done():
-                _print("muted", "Agent is busy, press esc to interrupt.")
+                ui.muted("Agent is busy, press esc to interrupt.")
                 continue
 
             session.current_task = get_app().create_background_task(process_request(line))
@@ -385,4 +324,4 @@ async def repl():
     if action == "restart":
         await repl()
     else:
-        _print("info", "Thanks for all the fish.")
+        ui.info("Thanks for all the fish.")

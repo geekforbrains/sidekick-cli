@@ -13,7 +13,7 @@ def read_file(filepath: str) -> str:
     Returns:
         str: The contents of the file or an error message.
     """
-    ui.status(f"Read({filepath})")
+    ui.info(f"Read({filepath})")
     try:
         # Add a size limit to prevent reading huge files
         if os.path.getsize(filepath) > 100 * 1024:  # 100KB limit
