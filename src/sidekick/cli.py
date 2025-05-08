@@ -20,14 +20,14 @@ def main(
     run_setup: bool = typer.Option(False, "--setup", help="Run setup process."),
 ):
     if version:
-        ui.version()
+        asyncio.run(ui.version())
         return
 
-    ui.banner()
+    asyncio.run(ui.banner())
 
     has_update, latest_version = check_for_updates()
     if has_update:
-        ui.show_update_message(latest_version)
+        asyncio.run(ui.show_update_message(latest_version))
 
     if no_telemetry:
         session.telemetry_enabled = False
@@ -36,8 +36,7 @@ def main(
         asyncio.run(setup(run_setup))
         asyncio.run(repl())
     except Exception as e:
-        ui.error(str(e))
-        raise e
+        asyncio.run(ui.error(str(e)))
 
 
 if __name__ == "__main__":

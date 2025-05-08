@@ -25,7 +25,7 @@ def _load_or_create_config():
         return True
 
 
-def _set_environment_variables():
+async def _set_environment_variables():
     """Set environment variables from the config file."""
     if "env" not in session.user_config or not isinstance(session.user_config["env"], dict):
         session.user_config["env"] = {}
@@ -33,7 +33,7 @@ def _set_environment_variables():
     env_dict = session.user_config["env"]
     for key, value in env_dict.items():
         if not isinstance(value, str):
-            ui.warning(f"Invalid env value in config: {key}")
+            await ui.warning(f"Invalid env value in config: {key}")
             continue
         value = value.strip()
         if value:
@@ -70,7 +70,7 @@ async def _step2():
         message += f"  {index} - {model_id}\n"
     message = message.strip()
 
-    ui.panel("Default Model", message, border_style=ui.colors.primary)
+    await ui.panel("Default Model", message, border_style=ui.colors.primary)
     choice = await ui.input(
         session="step2",
         pretext="  Default model (#): ",
@@ -99,38 +99,38 @@ async def _onboarding():
                 message = f"Config saved to: [bold]{CONFIG_FILE}[/bold]"
                 ui.panel("Finished", message, top=0, border_style=ui.colors.success)
             else:
-                ui.error("Failed to save configuration.")
+                await ui.error("Failed to save configuration.")
     else:
         ui.panel(
             "Setup canceled", "At least one API key is required.", border_style=ui.colors.warning
         )
 
 
-def _setup_telemetry():
+async def _setup_telemetry():
     """Setup telemetry for capturing exceptions and errors"""
     if not session.telemetry_enabled:
-        ui.info("Telemetry disabled, skipping")
+        await ui.info("Telemetry disabled, skipping")
         return
 
-    ui.info("Setting up telemetry")
+    await ui.info("Setting up telemetry")
     telemetry.setup()
 
 
 async def _setup_config(run_setup):
     """Setup configuration and environment variables"""
-    ui.info("Setting up config")
+    await ui.info("Setting up config")
 
     session.device_id = system.get_device_id()
     loaded_config = user_config.load_config()
 
     if loaded_config and not run_setup:
-        ui.muted(f"Loading config from: {CONFIG_FILE}")
+        await ui.muted(f"Loading config from: {CONFIG_FILE}")
         session.user_config = loaded_config
     else:
         if run_setup:
-            ui.muted("Running setup process, resetting config")
+            await ui.muted("Running setup process, resetting config")
         else:
-            ui.muted("No user configuration found, running setup")
+            await ui.muted("No user configuration found, running setup")
         session.user_config = DEFAULT_CONFIG.copy()
         user_config.save_config()  # Save the default config initially
         await _onboarding()
@@ -146,16 +146,16 @@ async def _setup_config(run_setup):
     session.current_model = session.user_config["default_model"]
 
 
-def _setup_undo():
+async def _setup_undo():
     """Initialize the undo system"""
-    ui.info("Initializing undo system")
+    await ui.info("Initializing undo system")
     session.undo_initialized = init_undo_system()
 
 
-def _setup_agent(agent):
+async def _setup_agent(agent):
     """Initialize the agent with the current model"""
     if agent is not None:
-        ui.info(f"Initializing Agent({session.current_model})")
+        await ui.info(f"Initializing Agent({session.current_model})")
         agent.agent = agent.get_agent()
 
 
@@ -166,7 +166,7 @@ async def setup(run_setup):
     Args:
         run_setup (bool): If True, force run the setup process, resetting current config.
     """
-    _setup_telemetry()
+    await _setup_telemetry()
     await _setup_config(run_setup)
-    _set_environment_variables()
-    _setup_undo()
+    await _set_environment_variables()
+    await _setup_undo()

@@ -1,8 +1,9 @@
+import asyncio
 import json
 from asyncio.exceptions import CancelledError
 from datetime import datetime, timezone
 
-from prompt_toolkit.application import run_in_terminal
+from prompt_toolkit.application import run_in_terminal, in_terminal
 from prompt_toolkit.application.current import get_app
 from pydantic_ai.messages import ModelRequest, ToolReturnPart
 
@@ -119,28 +120,24 @@ def _render_args(tool_name, args):
     return content.strip()
 
 
-def _log_mcp(title, args):
+async def _log_mcp(title, args):
     """Display MCP tool with its arguments."""
     if not args:
         return
 
-    ui.info(title)
+    await ui.info(title)
     for key, value in args.items():
         if isinstance(value, list):
             value = ", ".join(value)
-        ui.muted(f"{key}: {value}", spaces=4)
+        await ui.muted(f"{key}: {value}", spaces=4)
 
 
-def _tool_confirm(tool_call, node):
+async def _tool_confirm(tool_call, node):
     title = _get_tool_title(tool_call.tool_name)
     args = _parse_args(tool_call.args)
 
     # If we're skipping confirmation on this tool, log its output if MCP
-    if (
-        session.yolo
-        or tprintool_call.tool_name in session.tool_ignore
-        # or tool_call.tool_name in session.user_config["settings"]["tool_ignore"]
-    ):
+    if session.yolo or tool_call.tool_name in session.tool_ignore:
         if tool_call.tool_name not in config.INTERNAL_TOOLS:
             _log_mcp(title, args)
         return
@@ -149,14 +146,11 @@ def _tool_confirm(tool_call, node):
     content = _render_args(tool_call.tool_name, args)
     filepath = args.get("filepath")
 
-    # Set bottom padding to 0 if filepath is not None
-    bottom_padding = 0 if filepath else 1
-
-    ui.panel(title, content, bottom=bottom_padding, border_style=ui.colors.warning)
+    await ui.tool_confirm(title, content, filepath=filepath)
 
     # If tool call has filepath, show it under panel
     if filepath:
-        ui.show_usage(f"File: {filepath}")
+        await ui.usage(f"File: {filepath}")
 
     print("  1. Yes (default)")
     print("  2. Yes, and don't ask again for commands like this")
@@ -168,30 +162,101 @@ def _tool_confirm(tool_call, node):
     elif resp == "3":
         raise SidekickAbort("User aborted.")
 
-    ui.line()  # Add line after user input
+    await ui.line()  # Add line after user input
     session.spinner.start()
+
+
+# async def _tool_handler(part, node):
+#     await ui.info(f"Tool({part.tool_name})")
+#     session.spinner.stop()
+#     try:
+#         async def _handler():
+#             await _tool_confirm(part, node)
+#         await run_in_terminal(_handler)
+#     except SidekickAbort:
+#         _patch_tool_message(part.tool_name, part.tool_call_id)
+#         raise  # Let caller handle cancellation
+#     session.spinner.start()
+
+
+# async def _tool_handler(part, node):
+#     await ui.info(f"Tool({part.tool_name})")
+#     session.spinner.stop()
+#
+#     try:
+#         # ‼ Suspends the prompt, lets you await freely inside.
+#         async with in_terminal():
+#             await _tool_confirm(part, node)
+#
+#     except SidekickAbort:
+#         _patch_tool_message(part.tool_name, part.tool_call_id)
+#         raise      # bubble up so the caller handles it
+#     finally:
+#         session.spinner.start()
+
+
+# async def _tool_handler(part, node):
+#     await ui.info(f"Tool({part.tool_name})")
+#     session.spinner.stop()
+#
+#     try:
+#         # lambda/body is *synchronous* – it just schedules the coroutine.
+#         await run_in_terminal(
+#             lambda: asyncio.create_task(_tool_confirm(part, node))
+#         )
+#         #            └────────────── coroutine runs concurrently
+#
+#     except SidekickAbort:
+#         _patch_tool_message(part.tool_name, part.tool_call_id)
+#         raise
+#     finally:
+#         session.spinner.start()
+
+
+# async def _tool_handler(part, node):
+#     await ui.info(f"Tool({part.tool_name})")
+#     session.spinner.stop()
+#
+#     try:
+#         # Suspend the UI for as long as _tool_confirm runs.
+#         async with in_terminal():
+#             await _tool_confirm(part, node)
+#
+#     except SidekickAbort:
+#         _patch_tool_message(part.tool_name, part.tool_call_id)
+#         raise
+#     finally:
+#         session.spinner.start()
 
 
 async def _tool_handler(part, node):
-    ui.info(f"Tool({part.tool_name})")
+    await ui.info(f"Tool({part.tool_name})")
     session.spinner.stop()
+
     try:
-        await run_in_terminal(lambda: _tool_confirm(part, node))
+        # Everything between the lambda’s { … } runs in a thread,
+        # so it may call asyncio.run() and even use blocking I/O.
+        await run_in_terminal(
+            lambda: asyncio.run(_tool_confirm(part, node)),
+            in_executor=True,          # 🔑 put it in the thread pool
+        )
+
     except SidekickAbort:
         _patch_tool_message(part.tool_name, part.tool_call_id)
-        raise  # Let caller handle cancellation
-    session.spinner.start()
+        raise
+    finally:
+        session.spinner.start()
 
 
-def _toggle_yolo():
+async def _toggle_yolo():
     session.yolo = not session.yolo
     if session.yolo:
-        ui.success("Ooh shit, its YOLO time!\n")
+        await ui.success("Ooh shit, its YOLO time!\n")
     else:
-        ui.info("Pfft, boring...\n")
+        await ui.info("Pfft, boring...\n")
 
 
-def _dump_messages():
+async def _dump_messages():
     ui.dump_messages()
 
 
@@ -201,36 +266,36 @@ def _clear_screen():
     session.messages = []
 
 
-def _show_help():
-    ui.help()
+async def _show_help():
+    await ui.help()
 
 
-def _perform_undo():
+async def _perform_undo():
     success, message = perform_undo()
     if success:
-        ui.success(message)
+        await ui.success(message)
     else:
-        ui.warning(message)
+        await ui.warning(message)
 
 
 async def _compact_context():
     """Get the current agent, create a summary of contenxt, and trim message history"""
     await process_request("Summarize the conversation so far", output=False)
-    ui.success("Context history has been summarized and truncated.")
+    await ui.success("Context history has been summarized and truncated.")
     session.messages = session.messages[-2:]
 
 
-def _handle_model_command(model_index: int = None, action: str = None):
+async def _handle_model_command(model_index: int = None, action: str = None):
     if model_index:
         models = list(config.MODELS.keys())
         model = models[int(model_index)]
         session.current_model = model
         if action == "default":
             user_config.set_default_model(model)
-            ui.muted("Updating default model")
+            await ui.muted("Updating default model")
         return "restart"
     else:
-        ui.show_models()
+        await ui.models()
 
 
 async def _handle_command(command: str) -> bool:
@@ -261,9 +326,9 @@ async def _handle_command(command: str) -> bool:
         if base_command == "/compact":
             return await _compact_context()
         else:
-            return COMMANDS[base_command](*parts[1:])
+            return await COMMANDS[base_command](*parts[1:])
     else:
-        ui.errro(f"Unknown command: {command}")
+        await ui.error(f"Unknown command: {command}")
 
 
 async def process_request(text: str, output: bool = True):
@@ -276,13 +341,13 @@ async def process_request(text: str, output: bool = True):
             tool_callback=_tool_handler,
         )
         if output:
-            ui.agent(res.result.output)
+            await ui.agent(res.result.output)
     except CancelledError:
-        ui.muted("Request cancelled")
+        await ui.muted("Request cancelled")
     except SidekickAbort:
-        ui.muted("Operation aborted.")
+        await ui.muted("Operation aborted.")
     except Exception as e:
-        ui.muted(str(e))
+        await ui.muted(str(e))
     finally:
         await ui.spinner(False)
         session.current_task = None
@@ -291,10 +356,10 @@ async def process_request(text: str, output: bool = True):
 async def repl():
     action = None
 
-    ui.info(f"Using model {session.current_model}")
+    await ui.info(f"Using model {session.current_model}")
     instance = agent.get_or_create_agent(session.current_model)
 
-    ui.info("Attaching MCP servers")
+    await ui.info("Attaching MCP servers")
     async with instance.run_mcp_servers():
         while True:
             try:
@@ -316,7 +381,7 @@ async def repl():
 
             # Check if another task is already running
             if session.current_task and not session.current_task.done():
-                ui.muted("Agent is busy, press esc to interrupt.")
+                await ui.muted("Agent is busy, press esc to interrupt.")
                 continue
 
             session.current_task = get_app().create_background_task(process_request(line))
@@ -324,4 +389,4 @@ async def repl():
     if action == "restart":
         await repl()
     else:
-        ui.info("Thanks for all the fish.")
+        await ui.info("Thanks for all the fish.")
