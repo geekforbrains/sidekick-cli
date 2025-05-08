@@ -152,13 +152,10 @@ async def _tool_confirm(tool_call, node):
     if filepath:
         await ui.usage(f"File: {filepath}")
 
-    await ui.print("  1. Yes (default)")
-    await ui.print("  2. Yes, and don't ask again for commands like this")
-    await ui.print("  3. No, and tell Sidekick what to do differently")
-    resp = await ui.input(
-        session_key="tool_confirm",
-        pretext="  Choose an option [1/2/3]: "
-    ) or "1"
+    print("  1. Yes (default)")
+    print("  2. Yes, and don't ask again for commands like this")
+    print("  3. No, and tell Sidekick what to do differently")
+    resp = input("  Choose an option [1/2/3]: ").strip() or "1"
 
     if resp == "2":
         session.tool_ignore.append(tool_call.tool_name)
@@ -169,46 +166,81 @@ async def _tool_confirm(tool_call, node):
     session.spinner.start()
 
 
+# async def _tool_handler(part, node):
+#     await ui.info(f"Tool({part.tool_name})")
+#     session.spinner.stop()
+#     try:
+#         async def _handler():
+#             await _tool_confirm(part, node)
+#         await run_in_terminal(_handler)
+#     except SidekickAbort:
+#         _patch_tool_message(part.tool_name, part.tool_call_id)
+#         raise  # Let caller handle cancellation
+#     session.spinner.start()
+
+
+# async def _tool_handler(part, node):
+#     await ui.info(f"Tool({part.tool_name})")
+#     session.spinner.stop()
+#
+#     try:
+#         # ‼ Suspends the prompt, lets you await freely inside.
+#         async with in_terminal():
+#             await _tool_confirm(part, node)
+#
+#     except SidekickAbort:
+#         _patch_tool_message(part.tool_name, part.tool_call_id)
+#         raise      # bubble up so the caller handles it
+#     finally:
+#         session.spinner.start()
+
+
+# async def _tool_handler(part, node):
+#     await ui.info(f"Tool({part.tool_name})")
+#     session.spinner.stop()
+#
+#     try:
+#         # lambda/body is *synchronous* – it just schedules the coroutine.
+#         await run_in_terminal(
+#             lambda: asyncio.create_task(_tool_confirm(part, node))
+#         )
+#         #            └────────────── coroutine runs concurrently
+#
+#     except SidekickAbort:
+#         _patch_tool_message(part.tool_name, part.tool_call_id)
+#         raise
+#     finally:
+#         session.spinner.start()
+
+
+# async def _tool_handler(part, node):
+#     await ui.info(f"Tool({part.tool_name})")
+#     session.spinner.stop()
+#
+#     try:
+#         # Suspend the UI for as long as _tool_confirm runs.
+#         async with in_terminal():
+#             await _tool_confirm(part, node)
+#
+#     except SidekickAbort:
+#         _patch_tool_message(part.tool_name, part.tool_call_id)
+#         raise
+#     finally:
+#         session.spinner.start()
+
+
 async def _tool_handler(part, node):
     await ui.info(f"Tool({part.tool_name})")
     session.spinner.stop()
 
     try:
-        # Use a synchronous function in run_in_terminal to avoid async deadlocks
-        def confirm_func():
-            title = _get_tool_title(part.tool_name)
-            args = _parse_args(part.args)
-            
-            # Skip confirmation if needed
-            if session.yolo or part.tool_name in session.tool_ignore:
-                return False
-                
-            content = _render_args(part.tool_name, args)
-            filepath = args.get("filepath")
-            
-            # Display styled confirmation panel using sync UI functions
-            ui.sync_tool_confirm(title, content)
-            if filepath:
-                ui.sync_print(f"File: {filepath}", style=ui.colors.muted)
-                
-            ui.sync_print("  1. Yes (default)")
-            ui.sync_print("  2. Yes, and don't ask again for commands like this")
-            ui.sync_print("  3. No, and tell Sidekick what to do differently")
-            resp = input("  Choose an option [1/2/3]: ").strip() or "1"
-            
-            if resp == "2":
-                session.tool_ignore.append(part.tool_name)
-                return False
-            elif resp == "3":
-                return True  # Abort
-            return False  # Continue
-            
-        # Run the confirmation in the terminal
-        should_abort = await run_in_terminal(confirm_func)
-        
-        if should_abort:
-            raise SidekickAbort("User aborted.")
-            
+        # Everything between the lambda’s { … } runs in a thread,
+        # so it may call asyncio.run() and even use blocking I/O.
+        await run_in_terminal(
+            lambda: asyncio.run(_tool_confirm(part, node)),
+            in_executor=True,          # 🔑 put it in the thread pool
+        )
+
     except SidekickAbort:
         _patch_tool_message(part.tool_name, part.tool_call_id)
         raise

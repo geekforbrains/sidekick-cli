@@ -190,6 +190,19 @@ async def help():
 async def tool_confirm(title, content, filepath=None):
     bottom_padding = 0 if filepath else 1
     await panel(title, content, bottom=bottom_padding, border_style=colors.warning)
+    
+# Synchronous versions of UI functions for use with run_in_terminal
+def sync_print(text, **kwargs):
+    console.print(text, **kwargs)
+    
+def sync_panel(title, text, top=1, right=0, bottom=1, left=1, border_style=None, **kwargs):
+    border_style = border_style or kwargs.get("style")
+    panel_obj = Panel(Padding(text, 1), title=title, title_align="left", border_style=border_style)
+    console.print(Padding(panel_obj, (top, right, bottom, left)), **kwargs)
+    
+def sync_tool_confirm(title, content, filepath=None):
+    bottom_padding = 0 if filepath else 1
+    sync_panel(title, content, bottom=bottom_padding, border_style=colors.warning)
 
 
 # =============================================================================
