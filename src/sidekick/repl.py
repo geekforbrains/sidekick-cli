@@ -319,6 +319,12 @@ async def process_request(text: str, output: bool = True):
     finally:
         await ui.spinner(False)
         session.current_task = None
+        
+        # Force refresh of the multiline input prompt to restore placeholder
+        if "multiline" in session.input_sessions:
+            await run_in_terminal(
+                lambda: session.input_sessions["multiline"].app.invalidate()
+            )
 
 
 async def repl():

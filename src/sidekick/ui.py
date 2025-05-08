@@ -117,6 +117,9 @@ async def spinner(show=True):
         session.spinner.stop()
         session.spinner = None
 
+        for prompt_session in session.input_sessions.values():
+            await run_in_terminal(lambda: prompt_session.app.invalidate())
+
 
 # =============================================================================
 # BASE
