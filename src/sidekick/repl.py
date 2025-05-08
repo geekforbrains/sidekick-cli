@@ -1,9 +1,8 @@
-import asyncio
 import json
 from asyncio.exceptions import CancelledError
 from datetime import datetime, timezone
 
-from prompt_toolkit.application import run_in_terminal, in_terminal
+from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.application.current import get_app
 from pydantic_ai.messages import ModelRequest, ToolReturnPart
 
@@ -155,10 +154,7 @@ async def _tool_confirm(tool_call, node):
     await ui.print("  1. Yes (default)")
     await ui.print("  2. Yes, and don't ask again for commands like this")
     await ui.print("  3. No, and tell Sidekick what to do differently")
-    resp = await ui.input(
-        session_key="tool_confirm",
-        pretext="  Choose an option [1/2/3]: "
-    ) or "1"
+    resp = await ui.input(session_key="tool_confirm", pretext="  Choose an option [1/2/3]: ") or "1"
 
     if resp == "2":
         session.tool_ignore.append(tool_call.tool_name)
@@ -178,37 +174,37 @@ async def _tool_handler(part, node):
         def confirm_func():
             title = _get_tool_title(part.tool_name)
             args = _parse_args(part.args)
-            
+
             # Skip confirmation if needed
             if session.yolo or part.tool_name in session.tool_ignore:
                 return False
-                
+
             content = _render_args(part.tool_name, args)
             filepath = args.get("filepath")
-            
+
             # Display styled confirmation panel using sync UI functions
             ui.sync_tool_confirm(title, content)
             if filepath:
                 ui.sync_print(f"File: {filepath}", style=ui.colors.muted)
-                
+
             ui.sync_print("  1. Yes (default)")
             ui.sync_print("  2. Yes, and don't ask again for commands like this")
             ui.sync_print("  3. No, and tell Sidekick what to do differently")
             resp = input("  Choose an option [1/2/3]: ").strip() or "1"
-            
+
             if resp == "2":
                 session.tool_ignore.append(part.tool_name)
                 return False
             elif resp == "3":
                 return True  # Abort
             return False  # Continue
-            
+
         # Run the confirmation in the terminal
         should_abort = await run_in_terminal(confirm_func)
-        
+
         if should_abort:
             raise SidekickAbort("User aborted.")
-            
+
     except SidekickAbort:
         _patch_tool_message(part.tool_name, part.tool_call_id)
         raise
@@ -319,12 +315,10 @@ async def process_request(text: str, output: bool = True):
     finally:
         await ui.spinner(False)
         session.current_task = None
-        
+
         # Force refresh of the multiline input prompt to restore placeholder
         if "multiline" in session.input_sessions:
-            await run_in_terminal(
-                lambda: session.input_sessions["multiline"].app.invalidate()
-            )
+            await run_in_terminal(lambda: session.input_sessions["multiline"].app.invalidate())
 
 
 async def repl():
