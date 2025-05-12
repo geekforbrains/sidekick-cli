@@ -221,7 +221,7 @@ async def _toggle_yolo():
 
 
 async def _dump_messages():
-    ui.dump_messages()
+    await ui.dump_messages()
 
 
 def _clear_screen():
