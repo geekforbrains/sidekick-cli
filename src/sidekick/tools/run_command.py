@@ -1,14 +1,9 @@
 import subprocess
 
-message_handler = None
+from sidekick import ui
 
 
-def _msg(message_type: str, message: str):
-    if message_handler:
-        message_handler(message_type, message)
-
-
-def run_command(command: str) -> str:
+async def run_command(command: str) -> str:
     """
     Run a shell command and return the output. User must confirm risky commands.
 
@@ -19,7 +14,7 @@ def run_command(command: str) -> str:
         str: The output of the command (stdout and stderr) or an error message.
     """
     try:
-        _msg("status", f"Shell({command})")
+        await ui.info(f"Shell({command})")
 
         process = subprocess.Popen(
             command,

@@ -5,7 +5,7 @@ from pydantic_ai.exceptions import ModelRetry
 from sidekick import ui
 
 
-def update_file(filepath: str, target: str, patch: str) -> str:
+async def update_file(filepath: str, target: str, patch: str) -> str:
     """
     Update an existing file by replacing a target text block with a patch.
     Requires confirmation with diff before applying.
@@ -25,7 +25,7 @@ def update_file(filepath: str, target: str, patch: str) -> str:
                 "Verify the filepath or use `write_file` if it's a new file."
             )
 
-        ui.info(f"Update({filepath})")
+        await ui.info(f"Update({filepath})")
         with open(filepath, "r", encoding="utf-8") as f:
             original = f.read()
 
@@ -55,9 +55,9 @@ def update_file(filepath: str, target: str, patch: str) -> str:
 
         return f"File '{filepath}' updated successfully."
     except ModelRetry as e:
-        ui.warning(str(e))
+        await ui.warning(str(e))
         raise e  # Re-raise
     except Exception as e:
         err_msg = f"Error updating file '{filepath}': {e}"
-        ui.error(err_msg)
+        await ui.error(err_msg)
         return err_msg

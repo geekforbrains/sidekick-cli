@@ -134,8 +134,8 @@ async def panel(
     await print(Padding(panel, (top, right, bottom, left)), **kwargs)
 
 
-async def print(text: str, **kwargs):
-    await run_in_terminal(lambda: console.print(text, **kwargs))
+async def print(message, **kwargs):
+    await run_in_terminal(lambda: console.print(message, **kwargs))
 
 
 # =============================================================================

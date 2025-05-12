@@ -4,15 +4,8 @@ from pydantic_ai.exceptions import ModelRetry
 
 from sidekick import ui
 
-message_handler = None
 
-
-def _msg(type: str, message: str):
-    if message_handler:
-        message_handler(type, message)
-
-
-def write_file(filepath: str, content: str) -> str:
+async def write_file(filepath: str, content: str) -> str:
     """
     Write content to a new file. Fails if the file already exists.
     Requires confirmation before writing.
@@ -35,7 +28,7 @@ def write_file(filepath: str, content: str) -> str:
 
         # Confirmation should be handled by the LLM/user interaction layer before calling.
         # This tool assumes confirmation was obtained if required by the overall process.
-        ui.info(f"Write({filepath})")
+        await ui.info(f"Write({filepath})")
 
         # Create directories if they don't exist
         dirpath = os.path.dirname(filepath)
@@ -50,9 +43,9 @@ def write_file(filepath: str, content: str) -> str:
 
     except ModelRetry as e:
         # Log ModelRetry messages from this tool as warnings
-        ui.warning(str(e))
+        await ui.warning(str(e))
         raise e  # Re-raise to be handled by pydantic-ai
     except Exception as e:
         err_msg = f"Error writing file '{filepath}': {e}"
-        ui.error(err_msg)
+        await ui.error(err_msg)
         return err_msg

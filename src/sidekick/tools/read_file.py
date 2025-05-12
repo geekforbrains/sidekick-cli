@@ -3,7 +3,7 @@ import os
 from sidekick import ui
 
 
-def read_file(filepath: str) -> str:
+async def read_file(filepath: str) -> str:
     """
     Read the contents of a file.
 
@@ -13,7 +13,7 @@ def read_file(filepath: str) -> str:
     Returns:
         str: The contents of the file or an error message.
     """
-    ui.info(f"Read({filepath})")
+    await ui.info(f"Read({filepath})")
     try:
         # Add a size limit to prevent reading huge files
         if os.path.getsize(filepath) > 100 * 1024:  # 100KB limit
