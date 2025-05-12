@@ -11,6 +11,7 @@ from rich.pretty import Pretty
 from rich.table import Table
 
 from sidekick import config, session
+from sidekick.exceptions import SidekickAbort
 from sidekick.utils.helpers import DotDict
 
 BANNER = """\
@@ -66,10 +67,6 @@ def _newline(event):
 # =============================================================================
 # CLASSES & UTILS
 # =============================================================================
-
-
-class UserAbort(Exception):
-    pass
 
 
 class ModelValidator(Validator):
@@ -298,9 +295,9 @@ async def input(
             resp = resp.strip()
         return resp
     except KeyboardInterrupt:
-        raise UserAbort
+        raise SidekickAbort
     except EOFError:
-        raise UserAbort
+        raise SidekickAbort
 
 
 async def multiline_input():
