@@ -140,7 +140,7 @@ async def print(message, **kwargs):
 # =============================================================================
 
 
-async def agent(text: str, bottom=0):
+async def agent(text: str, bottom=1):
     await panel("Sidekick", Markdown(text), bottom=bottom, border_style=colors.primary)
 
 

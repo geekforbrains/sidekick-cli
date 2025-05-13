@@ -322,14 +322,14 @@ async def process_request(text: str, output: bool = True):
 
 
 async def repl():
-    await ui.agent("This is an agent message")
-    await ui.usage("This is a usage message")
     action = None
 
     await ui.info(f"Using model {session.current_model}")
     instance = agent.get_or_create_agent(session.current_model)
 
     await ui.info("Attaching MCP servers")
+    await ui.line()
+
     async with instance.run_mcp_servers():
         while True:
             try:
