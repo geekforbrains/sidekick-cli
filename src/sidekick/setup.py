@@ -52,11 +52,11 @@ async def _step1():
         "Let's get you setup. First, we'll need to set some environment variables.\n"
         "Skip the ones you don't need."
     )
-    ui.panel("Setup", message, border_style=ui.colors.primary)
+    await ui.panel("Setup", message, border_style=ui.colors.primary)
     env_keys = session.user_config["env"].copy()
     for key in env_keys:
         provider = _key_to_title(key)
-        val = await ui.input(session="step1", pretext=f"  {provider}: ", is_password=True)
+        val = await ui.input("step1", pretext=f"  {provider}: ", is_password=True)
         val = val.strip()
         if val:
             session.user_config["env"][key] = val
@@ -72,11 +72,11 @@ async def _step2():
 
     await ui.panel("Default Model", message, border_style=ui.colors.primary)
     choice = await ui.input(
-        session="step2",
+        "step2",
         pretext="  Default model (#): ",
         validator=ui.ModelValidator(len(model_ids)),
     )
-    session.user_config["default_model"] = model_ids[choice]
+    session.user_config["default_model"] = model_ids[int(choice)]
 
 
 async def _onboarding():
@@ -97,11 +97,11 @@ async def _onboarding():
         if initial_config != current_config:
             if user_config.save_config():
                 message = f"Config saved to: [bold]{CONFIG_FILE}[/bold]"
-                ui.panel("Finished", message, top=0, border_style=ui.colors.success)
+                await ui.panel("Finished", message, top=0, border_style=ui.colors.success)
             else:
                 await ui.error("Failed to save configuration.")
     else:
-        ui.panel(
+        await ui.panel(
             "Setup canceled", "At least one API key is required.", border_style=ui.colors.warning
         )
 
