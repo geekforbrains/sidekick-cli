@@ -1,4 +1,4 @@
-from pydantic_ai import Agent
+from pydantic_ai import Agent, Tool
 
 from sidekick import session
 from sidekick.tools.read_file import read_file
@@ -6,6 +6,30 @@ from sidekick.tools.run_command import run_command
 from sidekick.tools.update_file import update_file
 from sidekick.tools.write_file import write_file
 from sidekick.utils.mcp import get_mcp_servers
+
+
+# def _patch_tool_message(self, tool_name, tool_call_id):
+#     """
+#     If a tool is cancelled, we need to patch a response otherwise
+#     some models will throw an error.
+#
+#     Example:
+#         self._patch_tool_message(part.tool_name, part.tool_call_id)
+#     """
+#     session.messages.append(
+#         ModelRequest(
+#             parts=[
+#                 ToolReturnPart(
+#                     tool_name=tool_name,
+#                     content="Operation aborted by user.",
+#                     tool_call_id=tool_call_id,
+#                     timestamp=datetime.now(timezone.utc),
+#                     part_kind="tool-return",
+#                 )
+#             ],
+#             kind="request",
+#         )
+#     )
 
 
 async def _process_node(node, tool_callback):
@@ -21,13 +45,14 @@ async def _process_node(node, tool_callback):
 
 def get_or_create_agent(model):
     if model not in session.agents:
+        max_retries = session.user_config['settings']['max_retries']
         session.agents[model] = Agent(
             model=model,
             tools=[
-                read_file,
-                run_command,
-                update_file,
-                write_file,
+                Tool(read_file, max_retries=max_retries),
+                Tool(run_command, max_retries=max_retries),
+                Tool(update_file, max_retries=max_retries),
+                Tool(write_file, max_retries=max_retries),
             ],
             mcp_servers=get_mcp_servers(),
         )
