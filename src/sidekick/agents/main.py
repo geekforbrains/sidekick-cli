@@ -1,4 +1,7 @@
+from datetime import datetime, timezone
+
 from pydantic_ai import Agent, Tool
+from pydantic_ai.messages import ModelRequest, ToolReturnPart
 
 from sidekick import session
 from sidekick.tools.read_file import read_file
@@ -6,30 +9,6 @@ from sidekick.tools.run_command import run_command
 from sidekick.tools.update_file import update_file
 from sidekick.tools.write_file import write_file
 from sidekick.utils.mcp import get_mcp_servers
-
-
-# def _patch_tool_message(self, tool_name, tool_call_id):
-#     """
-#     If a tool is cancelled, we need to patch a response otherwise
-#     some models will throw an error.
-#
-#     Example:
-#         self._patch_tool_message(part.tool_name, part.tool_call_id)
-#     """
-#     session.messages.append(
-#         ModelRequest(
-#             parts=[
-#                 ToolReturnPart(
-#                     tool_name=tool_name,
-#                     content="Operation aborted by user.",
-#                     tool_call_id=tool_call_id,
-#                     timestamp=datetime.now(timezone.utc),
-#                     part_kind="tool-return",
-#                 )
-#             ],
-#             kind="request",
-#         )
-#     )
 
 
 async def _process_node(node, tool_callback):
@@ -45,7 +24,7 @@ async def _process_node(node, tool_callback):
 
 def get_or_create_agent(model):
     if model not in session.agents:
-        max_retries = session.user_config['settings']['max_retries']
+        max_retries = session.user_config["settings"]["max_retries"]
         session.agents[model] = Agent(
             model=model,
             tools=[
@@ -57,6 +36,56 @@ def get_or_create_agent(model):
             mcp_servers=get_mcp_servers(),
         )
     return session.agents[model]
+
+
+def patch_tool_messages(error_message="Tool operation failed"):
+    """
+    Find any tool calls without responses and add synthetic error responses for them.
+    Takes an error message to use in the synthesized tool response.
+
+    Ignores tools that have corresponding retry prompts as the model is already
+    addressing them.
+    """
+    if not session.messages:
+        return
+
+    # Map tool calls to their tool returns
+    tool_calls = {}  # tool_call_id -> tool_name
+    tool_returns = set()  # set of tool_call_ids with returns
+    retry_prompts = set()  # set of tool_call_ids with retry prompts
+
+    for message in session.messages:
+        if hasattr(message, "parts"):
+            for part in message.parts:
+                if (
+                    hasattr(part, "part_kind")
+                    and hasattr(part, "tool_call_id")
+                    and part.tool_call_id
+                ):
+                    if part.part_kind == "tool-call":
+                        tool_calls[part.tool_call_id] = part.tool_name
+                    elif part.part_kind == "tool-return":
+                        tool_returns.add(part.tool_call_id)
+                    elif part.part_kind == "retry-prompt":
+                        retry_prompts.add(part.tool_call_id)
+
+    # Identify orphaned tools (those without responses and not being retried)
+    for tool_call_id, tool_name in list(tool_calls.items()):
+        if tool_call_id not in tool_returns and tool_call_id not in retry_prompts:
+            session.messages.append(
+                ModelRequest(
+                    parts=[
+                        ToolReturnPart(
+                            tool_name=tool_name,
+                            content=error_message,
+                            tool_call_id=tool_call_id,
+                            timestamp=datetime.now(timezone.utc),
+                            part_kind="tool-return",
+                        )
+                    ],
+                    kind="request",
+                )
+            )
 
 
 async def process_request(model: str, message: str, tool_callback: callable = None):

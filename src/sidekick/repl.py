@@ -1,38 +1,17 @@
 import json
 from asyncio.exceptions import CancelledError
-from datetime import datetime, timezone
 
 from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.application.current import get_app
-from pydantic_ai.messages import ModelRequest, ToolReturnPart
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from sidekick import config, session, ui
 from sidekick.agents import main as agent
+from sidekick.agents.main import patch_tool_messages
 from sidekick.exceptions import SidekickAbort
 from sidekick.utils import user_config
 from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
 from sidekick.utils.undo import perform_undo
-
-
-def _patch_tool_message(tool_name, tool_call_id):
-    """
-    If a tool is cancelled, we need to patch a response otherwise
-    some models will throw an error.
-    """
-    session.messages.append(
-        ModelRequest(
-            parts=[
-                ToolReturnPart(
-                    tool_name=tool_name,
-                    content="Operation aborted by user.",
-                    tool_call_id=tool_call_id,
-                    timestamp=datetime.now(timezone.utc),
-                    part_kind="tool-return",
-                )
-            ],
-            kind="request",
-        )
-    )
 
 
 def _parse_args(args):
@@ -206,7 +185,7 @@ async def _tool_handler(part, node):
             raise SidekickAbort("User aborted.")
 
     except SidekickAbort:
-        _patch_tool_message(part.tool_name, part.tool_call_id)
+        patch_tool_messages("Operation aborted by user.")
         raise
     finally:
         session.spinner.start()
@@ -309,8 +288,12 @@ async def process_request(text: str, output: bool = True):
         await ui.muted("Request cancelled")
     except SidekickAbort:
         await ui.muted("Operation aborted.")
+    except UnexpectedModelBehavior as e:
+        error_message = str(e)
+        await ui.muted(error_message)
+        patch_tool_messages(error_message)
     except Exception as e:
-        await ui.muted(str(e))
+        await ui.error(str(e))
     finally:
         await ui.spinner(False)
         session.current_task = None
