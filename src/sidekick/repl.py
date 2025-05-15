@@ -224,9 +224,8 @@ async def _dump_messages():
     await ui.dump_messages()
 
 
-def _clear_screen():
-    ui.console.clear()
-    ui.show_banner()
+async def _clear_screen():
+    await ui.clear()
     session.messages = []
 
 

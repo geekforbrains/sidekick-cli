@@ -245,6 +245,11 @@ async def banner():
     await print(version, style=colors.muted)
 
 
+async def clear():
+    console.clear()
+    await banner()
+
+
 async def update_available(latest_version):
     await warning(f"Update available: v{latest_version}")
     await muted("Exit, and run: [bold]pip install --upgrade sidekick-cli")
