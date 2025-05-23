@@ -1,5 +1,9 @@
 import subprocess
 
+from sidekick.constants import (CMD_OUTPUT_FORMAT, CMD_OUTPUT_NO_ERRORS, CMD_OUTPUT_NO_OUTPUT,
+                                CMD_OUTPUT_TRUNCATED, COMMAND_OUTPUT_END_SIZE,
+                                COMMAND_OUTPUT_START_INDEX, COMMAND_OUTPUT_THRESHOLD,
+                                ERROR_COMMAND_EXECUTION, MAX_COMMAND_OUTPUT)
 from sidekick.tools.base import BaseTool
 from sidekick.types import ToolResult
 from sidekick.ui import console as ui
@@ -33,16 +37,20 @@ class RunCommandTool(BaseTool):
             text=True,
         )
         stdout, stderr = process.communicate()
-        output = stdout.strip() or "No output."
-        error = stderr.strip() or "No errors."
-        resp = f"STDOUT:\n{output}\n\nSTDERR:\n{error}".strip()
+        output = stdout.strip() or CMD_OUTPUT_NO_OUTPUT
+        error = stderr.strip() or CMD_OUTPUT_NO_ERRORS
+        resp = CMD_OUTPUT_FORMAT.format(output=output, error=error).strip()
 
         # Truncate if the output is too long to prevent issues
-        if len(resp) > 5000:
+        if len(resp) > MAX_COMMAND_OUTPUT:
             # Include both the beginning and end of the output
-            start_part = resp[:2500]
-            end_part = resp[-1000:] if len(resp) > 3500 else resp[2500:]
-            truncated_resp = start_part + "\n...\n[truncated]\n...\n" + end_part
+            start_part = resp[:COMMAND_OUTPUT_START_INDEX]
+            end_part = (
+                resp[-COMMAND_OUTPUT_END_SIZE:]
+                if len(resp) > COMMAND_OUTPUT_THRESHOLD
+                else resp[COMMAND_OUTPUT_START_INDEX:]
+            )
+            truncated_resp = start_part + CMD_OUTPUT_TRUNCATED + end_part
             return truncated_resp
 
         return resp
@@ -50,7 +58,7 @@ class RunCommandTool(BaseTool):
     async def _handle_error(self, error: Exception, command: str = None) -> ToolResult:
         """Handle errors with specific messages for common cases."""
         if isinstance(error, FileNotFoundError):
-            err_msg = f"Error: Command not found or failed to execute: {command}. Details: {error}"
+            err_msg = ERROR_COMMAND_EXECUTION.format(command=command, error=error)
         else:
             # Use parent class handling for other errors
             return await super()._handle_error(error, command)

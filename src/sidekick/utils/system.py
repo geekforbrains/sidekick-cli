@@ -5,6 +5,7 @@ import uuid
 from pathlib import Path
 
 from .. import config
+from ..constants import DEVICE_ID_FILE, ENV_FILE, SESSIONS_SUBDIR, SIDEKICK_HOME_DIR
 
 # Default ignore patterns if .gitignore is not found
 DEFAULT_IGNORE_PATTERNS = {
@@ -20,7 +21,7 @@ DEFAULT_IGNORE_PATTERNS = {
     "*.pyd",
     ".DS_Store",
     "Thumbs.db",
-    ".env",
+    ENV_FILE,
     ".venv",
     "*.egg-info",
     ".pytest_cache/",
@@ -44,7 +45,7 @@ def get_sidekick_home():
     Returns:
         Path: The path to the Sidekick home directory.
     """
-    home = Path.home() / ".sidekick"
+    home = Path.home() / SIDEKICK_HOME_DIR
     home.mkdir(exist_ok=True)
     return home
 
@@ -58,7 +59,7 @@ def get_session_dir():
     """
     from .. import session
 
-    session_dir = get_sidekick_home() / "sessions" / session.session_id
+    session_dir = get_sidekick_home() / SESSIONS_SUBDIR / session.session_id
     session_dir.mkdir(exist_ok=True, parents=True)
     return session_dir
 
@@ -180,7 +181,7 @@ def get_device_id():
     try:
         # Get the ~/.sidekick directory
         sidekick_home = get_sidekick_home()
-        device_id_file = sidekick_home / "device_id"
+        device_id_file = sidekick_home / DEVICE_ID_FILE
 
         # If the file exists, read the device ID
         if device_id_file.exists():

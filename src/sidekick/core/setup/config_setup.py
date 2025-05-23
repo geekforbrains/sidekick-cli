@@ -3,6 +3,7 @@ from pathlib import Path
 
 from sidekick.configuration.defaults import DEFAULT_USER_CONFIG
 from sidekick.configuration.models import ModelRegistry
+from sidekick.constants import APP_NAME, CONFIG_FILE_NAME
 from sidekick.core.setup.base import BaseSetup
 from sidekick.core.state import StateManager
 from sidekick.exceptions import SidekickConfigError
@@ -18,7 +19,7 @@ class ConfigSetup(BaseSetup):
     def __init__(self, state_manager: StateManager):
         super().__init__(state_manager)
         self.config_dir: ConfigPath = Path.home() / ".config"
-        self.config_file: ConfigFile = self.config_dir / "sidekick.json"
+        self.config_file: ConfigFile = self.config_dir / CONFIG_FILE_NAME
         self.model_registry = ModelRegistry()
 
     @property
@@ -123,7 +124,7 @@ class ConfigSetup(BaseSetup):
     async def _step1_api_keys(self):
         """Onboarding step 1: Collect API keys."""
         message = (
-            "Welcome to Sidekick!\n"
+            f"Welcome to {APP_NAME}!\n"
             "Let's get you setup. First, we'll need to set some environment variables.\n"
             "Skip the ones you don't need."
         )

@@ -3,6 +3,7 @@ Tool confirmation UI components, separated from business logic.
 """
 
 from sidekick import config
+from sidekick.constants import APP_NAME, TOOL_UPDATE_FILE, TOOL_WRITE_FILE
 from sidekick.core.tool_handler import ToolConfirmationRequest, ToolConfirmationResponse
 from sidekick.types import ToolArgs
 from sidekick.ui import console as ui
@@ -57,11 +58,11 @@ class ToolUI:
             str: Formatted arguments for display.
         """
         # Show diff between `target` and `patch` on file updates
-        if tool_name == "update_file":
+        if tool_name == TOOL_UPDATE_FILE:
             return render_file_diff(args["target"], args["patch"], ui.colors)
 
         # Show file content on write_file
-        elif tool_name == "write_file":
+        elif tool_name == TOOL_WRITE_FILE:
             return self._create_code_block(args["filepath"], args["content"])
 
         # Default to showing key and value on new line
@@ -103,7 +104,7 @@ class ToolUI:
 
         await ui.print("  1. Yes (default)")
         await ui.print("  2. Yes, and don't ask again for commands like this")
-        await ui.print("  3. No, and tell Sidekick what to do differently")
+        await ui.print(f"  3. No, and tell {APP_NAME} what to do differently")
         resp = (
             await ui.input(session_key="tool_confirm", pretext="  Choose an option [1/2/3]: ")
             or "1"
@@ -136,7 +137,7 @@ class ToolUI:
 
         ui.sync_print("  1. Yes (default)")
         ui.sync_print("  2. Yes, and don't ask again for commands like this")
-        ui.sync_print("  3. No, and tell Sidekick what to do differently")
+        ui.sync_print(f"  3. No, and tell {APP_NAME} what to do differently")
         resp = input("  Choose an option [1/2/3]: ").strip() or "1"
 
         if resp == "2":

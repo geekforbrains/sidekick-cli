@@ -11,6 +11,13 @@ from rich.pretty import Pretty
 from rich.table import Table
 
 from sidekick import config, session
+from sidekick.constants import (APP_NAME, CMD_CLEAR, CMD_COMPACT, CMD_DUMP, CMD_EXIT, CMD_HELP,
+                                CMD_MODEL, CMD_UNDO, CMD_YOLO, DESC_CLEAR, DESC_COMPACT, DESC_DUMP,
+                                DESC_EXIT, DESC_HELP, DESC_MODEL, DESC_MODEL_DEFAULT,
+                                DESC_MODEL_SWITCH, DESC_UNDO, DESC_YOLO, MSG_UPDATE_AVAILABLE,
+                                MSG_UPDATE_INSTRUCTION, MSG_VERSION_DISPLAY,
+                                PANEL_AVAILABLE_COMMANDS, PANEL_ERROR, PANEL_MESSAGE_HISTORY,
+                                PANEL_MODELS, UI_COLORS, UI_PROMPT_PREFIX, UI_THINKING_MESSAGE)
 from sidekick.exceptions import SidekickAbort
 from sidekick.utils.file_utils import DotDict
 
@@ -24,16 +31,7 @@ BANNER = """\
 
 
 console = Console()
-colors = DotDict(
-    {
-        "primary": "medium_purple1",
-        "secondary": "medium_purple3",
-        "success": "green",
-        "warning": "orange1",
-        "error": "red",
-        "muted": "grey62",
-    }
-)
+colors = DotDict(UI_COLORS)
 
 
 # =============================================================================
@@ -103,7 +101,7 @@ def markdown(text: str):
 
 async def spinner(show=True, spinner_obj=None):
     icon = "star2"
-    message = "[bold green]Thinking..."
+    message = UI_THINKING_MESSAGE
 
     # For backward compatibility, try to use global session if no spinner_obj provided
     if spinner_obj is None and hasattr(session, "spinner"):
@@ -146,11 +144,11 @@ async def print(message, **kwargs):
 
 
 async def agent(text: str, bottom=1):
-    await panel("Sidekick", Markdown(text), bottom=bottom, border_style=colors.primary)
+    await panel(APP_NAME, Markdown(text), bottom=bottom, border_style=colors.primary)
 
 
 async def error(text: str):
-    await panel("Error", text, style=colors.error)
+    await panel(PANEL_ERROR, text, style=colors.error)
 
 
 async def dump_messages(messages_list=None):
@@ -159,14 +157,14 @@ async def dump_messages(messages_list=None):
         messages = Pretty(session.messages)
     else:
         messages = Pretty(messages_list)
-    await panel("Message History", messages, style=colors.muted)
+    await panel(PANEL_MESSAGE_HISTORY, messages, style=colors.muted)
 
 
 async def models():
     model_ids = list(config.MODELS.keys())
     model_list = "\n".join([f"{index} - {model}" for index, model in enumerate(model_ids)])
     text = f"Current model: {session.current_model}\n\n{model_list}"
-    await panel("Models", text, border_style=colors.muted)
+    await panel(PANEL_MODELS, text, border_style=colors.muted)
 
 
 async def help():
@@ -178,22 +176,22 @@ async def help():
     table.add_column("Description", style="white")
 
     commands = [
-        ("/help", "Show this help message"),
-        ("/clear", "Clear the conversation history"),
-        ("/dump", "Show the current conversation history"),
-        ("/yolo", "Toggle confirmation prompts on/off"),
-        ("/undo", "Undo the last file change"),
-        ("/compact", "Summarize the conversation context"),
-        ("/model", "List available models"),
-        ("/model <n>", "Switch to a specific model"),
-        ("/model <n> default", "Set a model as the default"),
-        ("exit", "Exit the application"),
+        (CMD_HELP, DESC_HELP),
+        (CMD_CLEAR, DESC_CLEAR),
+        (CMD_DUMP, DESC_DUMP),
+        (CMD_YOLO, DESC_YOLO),
+        (CMD_UNDO, DESC_UNDO),
+        (CMD_COMPACT, DESC_COMPACT),
+        (CMD_MODEL, DESC_MODEL),
+        (f"{CMD_MODEL} <n>", DESC_MODEL_SWITCH),
+        (f"{CMD_MODEL} <n> default", DESC_MODEL_DEFAULT),
+        (CMD_EXIT, DESC_EXIT),
     ]
 
     for cmd, desc in commands:
         table.add_row(cmd, desc)
 
-    await panel("Available Commands", table, border_style=colors.muted)
+    await panel(PANEL_AVAILABLE_COMMANDS, table, border_style=colors.muted)
 
 
 async def tool_confirm(title, content, filepath=None):
@@ -243,7 +241,7 @@ async def usage(usage):
 
 
 async def version():
-    await info(f"Sidekick CLI {config.VERSION}")
+    await info(MSG_VERSION_DISPLAY.format(version=config.VERSION))
 
 
 async def banner():
@@ -260,8 +258,8 @@ async def clear():
 
 
 async def update_available(latest_version):
-    await warning(f"Update available: v{latest_version}")
-    await muted("Exit, and run: [bold]pip install --upgrade sidekick-cli")
+    await warning(MSG_UPDATE_AVAILABLE.format(latest_version=latest_version))
+    await muted(MSG_UPDATE_INSTRUCTION)
 
 
 # =============================================================================
@@ -271,7 +269,7 @@ async def update_available(latest_version):
 
 async def input(
     session_key: str,
-    pretext: str = "λ ",
+    pretext: str = UI_PROMPT_PREFIX,
     is_password: bool = False,
     validator: Validator = None,
     multiline=False,

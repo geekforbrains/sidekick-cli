@@ -1,3 +1,4 @@
+from sidekick.constants import GUIDE_FILE_NAME, TOOL_READ_FILE
 from sidekick.types import UserConfig
 
 DEFAULT_USER_CONFIG: UserConfig = {
@@ -9,8 +10,8 @@ DEFAULT_USER_CONFIG: UserConfig = {
     },
     "settings": {
         "max_retries": 10,
-        "tool_ignore": ["read_file"],
-        "guide_file": "SIDEKICK.md",
+        "tool_ignore": [TOOL_READ_FILE],
+        "guide_file": GUIDE_FILE_NAME,
     },
     "mcpServers": {},
 }

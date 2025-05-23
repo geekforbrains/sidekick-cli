@@ -1,5 +1,7 @@
 import os
 
+from sidekick.constants import (ERROR_FILE_DECODE, ERROR_FILE_DECODE_DETAILS, ERROR_FILE_NOT_FOUND,
+                                ERROR_FILE_TOO_LARGE, MAX_FILE_SIZE, MSG_FILE_SIZE_LIMIT)
 from sidekick.tools.base import FileBasedTool
 from sidekick.types import FilePath, ToolResult
 from sidekick.ui import console as ui
@@ -25,11 +27,8 @@ class ReadFileTool(FileBasedTool):
             Exception: Any file reading errors
         """
         # Add a size limit to prevent reading huge files
-        if os.path.getsize(filepath) > 100 * 1024:  # 100KB limit
-            err_msg = (
-                f"Error: File '{filepath}' is too large (> 100KB). "
-                f"Please specify a smaller file or use other tools to process it."
-            )
+        if os.path.getsize(filepath) > MAX_FILE_SIZE:
+            err_msg = ERROR_FILE_TOO_LARGE.format(filepath=filepath) + MSG_FILE_SIZE_LIMIT
             if self.ui:
                 await self.ui.error(err_msg)
             return err_msg
@@ -41,11 +40,12 @@ class ReadFileTool(FileBasedTool):
     async def _handle_error(self, error: Exception, filepath: FilePath = None) -> ToolResult:
         """Handle errors with specific messages for common cases."""
         if isinstance(error, FileNotFoundError):
-            err_msg = f"Error: File not found at '{filepath}'."
+            err_msg = ERROR_FILE_NOT_FOUND.format(filepath=filepath)
         elif isinstance(error, UnicodeDecodeError):
             err_msg = (
-                f"Error reading file '{filepath}': Could not decode using UTF-8. "
-                f"It might be a binary file or use a different encoding. {error}"
+                ERROR_FILE_DECODE.format(filepath=filepath)
+                + " "
+                + ERROR_FILE_DECODE_DETAILS.format(error=error)
             )
         else:
             # Use parent class handling for other errors

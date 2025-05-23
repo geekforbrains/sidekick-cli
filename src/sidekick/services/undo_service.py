@@ -5,6 +5,8 @@ from pathlib import Path
 from pydantic_ai.messages import ModelResponse, TextPart
 
 from sidekick import session
+from sidekick.constants import (ERROR_UNDO_INIT, UNDO_DISABLED_HOME, UNDO_DISABLED_NO_GIT,
+                                UNDO_GIT_TIMEOUT, UNDO_INITIAL_COMMIT)
 from sidekick.exceptions import GitOperationError
 from sidekick.ui import console as ui
 from sidekick.utils.system import get_session_dir
@@ -46,11 +48,11 @@ def init_undo_system():
     home_dir = Path.home()
 
     if cwd == home_dir:
-        ui.warning("Undo system disabled, running from home directory")
+        ui.warning(UNDO_DISABLED_HOME)
         return False
 
     if not is_in_git_project():
-        ui.warning("Undo system disable, not in a git project")
+        ui.warning(UNDO_DISABLED_NO_GIT)
         return False
 
     # Get the session directory path
@@ -75,7 +77,7 @@ def init_undo_system():
 
         # Create initial commit
         subprocess.run(
-            ["git", git_dir_arg, "commit", "-m", "Initial commit for sidekick undo history"],
+            ["git", git_dir_arg, "commit", "-m", UNDO_INITIAL_COMMIT],
             capture_output=True,
             check=True,
             timeout=5,
@@ -83,14 +85,12 @@ def init_undo_system():
 
         return True
     except subprocess.TimeoutExpired as e:
-        error = GitOperationError(
-            operation="init", message="Git initialization timed out", original_error=e
-        )
+        error = GitOperationError(operation="init", message=UNDO_GIT_TIMEOUT, original_error=e)
         ui.warning(str(error))
         return False
     except Exception as e:
         error = GitOperationError(operation="init", message=str(e), original_error=e)
-        ui.warning(f"Error initializing undo system: {e}")
+        ui.warning(ERROR_UNDO_INIT.format(e=e))
         return False
 
 
