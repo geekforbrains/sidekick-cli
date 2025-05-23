@@ -1,5 +1,6 @@
 import json
 from asyncio.exceptions import CancelledError
+from typing import Any
 
 from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.application.current import get_app
@@ -14,6 +15,7 @@ from sidekick.exceptions import SidekickAbort
 from sidekick.utils import user_config
 from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
 from sidekick.services.undo_service import perform_undo
+from .commands import CommandRegistry, CommandContext
 
 
 def _parse_args(args):
@@ -193,96 +195,35 @@ async def _tool_handler(part, node, state_manager: StateManager):
         state_manager.session.spinner.start()
 
 
-async def _toggle_yolo(state_manager: StateManager):
-    state_manager.session.yolo = not state_manager.session.yolo
-    if state_manager.session.yolo:
-        await ui.success("Ooh shit, its YOLO time!\n")
-    else:
-        await ui.info("Pfft, boring...\n")
+# Initialize command registry
+_command_registry = CommandRegistry()
+_command_registry.register_all_default_commands()
 
 
-async def _dump_messages(state_manager: StateManager):
-    await ui.dump_messages(state_manager.session.messages)
-
-
-async def _clear_screen(state_manager: StateManager):
-    await ui.clear()
-    state_manager.session.messages = []
-
-
-async def _show_help():
-    await ui.help()
-
-
-async def _perform_undo():
-    success, message = perform_undo()
-    if success:
-        await ui.success(message)
-    else:
-        await ui.warning(message)
-
-
-async def _compact_context(state_manager: StateManager):
-    """Get the current agent, create a summary of contenxt, and trim message history"""
-    await process_request("Summarize the conversation so far", state_manager, output=False)
-    await ui.success("Context history has been summarized and truncated.")
-    state_manager.session.messages = state_manager.session.messages[-2:]
-
-
-async def _handle_model_command(
-    state_manager: StateManager, model_index: int = None, action: str = None
-):
-    if model_index:
-        models = list(config.MODELS.keys())
-        model = models[int(model_index)]
-        state_manager.session.current_model = model
-        if action == "default":
-            user_config.set_default_model(model)
-            await ui.muted("Updating default model")
-        return "restart"
-    else:
-        await ui.models()
-
-
-async def _handle_command(command: str, state_manager: StateManager) -> bool:
+async def _handle_command(command: str, state_manager: StateManager) -> Any:
     """
-    Handles a command string.
+    Handles a command string using the command registry.
 
     Args:
         command: The command string entered by the user.
         state_manager: The state manager instance.
 
     Returns:
-        True if the command was handled, False otherwise.
+        Command result (varies by command).
     """
-    cmd_lower = command.lower()
-    parts = cmd_lower.split()
-    base_command = parts[0]
-
-    # Commands that need state_manager
-    state_commands = {
-        "/yolo": lambda: _toggle_yolo(state_manager),
-        "/clear": lambda: _clear_screen(state_manager),
-        "/compact": lambda: _compact_context(state_manager),
-        "/dump": lambda: _dump_messages(state_manager),
-        "/model": lambda *args: _handle_model_command(state_manager, *args),
-    }
-
-    # Commands that don't need state_manager
-    static_commands = {
-        "/help": _show_help,
-        "/undo": _perform_undo,
-    }
-
-    if base_command in state_commands:
-        if base_command == "/model":
-            return await state_commands[base_command](*parts[1:])
-        else:
-            return await state_commands[base_command]()
-    elif base_command in static_commands:
-        return await static_commands[base_command]()
-    else:
-        await ui.error(f"Unknown command: {command}")
+    # Create command context
+    context = CommandContext(
+        state_manager=state_manager
+    )
+    
+    try:
+        # Set the process_request callback for commands that need it
+        _command_registry.set_process_request_callback(process_request)
+        
+        # Execute the command
+        return await _command_registry.execute(command, context)
+    except ValueError as e:
+        await ui.error(str(e))
 
 
 async def process_request(text: str, state_manager: StateManager, output: bool = True):
