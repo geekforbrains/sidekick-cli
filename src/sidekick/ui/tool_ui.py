@@ -3,13 +3,16 @@ Tool confirmation UI components, separated from business logic.
 """
 
 from rich.markdown import Markdown
+from rich.padding import Padding
+from rich.panel import Panel
 
 from sidekick.configuration.settings import ApplicationSettings
-from sidekick.constants import APP_NAME, TOOL_UPDATE_FILE, TOOL_WRITE_FILE
+from sidekick.constants import APP_NAME, TOOL_UPDATE_FILE, TOOL_WRITE_FILE, UI_COLORS
 from sidekick.core.tool_handler import ToolConfirmationRequest, ToolConfirmationResponse
 from sidekick.types import ToolArgs
 from sidekick.ui import console as ui
 from sidekick.utils.diff_utils import render_file_diff
+from sidekick.utils.file_utils import DotDict
 from sidekick.utils.text_utils import ext_to_lang, key_to_title
 
 
@@ -17,7 +20,7 @@ class ToolUI:
     """Handles tool confirmation UI presentation."""
 
     def __init__(self):
-        pass
+        self.colors = DotDict(UI_COLORS)
 
     def _get_tool_title(self, tool_name: str) -> str:
         """
@@ -63,7 +66,7 @@ class ToolUI:
         """
         # Show diff between `target` and `patch` on file updates
         if tool_name == TOOL_UPDATE_FILE:
-            return render_file_diff(args["target"], args["patch"], ui.colors)
+            return render_file_diff(args["target"], args["patch"], self.colors)
 
         # Show file content on write_file
         elif tool_name == TOOL_WRITE_FILE:
@@ -140,14 +143,19 @@ class ToolUI:
         title = self._get_tool_title(request.tool_name)
         content = self._render_args(request.tool_name, request.args)
 
-        # Display styled confirmation panel using sync UI functions
-        ui.sync_tool_confirm(title, content)
-        if request.filepath:
-            ui.sync_print(f"File: {request.filepath}", style=ui.colors.muted)
+        # Display styled confirmation panel using direct console output
+        # Avoid using sync wrappers that might create event loop conflicts
+        panel_obj = Panel(
+            Padding(content, 1), title=title, title_align="left", border_style=self.colors.warning
+        )
+        ui.console.print(Padding(panel_obj, (0, 0, 0, 0)))
 
-        ui.sync_print("  1. Yes (default)")
-        ui.sync_print("  2. Yes, and don't ask again for commands like this")
-        ui.sync_print(f"  3. No, and tell {APP_NAME} what to do differently")
+        if request.filepath:
+            ui.console.print(f"File: {request.filepath}", style=self.colors.muted)
+
+        ui.console.print("  1. Yes (default)")
+        ui.console.print("  2. Yes, and don't ask again for commands like this")
+        ui.console.print(f"  3. No, and tell {APP_NAME} what to do differently")
         resp = input("  Choose an option [1/2/3]: ").strip() or "1"
 
         if resp == "2":
