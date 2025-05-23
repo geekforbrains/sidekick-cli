@@ -1,11 +1,11 @@
-from typing import Dict, Any
 from dataclasses import dataclass
+from typing import Dict
 
 
 @dataclass
 class ModelPricing:
     input: float
-    cached_input: float  
+    cached_input: float
     output: float
 
 
@@ -17,7 +17,7 @@ class ModelConfig:
 class ModelRegistry:
     def __init__(self):
         self._models = self._load_default_models()
-    
+
     def _load_default_models(self) -> Dict[str, ModelConfig]:
         return {
             "anthropic:claude-opus-4-20250514": ModelConfig(
@@ -54,9 +54,9 @@ class ModelRegistry:
                 pricing=ModelPricing(input=1.10, cached_input=0.55, output=4.40)
             ),
         }
-    
+
     def get_model(self, name: str) -> ModelConfig:
         return self._models.get(name)
-    
+
     def list_models(self) -> Dict[str, ModelConfig]:
         return self._models.copy()

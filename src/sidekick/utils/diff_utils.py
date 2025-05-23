@@ -1,4 +1,5 @@
 import difflib
+
 from rich.text import Text
 
 

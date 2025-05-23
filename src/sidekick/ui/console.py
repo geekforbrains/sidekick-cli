@@ -106,20 +106,20 @@ async def spinner(show=True, spinner_obj=None):
     message = "[bold green]Thinking..."
 
     # For backward compatibility, try to use global session if no spinner_obj provided
-    if spinner_obj is None and hasattr(session, 'spinner'):
+    if spinner_obj is None and hasattr(session, "spinner"):
         spinner_obj = session.spinner
-    
+
     if not spinner_obj:
         spinner_obj = await run_in_terminal(lambda: console.status(message, spinner=icon))
         # Try to store it back in global session for backward compatibility
-        if hasattr(session, 'spinner'):
+        if hasattr(session, "spinner"):
             session.spinner = spinner_obj
 
     if show:
         spinner_obj.start()
     else:
         spinner_obj.stop()
-    
+
     return spinner_obj
 
 

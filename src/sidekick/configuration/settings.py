@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Dict, List, Any
 
 
 class PathConfig:
@@ -16,7 +15,7 @@ class ApplicationSettings:
         self.paths = PathConfig()
         self.internal_tools = [
             "read_file",
-            "run_command", 
+            "run_command",
             "update_file",
             "write_file",
         ]

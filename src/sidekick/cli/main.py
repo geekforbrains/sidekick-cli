@@ -3,10 +3,10 @@ import asyncio
 import typer
 
 from sidekick import config
-from sidekick.ui import console as ui
-from sidekick.core.state import StateManager
 from sidekick.cli.repl import repl
+from sidekick.core.state import StateManager
 from sidekick.setup import setup
+from sidekick.ui import console as ui
 from sidekick.utils.system import check_for_updates
 
 app = typer.Typer(help=config.NAME)

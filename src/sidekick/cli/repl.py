@@ -7,15 +7,14 @@ from prompt_toolkit.application.current import get_app
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from sidekick import config
-from sidekick.ui import console as ui
 from sidekick.core.agents import main as agent
 from sidekick.core.agents.main import patch_tool_messages
 from sidekick.core.state import StateManager
 from sidekick.exceptions import SidekickAbort
-from sidekick.utils import user_config
+from sidekick.ui import console as ui
 from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
-from sidekick.services.undo_service import perform_undo
-from .commands import CommandRegistry, CommandContext
+
+from .commands import CommandContext, CommandRegistry
 
 
 def _parse_args(args):
@@ -212,14 +211,12 @@ async def _handle_command(command: str, state_manager: StateManager) -> Any:
         Command result (varies by command).
     """
     # Create command context
-    context = CommandContext(
-        state_manager=state_manager
-    )
-    
+    context = CommandContext(state_manager=state_manager)
+
     try:
         # Set the process_request callback for commands that need it
         _command_registry.set_process_request_callback(process_request)
-        
+
         # Execute the command
         return await _command_registry.execute(command, context)
     except ValueError as e:

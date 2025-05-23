@@ -6,7 +6,7 @@ def key_to_title(key: str, uppercase_words: Set[str] = None) -> str:
     """Convert key to title, replacing underscores with spaces and capitalizing words."""
     if uppercase_words is None:
         uppercase_words = {"api", "id", "url"}
-    
+
     words = key.split("_")
     result_words = []
     for word in words:
@@ -17,7 +17,7 @@ def key_to_title(key: str, uppercase_words: Set[str] = None) -> str:
             result_words.append(word[0].upper() + word[1:].lower())
         else:
             result_words.append("")
-    
+
     return " ".join(result_words)
 
 

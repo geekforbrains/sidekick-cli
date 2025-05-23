@@ -1,7 +1,7 @@
 # Backward compatibility imports
+from .configuration.defaults import DEFAULT_USER_CONFIG
 from .configuration.models import ModelRegistry
 from .configuration.settings import ApplicationSettings
-from .configuration.defaults import DEFAULT_USER_CONFIG
 
 # Create global instances for backward compatibility
 _app_settings = ApplicationSettings()
