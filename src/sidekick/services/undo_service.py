@@ -1,6 +1,7 @@
 import subprocess
 import time
 from pathlib import Path
+from typing import Optional, Tuple
 
 from pydantic_ai.messages import ModelResponse, TextPart
 
@@ -12,7 +13,7 @@ from sidekick.ui import console as ui
 from sidekick.utils.system import get_session_dir
 
 
-def is_in_git_project(directory=None):
+def is_in_git_project(directory: Optional[Path] = None) -> bool:
     """
     Recursively check if the given directory is inside a git project.
 
@@ -34,7 +35,7 @@ def is_in_git_project(directory=None):
     return is_in_git_project(directory.parent)
 
 
-def init_undo_system(state_manager: StateManager):
+def init_undo_system(state_manager: StateManager) -> bool:
     """
     Initialize the undo system by creating a Git repository
     in the ~/.sidekick/sessions/<session-id> directory.
@@ -97,7 +98,9 @@ def init_undo_system(state_manager: StateManager):
         return False
 
 
-def commit_for_undo(message_prefix="sidekick", state_manager: StateManager = None):
+def commit_for_undo(
+    message_prefix: str = "sidekick", state_manager: Optional[StateManager] = None
+) -> bool:
     """
     Commit the current state to the undo repository.
 
@@ -151,7 +154,7 @@ def commit_for_undo(message_prefix="sidekick", state_manager: StateManager = Non
         return False
 
 
-def perform_undo(state_manager: StateManager):
+def perform_undo(state_manager: StateManager) -> Tuple[bool, str]:
     """
     Undo the most recent change by resetting to the previous commit.
     Also adds a system message to the chat history to inform the AI

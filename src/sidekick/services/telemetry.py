@@ -1,14 +1,17 @@
 import os
+from typing import Any, Callable, Dict, List, Optional
 
 import sentry_sdk
 
 from sidekick.core.state import StateManager
 
 
-def _create_before_send_callback(state_manager: StateManager):
+def _create_before_send_callback(
+    state_manager: StateManager,
+) -> Callable[[Dict[str, Any], Dict[str, Any]], Optional[Dict[str, Any]]]:
     """Create a before_send callback with access to state_manager."""
 
-    def _before_send(event, hint):
+    def _before_send(event: Dict[str, Any], hint: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Filter sensitive data from Sentry events."""
         if not state_manager.session.telemetry_enabled:
             return None
@@ -20,7 +23,7 @@ def _create_before_send_callback(state_manager: StateManager):
                     headers[key] = "[Filtered]"
 
         if event.get("extra") and event["extra"].get("sys.argv"):
-            args = event["extra"]["sys.argv"]
+            args: List[str] = event["extra"]["sys.argv"]
             for i, arg in enumerate(args):
                 if "key" in arg.lower() or "token" in arg.lower() or "secret" in arg.lower():
                     args[i] = "[Filtered]"
@@ -33,7 +36,7 @@ def _create_before_send_callback(state_manager: StateManager):
     return _before_send
 
 
-def setup(state_manager: StateManager):
+def setup(state_manager: StateManager) -> None:
     """Setup Sentry for error reporting if telemetry is enabled."""
     if not state_manager.session.telemetry_enabled:
         return
@@ -57,5 +60,5 @@ def setup(state_manager: StateManager):
     )
 
 
-def capture_exception(*args, **kwargs):
+def capture_exception(*args: Any, **kwargs: Any) -> Optional[str]:
     return sentry_sdk.capture_exception(*args, **kwargs)

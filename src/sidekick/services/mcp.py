@@ -1,6 +1,6 @@
 import os
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, AsyncIterator, List, Optional, Tuple
 
 from pydantic_ai.mcp import MCPServerStdio
 
@@ -8,6 +8,8 @@ from sidekick.exceptions import MCPError
 from sidekick.types import MCPServers
 
 if TYPE_CHECKING:
+    from mcp.client.stdio import ReadStream, WriteStream
+
     from sidekick.core.state import StateManager
 
 
@@ -21,7 +23,7 @@ class QuietMCPServer(MCPServerStdio):
     """
 
     @asynccontextmanager
-    async def client_streams(self):  # type: ignore[override]
+    async def client_streams(self) -> AsyncIterator[Tuple["ReadStream", "WriteStream"]]:
         """Start the subprocess exactly like the parent class but silence *stderr*."""
         # Local import to avoid cycles
         from mcp.client.stdio import StdioServerParameters, stdio_client
@@ -36,7 +38,8 @@ class QuietMCPServer(MCPServerStdio):
         # server writes to *stderr* is discarded.
         #
         # This is to help with noisy MCP's that have options for verbosity
-        with open(os.devnull, "w", encoding=server_params.encoding) as devnull:
+        encoding: Optional[str] = getattr(server_params, "encoding", None)
+        with open(os.devnull, "w", encoding=encoding) as devnull:
             async with stdio_client(server=server_params, errlog=devnull) as (
                 read_stream,
                 write_stream,
