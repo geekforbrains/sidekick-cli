@@ -1,3 +1,9 @@
+"""Module: sidekick.core.setup.undo_setup
+
+Undo system initialization for the Sidekick CLI.
+Sets up file tracking and state management for undo operations.
+"""
+
 from sidekick.core.setup.base import BaseSetup
 from sidekick.core.state import StateManager
 from sidekick.services.undo_service import init_undo_system

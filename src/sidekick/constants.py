@@ -1,3 +1,10 @@
+"""
+Module: sidekick.constants
+
+Global constants and configuration values for the Sidekick CLI application.
+Centralizes all magic strings, UI text, error messages, and application constants.
+"""
+
 # Application info
 APP_NAME = "Sidekick"
 APP_VERSION = "0.4.1"

@@ -1,3 +1,11 @@
+"""
+Module: sidekick.configuration.defaults
+
+Default configuration values for the Sidekick CLI.
+Provides baseline settings for user configuration including API keys,
+tool settings, and MCP servers.
+"""
+
 from sidekick.constants import GUIDE_FILE_NAME, TOOL_READ_FILE
 from sidekick.types import UserConfig
 

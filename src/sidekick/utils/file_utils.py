@@ -1,3 +1,10 @@
+"""
+Module: sidekick.utils.file_utils
+
+Provides file system utilities and helper classes.
+Includes DotDict for dot notation access and stdout capture functionality.
+"""
+
 import io
 import sys
 from contextlib import contextmanager

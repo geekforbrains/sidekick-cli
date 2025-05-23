@@ -1,3 +1,9 @@
+"""Module: sidekick.core.state
+
+State management system for session data in Sidekick CLI.
+Provides centralized state tracking for agents, messages, configurations, and session information.
+"""
+
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Optional

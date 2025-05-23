@@ -1,3 +1,10 @@
+"""
+Module: sidekick.cli.repl
+
+Interactive REPL (Read-Eval-Print Loop) implementation for Sidekick.
+Handles user input, command processing, and agent interaction in an interactive shell.
+"""
+
 import json
 from asyncio.exceptions import CancelledError
 

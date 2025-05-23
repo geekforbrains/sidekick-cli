@@ -1,3 +1,9 @@
+"""Module: sidekick.core.setup.telemetry_setup
+
+Telemetry service initialization for the Sidekick CLI.
+Sets up error tracking and usage telemetry when enabled.
+"""
+
 from sidekick.core.setup.base import BaseSetup
 from sidekick.core.state import StateManager
 from sidekick.services import telemetry

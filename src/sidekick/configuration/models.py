@@ -1,3 +1,10 @@
+"""
+Module: sidekick.configuration.models
+
+Configuration model definitions and model registry for AI models.
+Manages available AI models, their configurations, and pricing information.
+"""
+
 from sidekick.types import ModelConfig, ModelName, ModelPricing
 from sidekick.types import ModelRegistry as ModelRegistryType
 

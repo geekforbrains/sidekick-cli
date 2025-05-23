@@ -1,3 +1,10 @@
+"""
+Module: sidekick.services.mcp
+
+Provides Model Context Protocol (MCP) server management functionality.
+Handles MCP server initialization, configuration validation, and client connections.
+"""
+
 import os
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, AsyncIterator, List, Optional, Tuple

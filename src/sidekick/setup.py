@@ -1,3 +1,10 @@
+"""
+Module: sidekick.setup
+
+Package setup and metadata configuration for the Sidekick CLI.
+Provides high-level setup functions for initializing the application and its agents.
+"""
+
 from typing import Any, Optional
 
 from sidekick.core.setup import (AgentSetup, ConfigSetup, EnvironmentSetup, SetupCoordinator,

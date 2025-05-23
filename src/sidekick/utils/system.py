@@ -1,3 +1,11 @@
+"""
+Module: sidekick.utils.system
+
+Provides system information and directory management utilities.
+Handles session management, device identification, file listing
+with gitignore support, and update checking.
+"""
+
 import fnmatch
 import os
 import subprocess

@@ -1,3 +1,9 @@
+"""Module: sidekick.core.setup.coordinator
+
+Setup orchestration and coordination for the Sidekick CLI.
+Manages the execution order and validation of all registered setup steps.
+"""
+
 from typing import List
 
 from sidekick.core.setup.base import BaseSetup

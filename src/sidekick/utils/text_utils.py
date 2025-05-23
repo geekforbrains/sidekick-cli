@@ -1,3 +1,10 @@
+"""
+Module: sidekick.utils.text_utils
+
+Provides text processing utilities.
+Includes file extension to language mapping and key formatting functions.
+"""
+
 import os
 from typing import Set
 

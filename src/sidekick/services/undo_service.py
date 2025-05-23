@@ -1,3 +1,10 @@
+"""
+Module: sidekick.services.undo_service
+
+Provides Git-based undo functionality for Sidekick operations.
+Manages automatic commits and rollback operations.
+"""
+
 import subprocess
 import time
 from pathlib import Path

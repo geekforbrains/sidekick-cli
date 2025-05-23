@@ -1,3 +1,9 @@
+"""Module: sidekick.core.setup.base
+
+Base setup step abstraction for the Sidekick CLI initialization process.
+Defines the contract that all setup steps must implement.
+"""
+
 from abc import ABC, abstractmethod
 
 from sidekick.core.state import StateManager

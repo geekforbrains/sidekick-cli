@@ -1,3 +1,10 @@
+"""
+Module: sidekick.configuration.settings
+
+Application settings management for the Sidekick CLI.
+Manages application paths, tool configurations, and runtime settings.
+"""
+
 from pathlib import Path
 
 from sidekick.constants import (APP_NAME, APP_VERSION, CONFIG_FILE_NAME, TOOL_READ_FILE,

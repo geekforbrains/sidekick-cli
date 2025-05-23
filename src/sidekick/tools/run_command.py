@@ -1,3 +1,10 @@
+"""
+Module: sidekick.tools.run_command
+
+Command execution tool for agent operations in the Sidekick application.
+Provides controlled shell command execution with output capture and truncation.
+"""
+
 import subprocess
 
 from sidekick.constants import (CMD_OUTPUT_FORMAT, CMD_OUTPUT_NO_ERRORS, CMD_OUTPUT_NO_OUTPUT,

@@ -1,3 +1,9 @@
+"""Module: sidekick.core.agents.main
+
+Main agent functionality and coordination for the Sidekick CLI.
+Provides agent creation, message processing, and tool call management.
+"""
+
 from datetime import datetime, timezone
 from typing import Optional
 

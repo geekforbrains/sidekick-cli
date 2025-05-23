@@ -1,3 +1,10 @@
+"""
+Module: sidekick.tools.write_file
+
+File writing tool for agent operations in the Sidekick application.
+Creates new files with automatic directory creation and overwrite protection.
+"""
+
 import os
 
 from pydantic_ai.exceptions import ModelRetry

@@ -1,3 +1,10 @@
+"""
+Module: sidekick.tools.update_file
+
+File update tool for agent operations in the Sidekick application.
+Enables safe text replacement in existing files with target/patch semantics.
+"""
+
 import os
 
 from pydantic_ai.exceptions import ModelRetry

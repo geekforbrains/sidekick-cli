@@ -1,3 +1,11 @@
+"""
+Module: sidekick.utils.user_configuration
+
+Provides user configuration file management.
+Handles loading, saving, and updating user preferences including
+model selection and MCP server settings.
+"""
+
 import json
 from json import JSONDecodeError
 from typing import TYPE_CHECKING, Optional

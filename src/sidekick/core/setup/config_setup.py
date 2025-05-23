@@ -1,3 +1,9 @@
+"""Module: sidekick.core.setup.config_setup
+
+Configuration system initialization for the Sidekick CLI.
+Handles user configuration loading, validation, and first-time setup onboarding.
+"""
+
 import json
 from pathlib import Path
 

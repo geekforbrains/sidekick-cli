@@ -1,3 +1,10 @@
+"""
+Module: sidekick.cli.main
+
+CLI entry point and main command handling for the Sidekick application.
+Manages application startup, version checking, and REPL initialization.
+"""
+
 import asyncio
 
 import typer

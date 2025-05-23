@@ -1,3 +1,9 @@
+"""Module: sidekick.core.setup.environment_setup
+
+Environment detection and configuration for the Sidekick CLI.
+Handles setting up environment variables from user configuration.
+"""
+
 import os
 
 from sidekick.core.setup.base import BaseSetup

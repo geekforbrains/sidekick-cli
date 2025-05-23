@@ -1,3 +1,10 @@
+"""
+Module: sidekick.services.telemetry
+
+Provides telemetry and error tracking functionality using Sentry.
+Manages Sentry SDK initialization and event callbacks.
+"""
+
 import os
 from typing import Any, Callable, Dict, List, Optional
 

@@ -1,3 +1,10 @@
+"""
+Module: sidekick.tools.read_file
+
+File reading tool for agent operations in the Sidekick application.
+Provides safe file reading with size limits and proper error handling.
+"""
+
 import os
 
 from sidekick.constants import (ERROR_FILE_DECODE, ERROR_FILE_DECODE_DETAILS, ERROR_FILE_NOT_FOUND,

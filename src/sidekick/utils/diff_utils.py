@@ -1,3 +1,10 @@
+"""
+Module: sidekick.utils.diff_utils
+
+Provides diff visualization utilities for file changes.
+Generates styled text diffs between original and modified content using the difflib library.
+"""
+
 import difflib
 
 from rich.text import Text
