@@ -8,6 +8,7 @@ from sidekick.services import telemetry
 from sidekick.services.undo_service import init_undo_system
 from sidekick.ui import console as ui
 from sidekick.utils import system, user_config
+from sidekick.utils.text_utils import key_to_title
 
 
 def _load_or_create_config(state_manager: StateManager):
@@ -44,10 +45,6 @@ async def _set_environment_variables(state_manager: StateManager):
             os.environ[key] = value
 
 
-def _key_to_title(key):
-    """Convert a provider env key to a title string."""
-    words = [word.title() for word in key.split("_")]
-    return " ".join(words).replace("Api", "API")
 
 
 def _merge_with_defaults(loaded_config):
@@ -78,7 +75,7 @@ async def _step1(state_manager: StateManager):
     await ui.panel("Setup", message, border_style=ui.colors.primary)
     env_keys = state_manager.session.user_config["env"].copy()
     for key in env_keys:
-        provider = _key_to_title(key)
+        provider = key_to_title(key)
         val = await ui.input("step1", pretext=f"  {provider}: ", is_password=True)
         val = val.strip()
         if val:
