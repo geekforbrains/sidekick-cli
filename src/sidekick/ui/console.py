@@ -101,21 +101,26 @@ def markdown(text: str):
     return Markdown(text)
 
 
-async def spinner(show=True):
+async def spinner(show=True, spinner_obj=None):
     icon = "star2"
     message = "[bold green]Thinking..."
 
-    if not session.spinner:
-        session.spinner = await run_in_terminal(lambda: console.status(message, spinner=icon))
+    # For backward compatibility, try to use global session if no spinner_obj provided
+    if spinner_obj is None and hasattr(session, 'spinner'):
+        spinner_obj = session.spinner
+    
+    if not spinner_obj:
+        spinner_obj = await run_in_terminal(lambda: console.status(message, spinner=icon))
+        # Try to store it back in global session for backward compatibility
+        if hasattr(session, 'spinner'):
+            session.spinner = spinner_obj
 
     if show:
-        session.spinner.start()
+        spinner_obj.start()
     else:
-        session.spinner.stop()
-        session.spinner = None
-
-        for prompt_session in session.input_sessions.values():
-            await run_in_terminal(lambda: prompt_session.app.invalidate())
+        spinner_obj.stop()
+    
+    return spinner_obj
 
 
 # =============================================================================

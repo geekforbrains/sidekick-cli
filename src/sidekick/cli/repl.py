@@ -287,7 +287,7 @@ async def _handle_command(command: str, state_manager: StateManager) -> bool:
 
 async def process_request(text: str, state_manager: StateManager, output: bool = True):
     """Process input using the agent, handling cancellation safely."""
-    await ui.spinner(True)
+    state_manager.session.spinner = await ui.spinner(True, state_manager.session.spinner)
     try:
         # Create a partial function that includes state_manager
         def tool_callback_with_state(part, node):
@@ -312,7 +312,7 @@ async def process_request(text: str, state_manager: StateManager, output: bool =
     except Exception as e:
         await ui.error(str(e))
     finally:
-        await ui.spinner(False)
+        await ui.spinner(False, state_manager.session.spinner)
         state_manager.session.current_task = None
 
         # Force refresh of the multiline input prompt to restore placeholder
