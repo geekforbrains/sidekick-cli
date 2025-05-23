@@ -132,7 +132,12 @@ class ConfigSetup(BaseSetup):
         env_keys = self.state_manager.session.user_config["env"].copy()
         for key in env_keys:
             provider = key_to_title(key)
-            val = await ui.input("step1", pretext=f"  {provider}: ", is_password=True)
+            val = await ui.input(
+                "step1",
+                pretext=f"  {provider}: ",
+                is_password=True,
+                state_manager=self.state_manager,
+            )
             val = val.strip()
             if val:
                 self.state_manager.session.user_config["env"][key] = val
@@ -151,5 +156,6 @@ class ConfigSetup(BaseSetup):
             "step2",
             pretext="  Default model (#): ",
             validator=ui.ModelValidator(len(model_ids)),
+            state_manager=self.state_manager,
         )
         self.state_manager.session.user_config["default_model"] = model_ids[int(choice)]

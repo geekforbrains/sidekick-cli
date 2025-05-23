@@ -4,9 +4,9 @@ from pathlib import Path
 
 from pydantic_ai.messages import ModelResponse, TextPart
 
-from sidekick import session
 from sidekick.constants import (ERROR_UNDO_INIT, UNDO_DISABLED_HOME, UNDO_DISABLED_NO_GIT,
                                 UNDO_GIT_TIMEOUT, UNDO_INITIAL_COMMIT)
+from sidekick.core.state import StateManager
 from sidekick.exceptions import GitOperationError
 from sidekick.ui import console as ui
 from sidekick.utils.system import get_session_dir
@@ -34,12 +34,15 @@ def is_in_git_project(directory=None):
     return is_in_git_project(directory.parent)
 
 
-def init_undo_system():
+def init_undo_system(state_manager: StateManager):
     """
     Initialize the undo system by creating a Git repository
     in the ~/.sidekick/sessions/<session-id> directory.
 
     Skip initialization if running from home directory or not in a git project.
+
+    Args:
+        state_manager: The StateManager instance.
 
     Returns:
         bool: True if the undo system was initialized, False otherwise.
@@ -56,7 +59,7 @@ def init_undo_system():
         return False
 
     # Get the session directory path
-    session_dir = get_session_dir()
+    session_dir = get_session_dir(state_manager)
     sidekick_git_dir = session_dir / ".git"
 
     # Check if already initialized
@@ -94,18 +97,21 @@ def init_undo_system():
         return False
 
 
-def commit_for_undo(message_prefix="sidekick"):
+def commit_for_undo(message_prefix="sidekick", state_manager: StateManager = None):
     """
     Commit the current state to the undo repository.
 
     Args:
         message_prefix (str): Prefix for the commit message.
+        state_manager: The StateManager instance.
 
     Returns:
         bool: True if the commit was successful, False otherwise.
     """
     # Get the session directory and git dir
-    session_dir = get_session_dir()
+    if state_manager is None:
+        raise ValueError("state_manager is required for commit_for_undo")
+    session_dir = get_session_dir(state_manager)
     sidekick_git_dir = session_dir / ".git"
 
     if not sidekick_git_dir.exists():
@@ -145,17 +151,20 @@ def commit_for_undo(message_prefix="sidekick"):
         return False
 
 
-def perform_undo():
+def perform_undo(state_manager: StateManager):
     """
     Undo the most recent change by resetting to the previous commit.
     Also adds a system message to the chat history to inform the AI
     that the last changes were undone.
 
+    Args:
+        state_manager: The StateManager instance.
+
     Returns:
         tuple: (bool, str) - Success status and message
     """
     # Get the session directory and git dir
-    session_dir = get_session_dir()
+    session_dir = get_session_dir(state_manager)
     sidekick_git_dir = session_dir / ".git"
 
     if not sidekick_git_dir.exists():
@@ -197,7 +206,7 @@ def perform_undo():
 
         # Add a system message to the chat history to inform the AI
         # about the undo operation
-        session.messages.append(
+        state_manager.session.messages.append(
             ModelResponse(
                 parts=[
                     TextPart(

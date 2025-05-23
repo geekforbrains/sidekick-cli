@@ -143,7 +143,7 @@ class UndoCommand(Command):
         return "Undo the last file operation"
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
-        success, message = perform_undo()
+        success, message = perform_undo(context.state_manager)
         if success:
             await ui.success(message)
         else:
@@ -195,7 +195,7 @@ class ModelCommand(Command):
     async def execute(self, args: CommandArgs, context: CommandContext) -> Optional[str]:
         if not args:
             # No arguments - list models
-            await ui.models()
+            await ui.models(context.state_manager)
             return None
 
         # Parse model index

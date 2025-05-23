@@ -19,7 +19,7 @@ class TelemetrySetup(BaseSetup):
 
     async def execute(self, force_setup: bool = False) -> None:
         """Setup telemetry for capturing exceptions and errors."""
-        telemetry.setup()
+        telemetry.setup(self.state_manager)
 
     async def validate(self) -> bool:
         """Validate that telemetry was set up correctly."""

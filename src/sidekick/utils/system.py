@@ -50,16 +50,17 @@ def get_sidekick_home():
     return home
 
 
-def get_session_dir():
+def get_session_dir(state_manager):
     """
     Get the path to the current session directory.
+
+    Args:
+        state_manager: The StateManager instance containing session info.
 
     Returns:
         Path: The path to the current session directory.
     """
-    from .. import session
-
-    session_dir = get_sidekick_home() / SESSIONS_SUBDIR / session.session_id
+    session_dir = get_sidekick_home() / SESSIONS_SUBDIR / state_manager.session.session_id
     session_dir.mkdir(exist_ok=True, parents=True)
     return session_dir
 
@@ -203,23 +204,24 @@ def get_device_id():
         return str(uuid.uuid4())
 
 
-def cleanup_session():
+def cleanup_session(state_manager):
     """
     Clean up the session directory after the CLI exits.
     Removes the session directory completely.
+
+    Args:
+        state_manager: The StateManager instance containing session info.
 
     Returns:
         bool: True if cleanup was successful, False otherwise.
     """
     try:
-        from .. import session
-
         # If no session ID was generated, nothing to clean up
-        if session.session_id is None:
+        if state_manager.session.session_id is None:
             return True
 
         # Get the session directory using the imported function
-        session_dir = get_session_dir()
+        session_dir = get_session_dir(state_manager)
 
         # If the directory exists, remove it
         if session_dir.exists():

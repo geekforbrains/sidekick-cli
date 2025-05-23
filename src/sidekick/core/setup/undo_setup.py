@@ -19,7 +19,7 @@ class UndoSetup(BaseSetup):
 
     async def execute(self, force_setup: bool = False) -> None:
         """Initialize the undo system."""
-        self.state_manager.session.undo_initialized = init_undo_system()
+        self.state_manager.session.undo_initialized = init_undo_system(self.state_manager)
 
     async def validate(self) -> bool:
         """Validate that undo system was initialized correctly."""

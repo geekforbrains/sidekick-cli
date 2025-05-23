@@ -65,7 +65,7 @@ async def _tool_confirm(tool_call, node, state_manager: StateManager):
     request = tool_handler.create_confirmation_request(tool_call.tool_name, args)
 
     # Show UI and get response
-    response = await _tool_ui.show_confirmation(request)
+    response = await _tool_ui.show_confirmation(request, state_manager)
 
     # Process the response
     if not tool_handler.process_confirmation(response, tool_call.tool_name):
@@ -146,7 +146,9 @@ async def _handle_command(command: str, state_manager: StateManager) -> CommandR
 
 async def process_request(text: str, state_manager: StateManager, output: bool = True):
     """Process input using the agent, handling cancellation safely."""
-    state_manager.session.spinner = await ui.spinner(True, state_manager.session.spinner)
+    state_manager.session.spinner = await ui.spinner(
+        True, state_manager.session.spinner, state_manager
+    )
     try:
         # Create a partial function that includes state_manager
         def tool_callback_with_state(part, node):
@@ -174,7 +176,7 @@ async def process_request(text: str, state_manager: StateManager, output: bool =
         agent_error.__cause__ = e  # Preserve the original exception chain
         await ui.error(str(e))
     finally:
-        await ui.spinner(False, state_manager.session.spinner)
+        await ui.spinner(False, state_manager.session.spinner, state_manager)
         state_manager.session.current_task = None
 
         # Force refresh of the multiline input prompt to restore placeholder

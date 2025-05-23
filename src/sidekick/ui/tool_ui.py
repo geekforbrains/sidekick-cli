@@ -83,7 +83,9 @@ class ToolUI:
                     content += f" {value}\n\n"
         return content.strip()
 
-    async def show_confirmation(self, request: ToolConfirmationRequest) -> ToolConfirmationResponse:
+    async def show_confirmation(
+        self, request: ToolConfirmationRequest, state_manager=None
+    ) -> ToolConfirmationResponse:
         """
         Show tool confirmation UI and get user response.
 
@@ -106,7 +108,11 @@ class ToolUI:
         await ui.print("  2. Yes, and don't ask again for commands like this")
         await ui.print(f"  3. No, and tell {APP_NAME} what to do differently")
         resp = (
-            await ui.input(session_key="tool_confirm", pretext="  Choose an option [1/2/3]: ")
+            await ui.input(
+                session_key="tool_confirm",
+                pretext="  Choose an option [1/2/3]: ",
+                state_manager=state_manager,
+            )
             or "1"
         )
 

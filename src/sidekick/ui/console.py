@@ -10,7 +10,7 @@ from rich.panel import Panel
 from rich.pretty import Pretty
 from rich.table import Table
 
-from sidekick import config, session
+from sidekick import config
 from sidekick.constants import (APP_NAME, CMD_CLEAR, CMD_COMPACT, CMD_DUMP, CMD_EXIT, CMD_HELP,
                                 CMD_MODEL, CMD_UNDO, CMD_YOLO, DESC_CLEAR, DESC_COMPACT, DESC_DUMP,
                                 DESC_EXIT, DESC_HELP, DESC_MODEL, DESC_MODEL_DEFAULT,
@@ -18,6 +18,7 @@ from sidekick.constants import (APP_NAME, CMD_CLEAR, CMD_COMPACT, CMD_DUMP, CMD_
                                 MSG_UPDATE_INSTRUCTION, MSG_VERSION_DISPLAY,
                                 PANEL_AVAILABLE_COMMANDS, PANEL_ERROR, PANEL_MESSAGE_HISTORY,
                                 PANEL_MODELS, UI_COLORS, UI_PROMPT_PREFIX, UI_THINKING_MESSAGE)
+from sidekick.core.state import StateManager
 from sidekick.exceptions import SidekickAbort
 from sidekick.utils.file_utils import DotDict
 
@@ -45,8 +46,14 @@ kb = KeyBindings()
 @kb.add("escape", eager=True)
 def _cancel(event):
     """Kill the running agent task, if any."""
-    if session.current_task and not session.current_task.done():
-        session.current_task.cancel()
+    # Key bindings can't easily access state_manager, so we'll handle this differently
+    # This will be handled in the REPL where state is available
+    if (
+        hasattr(event.app, "current_task")
+        and event.app.current_task
+        and not event.app.current_task.done()
+    ):
+        event.app.current_task.cancel()
         event.app.invalidate()
 
 
@@ -99,19 +106,19 @@ def markdown(text: str):
     return Markdown(text)
 
 
-async def spinner(show=True, spinner_obj=None):
+async def spinner(show=True, spinner_obj=None, state_manager: StateManager = None):
     icon = "star2"
     message = UI_THINKING_MESSAGE
 
-    # For backward compatibility, try to use global session if no spinner_obj provided
-    if spinner_obj is None and hasattr(session, "spinner"):
-        spinner_obj = session.spinner
+    # Get spinner from state manager if available
+    if spinner_obj is None and state_manager:
+        spinner_obj = state_manager.session.spinner
 
     if not spinner_obj:
         spinner_obj = await run_in_terminal(lambda: console.status(message, spinner=icon))
-        # Try to store it back in global session for backward compatibility
-        if hasattr(session, "spinner"):
-            session.spinner = spinner_obj
+        # Store it back in state manager if available
+        if state_manager:
+            state_manager.session.spinner = spinner_obj
 
     if show:
         spinner_obj.start()
@@ -151,19 +158,23 @@ async def error(text: str):
     await panel(PANEL_ERROR, text, style=colors.error)
 
 
-async def dump_messages(messages_list=None):
-    if messages_list is None:
-        # Fallback to global session for backward compatibility
-        messages = Pretty(session.messages)
-    else:
+async def dump_messages(messages_list=None, state_manager: StateManager = None):
+    if messages_list is None and state_manager:
+        # Get messages from state manager
+        messages = Pretty(state_manager.session.messages)
+    elif messages_list is not None:
         messages = Pretty(messages_list)
+    else:
+        # No messages available
+        messages = Pretty([])
     await panel(PANEL_MESSAGE_HISTORY, messages, style=colors.muted)
 
 
-async def models():
+async def models(state_manager: StateManager = None):
     model_ids = list(config.MODELS.keys())
     model_list = "\n".join([f"{index} - {model}" for index, model in enumerate(model_ids)])
-    text = f"Current model: {session.current_model}\n\n{model_list}"
+    current_model = state_manager.session.current_model if state_manager else "unknown"
+    text = f"Current model: {current_model}\n\n{model_list}"
     await panel(PANEL_MODELS, text, border_style=colors.muted)
 
 
@@ -276,23 +287,31 @@ async def input(
     key_bindings=None,
     placeholder=None,
     timeoutlen=0.05,
+    state_manager: StateManager = None,
 ):
     """
     Prompt for user input. Creates session for given key if it doesn't already exist.
 
     Args:
-        session (str): The session name for the prompt.
+        session_key (str): The session key for the prompt.
         pretext (str): The text to display before the input prompt.
         is_password (bool): Whether to mask the input.
+        state_manager (StateManager): The state manager for session storage.
 
     """
-    if session_key not in session.input_sessions:
-        session.input_sessions[session_key] = PromptSession(
+    if state_manager:
+        if session_key not in state_manager.session.input_sessions:
+            state_manager.session.input_sessions[session_key] = PromptSession(
+                key_bindings=key_bindings,
+                placeholder=placeholder,
+            )
+        prompt_session = state_manager.session.input_sessions[session_key]
+    else:
+        # Create a temporary session if no state manager
+        prompt_session = PromptSession(
             key_bindings=key_bindings,
             placeholder=placeholder,
         )
-
-    prompt_session = session.input_sessions[session_key]
 
     try:
         # # Ensure prompt is displayed correctly even after async output

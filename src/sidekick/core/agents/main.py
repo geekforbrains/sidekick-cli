@@ -43,7 +43,7 @@ def get_or_create_agent(model: ModelName, state_manager: StateManager) -> Pydant
 
 def patch_tool_messages(
     error_message: ErrorMessage = "Tool operation failed",
-    state_manager: Optional[StateManager] = None,
+    state_manager: StateManager = None,
 ):
     """
     Find any tool calls without responses and add synthetic error responses for them.
@@ -52,13 +52,10 @@ def patch_tool_messages(
     Ignores tools that have corresponding retry prompts as the model is already
     addressing them.
     """
-    # For backward compatibility, import session if state_manager is not provided
     if state_manager is None:
-        from sidekick import session
+        raise ValueError("state_manager is required for patch_tool_messages")
 
-        messages = session.messages
-    else:
-        messages = state_manager.session.messages
+    messages = state_manager.session.messages
 
     if not messages:
         return
