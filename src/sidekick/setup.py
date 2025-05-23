@@ -1,192 +1,43 @@
-import json
-import os
+from typing import Any, Optional
 
-from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
+from sidekick.core.setup import (AgentSetup, ConfigSetup, EnvironmentSetup, SetupCoordinator,
+                                 TelemetrySetup, UndoSetup)
 from sidekick.core.state import StateManager
-from sidekick.exceptions import SidekickConfigError
-from sidekick.services import telemetry
-from sidekick.services.undo_service import init_undo_system
-from sidekick.ui import console as ui
-from sidekick.utils import system, user_config
-from sidekick.utils.text_utils import key_to_title
 
 
-def _load_or_create_config(state_manager: StateManager):
+async def setup(run_setup: bool, state_manager: StateManager) -> None:
     """
-    Load user config from ~/.config/sidekick.json,
-    creating it with defaults if missing.
-    """
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-
-    loaded_config = user_config.load_config()
-    if loaded_config:
-        state_manager.session.user_config = loaded_config
-        return False
-    else:
-        state_manager.session.user_config = DEFAULT_CONFIG.copy()
-        user_config.save_config(state_manager)
-        return True
-
-
-async def _set_environment_variables(state_manager: StateManager):
-    """Set environment variables from the config file."""
-    if "env" not in state_manager.session.user_config or not isinstance(
-        state_manager.session.user_config["env"], dict
-    ):
-        state_manager.session.user_config["env"] = {}
-
-    env_dict = state_manager.session.user_config["env"]
-    for key, value in env_dict.items():
-        if not isinstance(value, str):
-            await ui.warning(f"Invalid env value in config: {key}")
-            continue
-        value = value.strip()
-        if value:
-            os.environ[key] = value
-
-
-def _merge_with_defaults(loaded_config):
-    """Merge loaded config with defaults to ensure all required keys exist."""
-    # Start with loaded config if available, otherwise use defaults
-    if loaded_config:
-        merged = loaded_config.copy()
-
-        # Only add missing top-level keys from defaults
-        for key, default_value in DEFAULT_CONFIG.items():
-            if key not in merged:
-                # Don't add empty env vars
-                if key == "env":
-                    continue
-                merged[key] = default_value
-
-        return merged
-    else:
-        return DEFAULT_CONFIG.copy()
-
-
-async def _step1(state_manager: StateManager):
-    message = (
-        "Welcome to Sidekick!\n"
-        "Let's get you setup. First, we'll need to set some environment variables.\n"
-        "Skip the ones you don't need."
-    )
-    await ui.panel("Setup", message, border_style=ui.colors.primary)
-    env_keys = state_manager.session.user_config["env"].copy()
-    for key in env_keys:
-        provider = key_to_title(key)
-        val = await ui.input("step1", pretext=f"  {provider}: ", is_password=True)
-        val = val.strip()
-        if val:
-            state_manager.session.user_config["env"][key] = val
-
-
-async def _step2(state_manager: StateManager):
-    message = "Which model would you like to use by default?\n\n"
-
-    model_ids = list(MODELS.keys())
-    for index, model_id in enumerate(model_ids):
-        message += f"  {index} - {model_id}\n"
-    message = message.strip()
-
-    await ui.panel("Default Model", message, border_style=ui.colors.primary)
-    choice = await ui.input(
-        "step2",
-        pretext="  Default model (#): ",
-        validator=ui.ModelValidator(len(model_ids)),
-    )
-    state_manager.session.user_config["default_model"] = model_ids[int(choice)]
-
-
-async def _onboarding(state_manager: StateManager):
-    initial_config = json.dumps(state_manager.session.user_config, sort_keys=True)
-
-    await _step1(state_manager)
-
-    # Only continue if at least one API key was provided
-    env = state_manager.session.user_config.get("env", {})
-    has_api_key = any(key.endswith("_API_KEY") and env.get(key) for key in env)
-
-    if has_api_key:
-        if not state_manager.session.user_config.get("default_model"):
-            await _step2(state_manager)
-
-        # Compare configs to see if anything changed
-        current_config = json.dumps(state_manager.session.user_config, sort_keys=True)
-        if initial_config != current_config:
-            if user_config.save_config(state_manager):
-                message = f"Config saved to: [bold]{CONFIG_FILE}[/bold]"
-                await ui.panel("Finished", message, top=0, border_style=ui.colors.success)
-            else:
-                await ui.error("Failed to save configuration.")
-    else:
-        await ui.panel(
-            "Setup canceled", "At least one API key is required.", border_style=ui.colors.warning
-        )
-
-
-async def _setup_telemetry(state_manager: StateManager):
-    """Setup telemetry for capturing exceptions and errors"""
-    if not state_manager.session.telemetry_enabled:
-        await ui.info("Telemetry disabled, skipping")
-        return
-
-    await ui.info("Setting up telemetry")
-    telemetry.setup()
-
-
-async def _setup_config(run_setup, state_manager: StateManager):
-    """Setup configuration and environment variables"""
-    await ui.info("Setting up config")
-
-    state_manager.session.device_id = system.get_device_id()
-    loaded_config = user_config.load_config()
-
-    if loaded_config and not run_setup:
-        await ui.muted(f"Loading config from: {CONFIG_FILE}")
-        # Merge loaded config with defaults to ensure all required keys exist
-        state_manager.session.user_config = _merge_with_defaults(loaded_config)
-    else:
-        if run_setup:
-            await ui.muted("Running setup process, resetting config")
-        else:
-            await ui.muted("No user configuration found, running setup")
-        state_manager.session.user_config = DEFAULT_CONFIG.copy()
-        user_config.save_config(state_manager)  # Save the default config initially
-        await _onboarding(state_manager)
-
-    if not state_manager.session.user_config.get("default_model"):
-        raise SidekickConfigError(
-            (
-                f"No default model found in config at [bold]{CONFIG_FILE}[/bold]\n\n"
-                "Run [code]sidekick --setup[/code] to rerun the setup process."
-            )
-        )
-
-    state_manager.session.current_model = state_manager.session.user_config["default_model"]
-
-
-async def _setup_undo(state_manager: StateManager):
-    """Initialize the undo system"""
-    await ui.info("Initializing undo system")
-    state_manager.session.undo_initialized = init_undo_system()
-
-
-async def _setup_agent(agent, state_manager: StateManager):
-    """Initialize the agent with the current model"""
-    if agent is not None:
-        await ui.info(f"Initializing Agent({state_manager.session.current_model})")
-        agent.agent = agent.get_agent()
-
-
-async def setup(run_setup, state_manager: StateManager):
-    """
-    Setup Sidekick on startup.
+    Setup Sidekick on startup using the new setup coordinator.
 
     Args:
         run_setup (bool): If True, force run the setup process, resetting current config.
         state_manager (StateManager): The state manager instance.
     """
-    await _setup_telemetry(state_manager)
-    await _setup_config(run_setup, state_manager)
-    await _set_environment_variables(state_manager)
-    await _setup_undo(state_manager)
+    coordinator = SetupCoordinator(state_manager)
+
+    # Register setup steps in order
+    coordinator.register_step(TelemetrySetup(state_manager))
+    coordinator.register_step(ConfigSetup(state_manager))
+    coordinator.register_step(EnvironmentSetup(state_manager))
+    coordinator.register_step(UndoSetup(state_manager))
+
+    # Run all setup steps
+    await coordinator.run_setup(force_setup=run_setup)
+
+
+async def setup_agent(agent: Optional[Any], state_manager: StateManager) -> None:
+    """
+    Setup the agent separately.
+
+    This is called from other parts of the codebase when an agent needs to be initialized.
+
+    Args:
+        agent: The agent instance to initialize.
+        state_manager (StateManager): The state manager instance.
+    """
+    if agent is not None:
+        agent_setup = AgentSetup(state_manager, agent)
+        if await agent_setup.should_run():
+            await agent_setup.execute()
+            if not await agent_setup.validate():
+                raise RuntimeError("Agent setup failed validation")

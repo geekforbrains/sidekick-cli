@@ -60,3 +60,6 @@ class ModelRegistry:
 
     def list_models(self) -> Dict[str, ModelConfig]:
         return self._models.copy()
+
+    def list_model_ids(self) -> list[str]:
+        return list(self._models.keys())
