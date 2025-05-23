@@ -8,7 +8,7 @@ from sidekick.tools.read_file import read_file
 from sidekick.tools.run_command import run_command
 from sidekick.tools.update_file import update_file
 from sidekick.tools.write_file import write_file
-from sidekick.utils.mcp import get_mcp_servers
+from sidekick.services.mcp import get_mcp_servers
 
 
 async def _process_node(node, tool_callback, state_manager: StateManager):

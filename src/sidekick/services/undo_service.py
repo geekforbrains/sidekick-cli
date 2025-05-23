@@ -4,7 +4,8 @@ from pathlib import Path
 
 from pydantic_ai.messages import ModelResponse, TextPart
 
-from sidekick import session, ui
+from sidekick import session
+from sidekick.ui import console as ui
 from sidekick.utils.system import get_session_dir
 
 

@@ -1,12 +1,13 @@
 import json
 import os
 
-from sidekick import ui
+from sidekick.ui import console as ui
 from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
 from sidekick.core.state import StateManager
 from sidekick.exceptions import SidekickConfigError
-from sidekick.utils import system, telemetry, user_config
-from sidekick.utils.undo import init_undo_system
+from sidekick.utils import system, user_config
+from sidekick.services import telemetry
+from sidekick.services.undo_service import init_undo_system
 
 
 def _load_or_create_config(state_manager: StateManager):

@@ -1,6 +1,6 @@
 import subprocess
 
-from sidekick import ui
+from sidekick.ui import console as ui
 
 
 async def run_command(command: str) -> str:

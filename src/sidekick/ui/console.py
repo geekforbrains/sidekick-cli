@@ -12,7 +12,7 @@ from rich.table import Table
 
 from sidekick import config, session
 from sidekick.exceptions import SidekickAbort
-from sidekick.utils.helpers import DotDict
+from sidekick.utils.file_utils import DotDict
 
 BANNER = """\
 ███████╗██╗██████╗ ███████╗██╗  ██╗██╗ ██████╗██╗  ██╗

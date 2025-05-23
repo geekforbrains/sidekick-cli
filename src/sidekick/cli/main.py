@@ -2,9 +2,10 @@ import asyncio
 
 import typer
 
-from sidekick import config, ui
+from sidekick import config
+from sidekick.ui import console as ui
 from sidekick.core.state import StateManager
-from sidekick.repl import repl
+from sidekick.cli.repl import repl
 from sidekick.setup import setup
 from sidekick.utils.system import check_for_updates
 

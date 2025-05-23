@@ -5,14 +5,15 @@ from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.application.current import get_app
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
-from sidekick import config, ui
-from sidekick.agents import main as agent
-from sidekick.agents.main import patch_tool_messages
+from sidekick import config
+from sidekick.ui import console as ui
+from sidekick.core.agents import main as agent
+from sidekick.core.agents.main import patch_tool_messages
 from sidekick.core.state import StateManager
 from sidekick.exceptions import SidekickAbort
 from sidekick.utils import user_config
 from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
-from sidekick.utils.undo import perform_undo
+from sidekick.services.undo_service import perform_undo
 
 
 def _parse_args(args):

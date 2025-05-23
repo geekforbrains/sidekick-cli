@@ -2,7 +2,7 @@ import os
 
 from pydantic_ai.exceptions import ModelRetry
 
-from sidekick import ui
+from sidekick.ui import console as ui
 
 
 async def write_file(filepath: str, content: str) -> str:
