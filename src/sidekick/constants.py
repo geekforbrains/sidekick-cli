@@ -7,7 +7,7 @@ Centralizes all magic strings, UI text, error messages, and application constant
 
 # Application info
 APP_NAME = "Sidekick"
-APP_VERSION = "0.4.1"
+APP_VERSION = "0.5.0"
 
 # File patterns
 GUIDE_FILE_PATTERN = "{name}.md"
