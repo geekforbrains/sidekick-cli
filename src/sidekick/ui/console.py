@@ -14,6 +14,7 @@ from .output import (banner, clear, info, line, muted, print, spinner, success, 
                      update_available, usage, version, warning)
 from .panels import (agent, dump_messages, error, help, models, panel, sync_panel,
                      sync_tool_confirm, tool_confirm)
+from .prompt_manager import PromptConfig, PromptManager
 from .validators import ModelValidator
 
 # Create console object for backward compatibility
@@ -63,6 +64,9 @@ __all__ = [
     "sync_panel",
     "sync_tool_confirm",
     "tool_confirm",
+    # From prompt_manager module
+    "PromptConfig",
+    "PromptManager",
     # From validators module
     "ModelValidator",
     # Local utilities

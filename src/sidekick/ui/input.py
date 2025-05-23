@@ -1,14 +1,13 @@
 """User input handling functions for Sidekick UI."""
 
 from prompt_toolkit.formatted_text import HTML
-from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.validation import Validator
 
 from sidekick.constants import UI_PROMPT_PREFIX
 from sidekick.core.state import StateManager
-from sidekick.exceptions import UserAbortError
 
 from .keybindings import create_key_bindings
+from .prompt_manager import PromptConfig, PromptManager
 
 
 def formatted_text(text: str):
@@ -28,45 +27,37 @@ async def input(
     state_manager: StateManager = None,
 ):
     """
-    Prompt for user input. Creates session for given key if it doesn't already exist.
+    Prompt for user input using simplified prompt management.
 
     Args:
-        session_key (str): The session key for the prompt.
-        pretext (str): The text to display before the input prompt.
-        is_password (bool): Whether to mask the input.
-        state_manager (StateManager): The state manager for session storage.
+        session_key: The session key for the prompt
+        pretext: The text to display before the input prompt
+        is_password: Whether to mask the input
+        validator: Optional input validator
+        multiline: Whether to allow multiline input
+        key_bindings: Optional custom key bindings
+        placeholder: Optional placeholder text
+        timeoutlen: Timeout length for input
+        state_manager: The state manager for session storage
 
+    Returns:
+        User input string
     """
-    if state_manager:
-        if session_key not in state_manager.session.input_sessions:
-            state_manager.session.input_sessions[session_key] = PromptSession(
-                key_bindings=key_bindings,
-                placeholder=placeholder,
-            )
-        prompt_session = state_manager.session.input_sessions[session_key]
-    else:
-        # Create a temporary session if no state manager
-        prompt_session = PromptSession(
-            key_bindings=key_bindings,
-            placeholder=placeholder,
-        )
+    # Create prompt configuration
+    config = PromptConfig(
+        multiline=multiline,
+        is_password=is_password,
+        validator=validator,
+        key_bindings=key_bindings,
+        placeholder=placeholder,
+        timeoutlen=timeoutlen,
+    )
 
-    try:
-        # # Ensure prompt is displayed correctly even after async output
-        # await run_in_terminal(lambda: prompt_session.app.invalidate())
-        resp = await prompt_session.prompt_async(
-            pretext,
-            is_password=is_password,
-            validator=validator,
-            multiline=multiline,
-        )
-        if isinstance(resp, str):
-            resp = resp.strip()
-        return resp
-    except KeyboardInterrupt:
-        raise UserAbortError
-    except EOFError:
-        raise UserAbortError
+    # Create prompt manager
+    manager = PromptManager(state_manager)
+
+    # Get user input
+    return await manager.get_input(session_key, pretext, config)
 
 
 async def multiline_input():
