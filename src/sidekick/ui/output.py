@@ -11,6 +11,7 @@ from sidekick.core.state import StateManager
 from sidekick.utils.file_utils import DotDict
 
 from .constants import SPINNER_TYPE
+from .decorators import create_sync_wrapper
 
 console = Console()
 colors = DotDict(UI_COLORS)
@@ -24,6 +25,7 @@ BANNER = """\
 ╚══════╝╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝ ╚═════╝╚═╝  ╚═╝"""
 
 
+@create_sync_wrapper
 async def print(message, **kwargs) -> None:
     """Print a message to the console."""
     await run_in_terminal(lambda: console.print(message, **kwargs))
@@ -110,7 +112,5 @@ async def spinner(show: bool = True, spinner_obj=None, state_manager: StateManag
     return spinner_obj
 
 
-# Synchronous version for use with run_in_terminal
-def sync_print(text, **kwargs) -> None:
-    """Synchronous version of print."""
-    console.print(text, **kwargs)
+# Auto-generated sync version
+sync_print = print.sync  # type: ignore

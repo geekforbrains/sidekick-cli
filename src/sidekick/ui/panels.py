@@ -18,11 +18,13 @@ from sidekick.core.state import StateManager
 from sidekick.utils.file_utils import DotDict
 
 from .constants import DEFAULT_PANEL_PADDING
+from .decorators import create_sync_wrapper
 from .output import print
 
 colors = DotDict(UI_COLORS)
 
 
+@create_sync_wrapper
 async def panel(
     title: str,
     text: Union[str, Markdown, Pretty],
@@ -133,6 +135,7 @@ async def help(command_registry=None) -> None:
     await panel(PANEL_AVAILABLE_COMMANDS, table, border_style=colors.muted)
 
 
+@create_sync_wrapper
 async def tool_confirm(
     title: str, content: Union[str, Markdown], filepath: Optional[str] = None
 ) -> None:
@@ -141,29 +144,6 @@ async def tool_confirm(
     await panel(title, content, bottom=bottom_padding, border_style=colors.warning)
 
 
-# Synchronous versions for use with run_in_terminal
-def sync_panel(
-    title: str,
-    text: Union[str, Markdown, Pretty],
-    top: int = DEFAULT_PANEL_PADDING["top"],
-    right: int = DEFAULT_PANEL_PADDING["right"],
-    bottom: int = DEFAULT_PANEL_PADDING["bottom"],
-    left: int = DEFAULT_PANEL_PADDING["left"],
-    border_style: Optional[str] = None,
-    **kwargs: Any,
-) -> None:
-    """Synchronous version of panel display."""
-    from rich.console import Console
-
-    console = Console()
-    border_style = border_style or kwargs.get("style")
-    panel_obj = Panel(Padding(text, 1), title=title, title_align="left", border_style=border_style)
-    console.print(Padding(panel_obj, (top, right, bottom, left)), **kwargs)
-
-
-def sync_tool_confirm(
-    title: str, content: Union[str, Markdown], filepath: Optional[str] = None
-) -> None:
-    """Synchronous version of tool confirmation panel."""
-    bottom_padding = 0 if filepath else 1
-    sync_panel(title, content, bottom=bottom_padding, border_style=colors.warning)
+# Auto-generated sync versions
+sync_panel = panel.sync  # type: ignore
+sync_tool_confirm = tool_confirm.sync  # type: ignore
