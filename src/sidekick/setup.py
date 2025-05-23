@@ -45,8 +45,6 @@ async def _set_environment_variables(state_manager: StateManager):
             os.environ[key] = value
 
 
-
-
 def _merge_with_defaults(loaded_config):
     """Merge loaded config with defaults to ensure all required keys exist."""
     # Start with loaded config if available, otherwise use defaults

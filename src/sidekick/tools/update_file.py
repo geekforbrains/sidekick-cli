@@ -2,30 +2,38 @@ import os
 
 from pydantic_ai.exceptions import ModelRetry
 
+from sidekick.tools.base import FileBasedTool
 from sidekick.ui import console as ui
 
 
-async def update_file(filepath: str, target: str, patch: str) -> str:
-    """
-    Update an existing file by replacing a target text block with a patch.
-    Requires confirmation with diff before applying.
+class UpdateFileTool(FileBasedTool):
+    """Tool for updating existing files by replacing text blocks."""
 
-    Args:
-        filepath (str): The path to the file to update.
-        target (str): The entire, exact block of text to be replaced.
-        patch (str): The new block of text to insert.
+    @property
+    def tool_name(self) -> str:
+        return "Update"
 
-    Returns:
-        str: A message indicating the success or failure of the operation.
-    """
-    try:
+    async def _execute(self, filepath: str, target: str, patch: str) -> str:
+        """Update an existing file by replacing a target text block with a patch.
+
+        Args:
+            filepath: The path to the file to update.
+            target: The entire, exact block of text to be replaced.
+            patch: The new block of text to insert.
+
+        Returns:
+            str: A message indicating success.
+
+        Raises:
+            ModelRetry: If file not found or target not found
+            Exception: Any file operation errors
+        """
         if not os.path.exists(filepath):
             raise ModelRetry(
                 f"File '{filepath}' not found. Cannot update. "
                 "Verify the filepath or use `write_file` if it's a new file."
             )
 
-        await ui.info(f"Update({filepath})")
         with open(filepath, "r", encoding="utf-8") as f:
             original = f.read()
 
@@ -54,10 +62,39 @@ async def update_file(filepath: str, target: str, patch: str) -> str:
             f.write(new_content)
 
         return f"File '{filepath}' updated successfully."
-    except ModelRetry as e:
-        await ui.warning(str(e))
-        raise e  # Re-raise
-    except Exception as e:
-        err_msg = f"Error updating file '{filepath}': {e}"
-        await ui.error(err_msg)
-        return err_msg
+
+    def _format_args(self, filepath: str, target: str = None, patch: str = None) -> str:
+        """Format arguments, truncating target and patch for display."""
+        args = [repr(filepath)]
+
+        if target is not None:
+            if len(target) > 50:
+                args.append(f"target='{target[:47]}...'")
+            else:
+                args.append(f"target={repr(target)}")
+
+        if patch is not None:
+            if len(patch) > 50:
+                args.append(f"patch='{patch[:47]}...'")
+            else:
+                args.append(f"patch={repr(patch)}")
+
+        return ", ".join(args)
+
+
+# Create the function that maintains the existing interface
+async def update_file(filepath: str, target: str, patch: str) -> str:
+    """
+    Update an existing file by replacing a target text block with a patch.
+    Requires confirmation with diff before applying.
+
+    Args:
+        filepath (str): The path to the file to update.
+        target (str): The entire, exact block of text to be replaced.
+        patch (str): The new block of text to insert.
+
+    Returns:
+        str: A message indicating the success or failure of the operation.
+    """
+    tool = UpdateFileTool(ui)
+    return await tool.execute(filepath, target, patch)

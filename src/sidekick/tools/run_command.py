@@ -1,21 +1,29 @@
 import subprocess
 
+from sidekick.tools.base import BaseTool
 from sidekick.ui import console as ui
 
 
-async def run_command(command: str) -> str:
-    """
-    Run a shell command and return the output. User must confirm risky commands.
+class RunCommandTool(BaseTool):
+    """Tool for running shell commands."""
 
-    Args:
-        command (str): The command to run.
+    @property
+    def tool_name(self) -> str:
+        return "Shell"
 
-    Returns:
-        str: The output of the command (stdout and stderr) or an error message.
-    """
-    try:
-        await ui.info(f"Shell({command})")
+    async def _execute(self, command: str) -> str:
+        """Run a shell command and return the output.
 
+        Args:
+            command: The command to run.
+
+        Returns:
+            str: The output of the command (stdout and stderr).
+
+        Raises:
+            FileNotFoundError: If command not found
+            Exception: Any command execution errors
+        """
         process = subprocess.Popen(
             command,
             shell=True,
@@ -28,10 +36,8 @@ async def run_command(command: str) -> str:
         error = stderr.strip() or "No errors."
         resp = f"STDOUT:\n{output}\n\nSTDERR:\n{error}".strip()
 
-        # Raise retry if the output is too long to prevent issues
-        # Reduced limit as it's often better to be concise
+        # Truncate if the output is too long to prevent issues
         if len(resp) > 5000:
-            # _msg("warning", "Command output too long, returning truncated.")
             # Include both the beginning and end of the output
             start_part = resp[:2500]
             end_part = resp[-1000:] if len(resp) > 3500 else resp[2500:]
@@ -39,11 +45,36 @@ async def run_command(command: str) -> str:
             return truncated_resp
 
         return resp
-    except FileNotFoundError as e:
-        err_msg = f"Error: Command not found or failed to execute: {command}. Details: {e}"
-        # _msg("error", err_msg)
+
+    async def _handle_error(self, error: Exception, command: str = None) -> str:
+        """Handle errors with specific messages for common cases."""
+        if isinstance(error, FileNotFoundError):
+            err_msg = f"Error: Command not found or failed to execute: {command}. Details: {error}"
+        else:
+            # Use parent class handling for other errors
+            return await super()._handle_error(error, command)
+
+        if self.ui:
+            await self.ui.error(err_msg)
         return err_msg
-    # except Exception as e:
-    #     err_msg = f"Error running command '{command}': {e}"
-    #     _msg("error", err_msg)
-    #     return err_msg
+
+    def _get_error_context(self, command: str = None) -> str:
+        """Get error context for command execution."""
+        if command:
+            return f"running command '{command}'"
+        return super()._get_error_context()
+
+
+# Create the function that maintains the existing interface
+async def run_command(command: str) -> str:
+    """
+    Run a shell command and return the output. User must confirm risky commands.
+
+    Args:
+        command (str): The command to run.
+
+    Returns:
+        str: The output of the command (stdout and stderr) or an error message.
+    """
+    tool = RunCommandTool(ui)
+    return await tool.execute(command)
