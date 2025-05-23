@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 
 from pydantic_ai.mcp import MCPServerStdio
 
+from sidekick.exceptions import MCPError
+
 if TYPE_CHECKING:
     from sidekick.core.state import StateManager
 
@@ -42,14 +44,32 @@ class QuietMCPServer(MCPServerStdio):
 
 
 def get_mcp_servers(state_manager: "StateManager"):
+    """Load MCP servers from configuration.
+
+    Args:
+        state_manager: The state manager containing user configuration
+
+    Returns:
+        List of MCP server instances
+
+    Raises:
+        MCPError: If a server configuration is invalid
+    """
     mcp_servers = state_manager.session.user_config.get("mcpServers", {})
     loaded_servers = []
     MCPServerStdio.log_level = "critical"
 
-    for conf in mcp_servers.values():
-        # loaded_servers.append(QuietMCPServer(**conf))
-        mcp_instance = MCPServerStdio(**conf)
-        # mcp_instance.log_level = "critical"
-        loaded_servers.append(mcp_instance)
+    for server_name, conf in mcp_servers.items():
+        try:
+            # loaded_servers.append(QuietMCPServer(**conf))
+            mcp_instance = MCPServerStdio(**conf)
+            # mcp_instance.log_level = "critical"
+            loaded_servers.append(mcp_instance)
+        except Exception as e:
+            raise MCPError(
+                server_name=server_name,
+                message=f"Failed to create MCP server: {str(e)}",
+                original_error=e,
+            )
 
     return loaded_servers

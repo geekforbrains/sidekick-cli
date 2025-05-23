@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from .. import config, utils
 from ..core.state import StateManager
+from ..exceptions import ValidationError
 from ..services.undo_service import perform_undo
 from ..ui import console as ui
 
@@ -275,17 +276,17 @@ class CommandRegistry:
             Command-specific return value, or None if command not found
 
         Raises:
-            ValueError: If command is not found
+            ValidationError: If command is not found or empty
         """
         parts = command_text.split()
         if not parts:
-            raise ValueError("Empty command")
+            raise ValidationError("Empty command")
 
         command_name = parts[0].lower()
         args = parts[1:]
 
         if command_name not in self._commands:
-            raise ValueError(f"Unknown command: {command_name}")
+            raise ValidationError(f"Unknown command: {command_name}")
 
         command = self._commands[command_name]
 

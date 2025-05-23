@@ -5,6 +5,7 @@ from pathlib import Path
 from pydantic_ai.messages import ModelResponse, TextPart
 
 from sidekick import session
+from sidekick.exceptions import GitOperationError
 from sidekick.ui import console as ui
 from sidekick.utils.system import get_session_dir
 
@@ -81,10 +82,14 @@ def init_undo_system():
         )
 
         return True
-    except subprocess.TimeoutExpired:
-        ui.warning("Undo system initialization timed out")
+    except subprocess.TimeoutExpired as e:
+        error = GitOperationError(
+            operation="init", message="Git initialization timed out", original_error=e
+        )
+        ui.warning(str(error))
         return False
     except Exception as e:
+        error = GitOperationError(operation="init", message=str(e), original_error=e)
         ui.warning(f"Error initializing undo system: {e}")
         return False
 
@@ -128,10 +133,14 @@ def commit_for_undo(message_prefix="sidekick"):
             return False
 
         return True
-    except subprocess.TimeoutExpired:
-        ui.warning("Undo system commit timed out")
+    except subprocess.TimeoutExpired as e:
+        error = GitOperationError(
+            operation="commit", message="Git commit timed out", original_error=e
+        )
+        ui.warning(str(error))
         return False
     except Exception as e:
+        error = GitOperationError(operation="commit", message=str(e), original_error=e)
         ui.warning(f"Error creating undo commit: {e}")
         return False
 
@@ -203,7 +212,11 @@ def perform_undo():
         )
 
         return True, "Successfully undid last change"
-    except subprocess.TimeoutExpired:
-        return False, "Undo operation timed out"
+    except subprocess.TimeoutExpired as e:
+        error = GitOperationError(
+            operation="reset", message="Undo operation timed out", original_error=e
+        )
+        return False, str(error)
     except Exception as e:
+        error = GitOperationError(operation="reset", message=str(e), original_error=e)
         return False, f"Error performing undo: {e}"

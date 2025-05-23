@@ -8,6 +8,8 @@ from abc import ABC, abstractmethod
 
 from pydantic_ai.exceptions import ModelRetry
 
+from sidekick.exceptions import FileOperationError
+
 
 class BaseTool(ABC):
     """Base class for all Sidekick tools providing common functionality."""
@@ -77,9 +79,17 @@ class BaseTool(ABC):
         Returns:
             str: Error message formatted consistently
         """
+        # Format error message for display
         err_msg = f"Error {self._get_error_context(*args, **kwargs)}: {error}"
         if self.ui:
             await self.ui.error(err_msg)
+
+        # TODO: In future, create ToolExecutionError to maintain proper exception hierarchy
+        # tool_error = ToolExecutionError(
+        #     tool_name=self.tool_name, message=str(error), original_error=error
+        # )
+        # This would allow structured logging/telemetry of tool errors
+
         return err_msg
 
     def _format_args(self, *args, **kwargs) -> str:
@@ -157,3 +167,29 @@ class FileBasedTool(BaseTool):
         if filepath:
             return f"handling file '{filepath}'"
         return super()._get_error_context(*args, **kwargs)
+
+    async def _handle_error(self, error: Exception, *args, **kwargs) -> str:
+        """Handle file-specific errors.
+
+        Overrides base class to create FileOperationError for file-related issues.
+        """
+        filepath = args[0] if args else kwargs.get("filepath", "unknown")
+
+        # Check if this is a file-related error
+        if isinstance(error, (IOError, OSError, PermissionError, FileNotFoundError)):
+            # Determine the operation based on the tool name
+            operation = self.tool_name.replace("_", " ")
+
+            # Create a FileOperationError
+            file_error = FileOperationError(
+                operation=operation, path=str(filepath), message=str(error), original_error=error
+            )
+
+            # Format error message for display
+            err_msg = str(file_error)
+            if self.ui:
+                await self.ui.error(err_msg)
+            return err_msg
+
+        # For non-file errors, use the base class handling
+        return await super()._handle_error(error, *args, **kwargs)

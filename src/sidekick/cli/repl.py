@@ -11,7 +11,7 @@ from sidekick.core.agents import main as agent
 from sidekick.core.agents.main import patch_tool_messages
 from sidekick.core.state import StateManager
 from sidekick.core.tool_handler import ToolHandler
-from sidekick.exceptions import SidekickAbort
+from sidekick.exceptions import AgentError, SidekickAbort, ValidationError
 from sidekick.ui import console as ui
 from sidekick.ui.tool_ui import ToolUI
 
@@ -38,11 +38,11 @@ def _parse_args(args):
         try:
             return json.loads(args)
         except json.JSONDecodeError:
-            raise ValueError(f"Invalid JSON: {args}")
+            raise ValidationError(f"Invalid JSON: {args}")
     elif isinstance(args, dict):
         return args
     else:
-        raise ValueError(f"Invalid args type: {type(args)}")
+        raise ValidationError(f"Invalid args type: {type(args)}")
 
 
 async def _tool_confirm(tool_call, node, state_manager: StateManager):
@@ -141,7 +141,7 @@ async def _handle_command(command: str, state_manager: StateManager) -> Any:
 
         # Execute the command
         return await _command_registry.execute(command, context)
-    except ValueError as e:
+    except ValidationError as e:
         await ui.error(str(e))
 
 
@@ -170,6 +170,9 @@ async def process_request(text: str, state_manager: StateManager, output: bool =
         await ui.muted(error_message)
         patch_tool_messages(error_message, state_manager)
     except Exception as e:
+        # Wrap unexpected exceptions in AgentError for better tracking
+        agent_error = AgentError(f"Agent processing failed: {str(e)}")
+        agent_error.__cause__ = e  # Preserve the original exception chain
         await ui.error(str(e))
     finally:
         await ui.spinner(False, state_manager.session.spinner)
