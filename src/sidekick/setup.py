@@ -2,8 +2,8 @@ import json
 import os
 
 from sidekick import ui
-from sidekick.core.state import StateManager
 from sidekick.config import CONFIG_DIR, CONFIG_FILE, DEFAULT_CONFIG, MODELS
+from sidekick.core.state import StateManager
 from sidekick.exceptions import SidekickConfigError
 from sidekick.utils import system, telemetry, user_config
 from sidekick.utils.undo import init_undo_system
@@ -28,7 +28,9 @@ def _load_or_create_config(state_manager: StateManager):
 
 async def _set_environment_variables(state_manager: StateManager):
     """Set environment variables from the config file."""
-    if "env" not in state_manager.session.user_config or not isinstance(state_manager.session.user_config["env"], dict):
+    if "env" not in state_manager.session.user_config or not isinstance(
+        state_manager.session.user_config["env"], dict
+    ):
         state_manager.session.user_config["env"] = {}
 
     env_dict = state_manager.session.user_config["env"]

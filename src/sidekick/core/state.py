@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
 import uuid
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -24,10 +24,10 @@ class SessionState:
 class StateManager:
     def __init__(self):
         self._session = SessionState()
-    
+
     @property
     def session(self) -> SessionState:
         return self._session
-    
+
     def reset_session(self):
         self._session = SessionState()

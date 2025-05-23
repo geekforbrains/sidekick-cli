@@ -4,6 +4,20 @@ VERSION = "0.4.1"
 NAME = "Sidekick"
 GUIDE_FILE = f"{NAME.upper()}.md"
 MODELS = {
+    "anthropic:claude-opus-4-20250514": {
+        "pricing": {
+            "input": 3.00,
+            "cached_input": 1.50,
+            "output": 15.00,
+        }
+    },
+    "anthropic:claude-sonnet-4-20250514": {
+        "pricing": {
+            "input": 3.00,
+            "cached_input": 1.50,
+            "output": 15.00,
+        }
+    },
     "anthropic:claude-3-7-sonnet-latest": {
         "pricing": {
             "input": 3.00,

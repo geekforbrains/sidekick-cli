@@ -49,10 +49,11 @@ def patch_tool_messages(error_message="Tool operation failed", state_manager: St
     # For backward compatibility, import session if state_manager is not provided
     if state_manager is None:
         from sidekick import session
+
         messages = session.messages
     else:
         messages = state_manager.session.messages
-        
+
     if not messages:
         return
 
@@ -95,7 +96,9 @@ def patch_tool_messages(error_message="Tool operation failed", state_manager: St
             )
 
 
-async def process_request(model: str, message: str, state_manager: StateManager, tool_callback: callable = None):
+async def process_request(
+    model: str, message: str, state_manager: StateManager, tool_callback: callable = None
+):
     agent = get_or_create_agent(model, state_manager)
     mh = state_manager.session.messages.copy()
     async with agent.iter(message, message_history=mh) as agent_run:
