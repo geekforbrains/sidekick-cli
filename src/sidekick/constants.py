@@ -46,6 +46,15 @@ DESC_MODEL_SWITCH = "Switch to a specific model"
 DESC_MODEL_DEFAULT = "Set a model as the default"
 DESC_EXIT = "Exit the application"
 
+# Command Configuration
+COMMAND_PREFIX = "/"
+COMMAND_CATEGORIES = {
+    "state": ["yolo", "undo"],
+    "debug": ["dump", "compact"],
+    "ui": ["clear", "help"],
+    "config": ["model"],
+}
+
 # System paths
 SIDEKICK_HOME_DIR = ".sidekick"
 SESSIONS_SUBDIR = "sessions"
