@@ -2,6 +2,7 @@ import os
 
 from sidekick.constants import (ERROR_FILE_DECODE, ERROR_FILE_DECODE_DETAILS, ERROR_FILE_NOT_FOUND,
                                 ERROR_FILE_TOO_LARGE, MAX_FILE_SIZE, MSG_FILE_SIZE_LIMIT)
+from sidekick.exceptions import ToolExecutionError
 from sidekick.tools.base import FileBasedTool
 from sidekick.types import FilePath, ToolResult
 from sidekick.ui import console as default_ui
@@ -31,14 +32,18 @@ class ReadFileTool(FileBasedTool):
             err_msg = ERROR_FILE_TOO_LARGE.format(filepath=filepath) + MSG_FILE_SIZE_LIMIT
             if self.ui:
                 await self.ui.error(err_msg)
-            return err_msg
+            raise ToolExecutionError(tool_name=self.tool_name, message=err_msg, original_error=None)
 
         with open(filepath, "r", encoding="utf-8") as file:
             content = file.read()
             return content
 
     async def _handle_error(self, error: Exception, filepath: FilePath = None) -> ToolResult:
-        """Handle errors with specific messages for common cases."""
+        """Handle errors with specific messages for common cases.
+
+        Raises:
+            ToolExecutionError: Always raised with structured error information
+        """
         if isinstance(error, FileNotFoundError):
             err_msg = ERROR_FILE_NOT_FOUND.format(filepath=filepath)
         elif isinstance(error, UnicodeDecodeError):
@@ -49,11 +54,13 @@ class ReadFileTool(FileBasedTool):
             )
         else:
             # Use parent class handling for other errors
-            return await super()._handle_error(error, filepath)
+            await super()._handle_error(error, filepath)
+            return  # super() will raise, this is unreachable
 
         if self.ui:
             await self.ui.error(err_msg)
-        return err_msg
+
+        raise ToolExecutionError(tool_name=self.tool_name, message=err_msg, original_error=error)
 
 
 # Create the function that maintains the existing interface
@@ -68,4 +75,8 @@ async def read_file(filepath: FilePath) -> ToolResult:
         ToolResult: The contents of the file or an error message.
     """
     tool = ReadFileTool(default_ui)
-    return await tool.execute(filepath)
+    try:
+        return await tool.execute(filepath)
+    except ToolExecutionError as e:
+        # Return error message for pydantic-ai compatibility
+        return str(e)

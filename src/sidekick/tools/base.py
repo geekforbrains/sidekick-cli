@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 
 from pydantic_ai.exceptions import ModelRetry
 
-from sidekick.exceptions import FileOperationError
+from sidekick.exceptions import FileOperationError, ToolExecutionError
 from sidekick.types import FilePath, ToolName, ToolResult, UILogger
 
 
@@ -28,14 +28,15 @@ class BaseTool(ABC):
 
         This method wraps the tool-specific logic with:
         - UI logging of the operation
-        - Exception handling (except ModelRetry)
+        - Exception handling (except ModelRetry and ToolExecutionError)
         - Consistent error message formatting
 
         Returns:
-            str: Success message or error message
+            str: Success message
 
         Raises:
             ModelRetry: Re-raised to guide the LLM
+            ToolExecutionError: Raised for all other errors with structured information
         """
         try:
             if self.ui:
@@ -46,8 +47,12 @@ class BaseTool(ABC):
             if self.ui:
                 await self.ui.warning(str(e))
             raise
+        except ToolExecutionError:
+            # Already properly formatted, just re-raise
+            raise
         except Exception as e:
-            return await self._handle_error(e, *args, **kwargs)
+            # Handle any other exceptions
+            await self._handle_error(e, *args, **kwargs)
 
     @property
     @abstractmethod
@@ -71,27 +76,22 @@ class BaseTool(ABC):
         pass
 
     async def _handle_error(self, error: Exception, *args, **kwargs) -> ToolResult:
-        """Handle errors in a consistent way.
+        """Handle errors by logging and raising proper exceptions.
 
         Args:
             error: The exception that was raised
             *args, **kwargs: Original arguments for context
 
-        Returns:
-            str: Error message formatted consistently
+        Raises:
+            ToolExecutionError: Always raised with structured error information
         """
         # Format error message for display
         err_msg = f"Error {self._get_error_context(*args, **kwargs)}: {error}"
         if self.ui:
             await self.ui.error(err_msg)
 
-        # TODO: In future, create ToolExecutionError to maintain proper exception hierarchy
-        # tool_error = ToolExecutionError(
-        #     tool_name=self.tool_name, message=str(error), original_error=error
-        # )
-        # This would allow structured logging/telemetry of tool errors
-
-        return err_msg
+        # Raise proper exception instead of returning string
+        raise ToolExecutionError(tool_name=self.tool_name, message=str(error), original_error=error)
 
     def _format_args(self, *args, **kwargs) -> str:
         """Format arguments for display in UI logging.
@@ -173,6 +173,9 @@ class FileBasedTool(BaseTool):
         """Handle file-specific errors.
 
         Overrides base class to create FileOperationError for file-related issues.
+
+        Raises:
+            ToolExecutionError: Always raised with structured error information
         """
         filepath = args[0] if args else kwargs.get("filepath", "unknown")
 
@@ -190,7 +193,11 @@ class FileBasedTool(BaseTool):
             err_msg = str(file_error)
             if self.ui:
                 await self.ui.error(err_msg)
-            return err_msg
+
+            # Raise ToolExecutionError with the file error
+            raise ToolExecutionError(
+                tool_name=self.tool_name, message=str(file_error), original_error=file_error
+            )
 
         # For non-file errors, use the base class handling
-        return await super()._handle_error(error, *args, **kwargs)
+        await super()._handle_error(error, *args, **kwargs)

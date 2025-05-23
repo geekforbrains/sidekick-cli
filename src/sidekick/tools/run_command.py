@@ -4,6 +4,7 @@ from sidekick.constants import (CMD_OUTPUT_FORMAT, CMD_OUTPUT_NO_ERRORS, CMD_OUT
                                 CMD_OUTPUT_TRUNCATED, COMMAND_OUTPUT_END_SIZE,
                                 COMMAND_OUTPUT_START_INDEX, COMMAND_OUTPUT_THRESHOLD,
                                 ERROR_COMMAND_EXECUTION, MAX_COMMAND_OUTPUT)
+from sidekick.exceptions import ToolExecutionError
 from sidekick.tools.base import BaseTool
 from sidekick.types import ToolResult
 from sidekick.ui import console as default_ui
@@ -56,16 +57,22 @@ class RunCommandTool(BaseTool):
         return resp
 
     async def _handle_error(self, error: Exception, command: str = None) -> ToolResult:
-        """Handle errors with specific messages for common cases."""
+        """Handle errors with specific messages for common cases.
+
+        Raises:
+            ToolExecutionError: Always raised with structured error information
+        """
         if isinstance(error, FileNotFoundError):
             err_msg = ERROR_COMMAND_EXECUTION.format(command=command, error=error)
         else:
             # Use parent class handling for other errors
-            return await super()._handle_error(error, command)
+            await super()._handle_error(error, command)
+            return  # super() will raise, this is unreachable
 
         if self.ui:
             await self.ui.error(err_msg)
-        return err_msg
+
+        raise ToolExecutionError(tool_name=self.tool_name, message=err_msg, original_error=error)
 
     def _get_error_context(self, command: str = None) -> str:
         """Get error context for command execution."""
@@ -86,4 +93,8 @@ async def run_command(command: str) -> ToolResult:
         ToolResult: The output of the command (stdout and stderr) or an error message.
     """
     tool = RunCommandTool(default_ui)
-    return await tool.execute(command)
+    try:
+        return await tool.execute(command)
+    except ToolExecutionError as e:
+        # Return error message for pydantic-ai compatibility
+        return str(e)
