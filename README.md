@@ -1,5 +1,8 @@
 # Sidekick (Beta)
 
+[![PyPI version](https://badge.fury.io/py/sidekick-cli.svg)](https://badge.fury.io/py/sidekick-cli)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+
 ![Sidekick Demo](screenshot.gif)
 
 Your agentic CLI developer.
@@ -8,9 +11,9 @@ Your agentic CLI developer.
 
 Sidekick is an agentic CLI-based AI tool inspired by Claude Code, Copilot, Windsurf and Cursor. It's meant
 to be an open source alternative to these tools, providing a similar experience but with the flexibility of
-using different LLM providers while keeping the agentic workflow.
+using different LLM providers (Anthropic, OpenAI, Google Gemini) while keeping the agentic workflow.
 
-*Sidekick is currently in beta and under active development. I'd love your ideas and feedback.*
+*Sidekick is currently in beta and under active development. Please [report issues](https://github.com/geekforbrains/sidekick-cli/issues) or share feedback!*
 
 ## Features
 
@@ -99,6 +102,11 @@ starting with the `--no-telemetry` flag.
 sidekick --no-telemetry
 ```
 
+## Requirements
+
+- Python 3.10 or higher
+- Git (for undo functionality)
+
 ## Installation
 
 ### Using pip
@@ -124,6 +132,54 @@ make lint
 # Run tests
 make test
 ```
+
+## Release Process
+
+When preparing a new release:
+
+1. Update version numbers in:
+   - `pyproject.toml`
+   - `src/sidekick/constants.py` (APP_VERSION)
+
+2. Commit the version changes:
+   ```bash
+   git add pyproject.toml src/sidekick/constants.py
+   git commit -m "chore: bump version to X.Y.Z"
+   ```
+
+3. Create and push a tag:
+   ```bash
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+
+4. Create a GitHub release:
+   ```bash
+   gh release create vX.Y.Z --title "vX.Y.Z" --notes "Release notes here"
+   ```
+
+5. Merge to main branch and push to trigger PyPI release (automated)
+
+### Commit Convention
+
+This project follows the [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages:
+
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `docs:` - Documentation changes
+- `style:` - Code style changes (formatting, etc.)
+- `refactor:` - Code refactoring
+- `perf:` - Performance improvements
+- `test:` - Test additions or modifications
+- `chore:` - Maintenance tasks (version bumps, etc.)
+- `build:` - Build system changes
+- `ci:` - CI configuration changes
+
+## Links
+
+- [PyPI Package](https://pypi.org/project/sidekick-cli/)
+- [GitHub Issues](https://github.com/geekforbrains/sidekick-cli/issues)
+- [GitHub Repository](https://github.com/geekforbrains/sidekick-cli)
 
 ## License
 
