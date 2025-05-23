@@ -1,10 +1,12 @@
 from pathlib import Path
 
+from sidekick.types import ConfigFile, ConfigPath, ToolName
+
 
 class PathConfig:
     def __init__(self):
-        self.config_dir = Path.home() / ".config"
-        self.config_file = self.config_dir / "sidekick.json"
+        self.config_dir: ConfigPath = Path.home() / ".config"
+        self.config_file: ConfigFile = self.config_dir / "sidekick.json"
 
 
 class ApplicationSettings:
@@ -13,7 +15,7 @@ class ApplicationSettings:
         self.name = "Sidekick"
         self.guide_file = f"{self.name.upper()}.md"
         self.paths = PathConfig()
-        self.internal_tools = [
+        self.internal_tools: list[ToolName] = [
             "read_file",
             "run_command",
             "update_file",

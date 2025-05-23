@@ -5,6 +5,8 @@ This module defines all custom exceptions used throughout the Sidekick CLI.
 All exceptions inherit from SidekickError for easy catching of any Sidekick-specific error.
 """
 
+from sidekick.types import ErrorMessage, FilePath, OriginalError, ToolName
+
 
 class SidekickError(Exception):
     """Base exception for all Sidekick errors."""
@@ -48,7 +50,9 @@ class ValidationError(SidekickError):
 class ToolExecutionError(SidekickError):
     """Raised when a tool fails to execute."""
 
-    def __init__(self, tool_name: str, message: str, original_error: Exception = None):
+    def __init__(
+        self, tool_name: ToolName, message: ErrorMessage, original_error: OriginalError = None
+    ):
         self.tool_name = tool_name
         self.original_error = original_error
         super().__init__(f"Tool '{tool_name}' failed: {message}")
@@ -77,7 +81,9 @@ class ServiceError(SidekickError):
 class MCPError(ServiceError):
     """Raised when MCP server operations fail."""
 
-    def __init__(self, server_name: str, message: str, original_error: Exception = None):
+    def __init__(
+        self, server_name: str, message: ErrorMessage, original_error: OriginalError = None
+    ):
         self.server_name = server_name
         self.original_error = original_error
         super().__init__(f"MCP server '{server_name}' error: {message}")
@@ -92,7 +98,7 @@ class TelemetryError(ServiceError):
 class GitOperationError(ServiceError):
     """Raised when Git operations fail."""
 
-    def __init__(self, operation: str, message: str, original_error: Exception = None):
+    def __init__(self, operation: str, message: ErrorMessage, original_error: OriginalError = None):
         self.operation = operation
         self.original_error = original_error
         super().__init__(f"Git {operation} failed: {message}")
@@ -102,7 +108,13 @@ class GitOperationError(ServiceError):
 class FileOperationError(SidekickError):
     """Raised when file system operations fail."""
 
-    def __init__(self, operation: str, path: str, message: str, original_error: Exception = None):
+    def __init__(
+        self,
+        operation: str,
+        path: FilePath,
+        message: ErrorMessage,
+        original_error: OriginalError = None,
+    ):
         self.operation = operation
         self.path = path
         self.original_error = original_error

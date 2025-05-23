@@ -1,6 +1,7 @@
 import os
 
 from sidekick.tools.base import FileBasedTool
+from sidekick.types import FilePath, ToolResult
 from sidekick.ui import console as ui
 
 
@@ -11,14 +12,14 @@ class ReadFileTool(FileBasedTool):
     def tool_name(self) -> str:
         return "Read"
 
-    async def _execute(self, filepath: str) -> str:
+    async def _execute(self, filepath: FilePath) -> ToolResult:
         """Read the contents of a file.
 
         Args:
             filepath: The path to the file to read.
 
         Returns:
-            str: The contents of the file or an error message.
+            ToolResult: The contents of the file or an error message.
 
         Raises:
             Exception: Any file reading errors
@@ -37,7 +38,7 @@ class ReadFileTool(FileBasedTool):
             content = file.read()
             return content
 
-    async def _handle_error(self, error: Exception, filepath: str = None) -> str:
+    async def _handle_error(self, error: Exception, filepath: FilePath = None) -> ToolResult:
         """Handle errors with specific messages for common cases."""
         if isinstance(error, FileNotFoundError):
             err_msg = f"Error: File not found at '{filepath}'."
@@ -56,15 +57,15 @@ class ReadFileTool(FileBasedTool):
 
 
 # Create the function that maintains the existing interface
-async def read_file(filepath: str) -> str:
+async def read_file(filepath: FilePath) -> ToolResult:
     """
     Read the contents of a file.
 
     Args:
-        filepath (str): The path to the file to read.
+        filepath (FilePath): The path to the file to read.
 
     Returns:
-        str: The contents of the file or an error message.
+        ToolResult: The contents of the file or an error message.
     """
     tool = ReadFileTool(ui)
     return await tool.execute(filepath)

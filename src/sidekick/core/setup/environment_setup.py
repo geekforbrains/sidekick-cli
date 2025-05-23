@@ -2,6 +2,7 @@ import os
 
 from sidekick.core.setup.base import BaseSetup
 from sidekick.core.state import StateManager
+from sidekick.types import EnvConfig
 from sidekick.ui import console as ui
 
 
@@ -26,7 +27,7 @@ class EnvironmentSetup(BaseSetup):
         ):
             self.state_manager.session.user_config["env"] = {}
 
-        env_dict = self.state_manager.session.user_config["env"]
+        env_dict: EnvConfig = self.state_manager.session.user_config["env"]
         env_set_count = 0
 
         for key, value in env_dict.items():

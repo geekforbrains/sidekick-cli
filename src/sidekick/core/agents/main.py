@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Optional
 
 from pydantic_ai import Agent, Tool
 from pydantic_ai.messages import ModelRequest, ToolReturnPart
@@ -9,9 +10,11 @@ from sidekick.tools.read_file import read_file
 from sidekick.tools.run_command import run_command
 from sidekick.tools.update_file import update_file
 from sidekick.tools.write_file import write_file
+from sidekick.types import (AgentRun, ErrorMessage, ModelName, PydanticAgent, ToolCallback,
+                            ToolCallId, ToolName)
 
 
-async def _process_node(node, tool_callback, state_manager: StateManager):
+async def _process_node(node, tool_callback: Optional[ToolCallback], state_manager: StateManager):
     if hasattr(node, "request"):
         state_manager.session.messages.append(node.request)
 
@@ -22,7 +25,7 @@ async def _process_node(node, tool_callback, state_manager: StateManager):
                 await tool_callback(part, node)
 
 
-def get_or_create_agent(model, state_manager: StateManager):
+def get_or_create_agent(model: ModelName, state_manager: StateManager) -> PydanticAgent:
     if model not in state_manager.session.agents:
         max_retries = state_manager.session.user_config["settings"]["max_retries"]
         state_manager.session.agents[model] = Agent(
@@ -38,7 +41,10 @@ def get_or_create_agent(model, state_manager: StateManager):
     return state_manager.session.agents[model]
 
 
-def patch_tool_messages(error_message="Tool operation failed", state_manager: StateManager = None):
+def patch_tool_messages(
+    error_message: ErrorMessage = "Tool operation failed",
+    state_manager: Optional[StateManager] = None,
+):
     """
     Find any tool calls without responses and add synthetic error responses for them.
     Takes an error message to use in the synthesized tool response.
@@ -58,9 +64,9 @@ def patch_tool_messages(error_message="Tool operation failed", state_manager: St
         return
 
     # Map tool calls to their tool returns
-    tool_calls = {}  # tool_call_id -> tool_name
-    tool_returns = set()  # set of tool_call_ids with returns
-    retry_prompts = set()  # set of tool_call_ids with retry prompts
+    tool_calls: dict[ToolCallId, ToolName] = {}  # tool_call_id -> tool_name
+    tool_returns: set[ToolCallId] = set()  # set of tool_call_ids with returns
+    retry_prompts: set[ToolCallId] = set()  # set of tool_call_ids with retry prompts
 
     for message in messages:
         if hasattr(message, "parts"):
@@ -97,8 +103,11 @@ def patch_tool_messages(error_message="Tool operation failed", state_manager: St
 
 
 async def process_request(
-    model: str, message: str, state_manager: StateManager, tool_callback: callable = None
-):
+    model: ModelName,
+    message: str,
+    state_manager: StateManager,
+    tool_callback: Optional[ToolCallback] = None,
+) -> AgentRun:
     agent = get_or_create_agent(model, state_manager)
     mh = state_manager.session.messages.copy()
     async with agent.iter(message, message_history=mh) as agent_run:

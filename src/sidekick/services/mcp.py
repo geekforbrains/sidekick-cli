@@ -1,10 +1,11 @@
 import os
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from pydantic_ai.mcp import MCPServerStdio
 
 from sidekick.exceptions import MCPError
+from sidekick.types import MCPServers
 
 if TYPE_CHECKING:
     from sidekick.core.state import StateManager
@@ -43,7 +44,7 @@ class QuietMCPServer(MCPServerStdio):
                 yield read_stream, write_stream
 
 
-def get_mcp_servers(state_manager: "StateManager"):
+def get_mcp_servers(state_manager: "StateManager") -> List[MCPServerStdio]:
     """Load MCP servers from configuration.
 
     Args:
@@ -55,8 +56,8 @@ def get_mcp_servers(state_manager: "StateManager"):
     Raises:
         MCPError: If a server configuration is invalid
     """
-    mcp_servers = state_manager.session.user_config.get("mcpServers", {})
-    loaded_servers = []
+    mcp_servers: MCPServers = state_manager.session.user_config.get("mcpServers", {})
+    loaded_servers: List[MCPServerStdio] = []
     MCPServerStdio.log_level = "critical"
 
     for server_name, conf in mcp_servers.items():

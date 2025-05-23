@@ -3,6 +3,7 @@ import os
 from pydantic_ai.exceptions import ModelRetry
 
 from sidekick.tools.base import FileBasedTool
+from sidekick.types import FileContent, FilePath, ToolResult
 from sidekick.ui import console as ui
 
 
@@ -13,7 +14,7 @@ class WriteFileTool(FileBasedTool):
     def tool_name(self) -> str:
         return "Write"
 
-    async def _execute(self, filepath: str, content: str) -> str:
+    async def _execute(self, filepath: FilePath, content: FileContent) -> ToolResult:
         """Write content to a new file. Fails if the file already exists.
 
         Args:
@@ -21,7 +22,7 @@ class WriteFileTool(FileBasedTool):
             content: The content to write to the file.
 
         Returns:
-            str: A message indicating success.
+            ToolResult: A message indicating success.
 
         Raises:
             ModelRetry: If the file already exists
@@ -45,7 +46,7 @@ class WriteFileTool(FileBasedTool):
 
         return f"Successfully wrote to new file: {filepath}"
 
-    def _format_args(self, filepath: str, content: str = None) -> str:
+    def _format_args(self, filepath: FilePath, content: FileContent = None) -> str:
         """Format arguments, truncating content for display."""
         if content is not None and len(content) > 50:
             return f"{repr(filepath)}, content='{content[:47]}...'"
@@ -53,17 +54,17 @@ class WriteFileTool(FileBasedTool):
 
 
 # Create the function that maintains the existing interface
-async def write_file(filepath: str, content: str) -> str:
+async def write_file(filepath: FilePath, content: FileContent) -> ToolResult:
     """
     Write content to a new file. Fails if the file already exists.
     Requires confirmation before writing.
 
     Args:
-        filepath (str): The path to the file to write to.
-        content (str): The content to write to the file.
+        filepath (FilePath): The path to the file to write to.
+        content (FileContent): The content to write to the file.
 
     Returns:
-        str: A message indicating the success or failure of the operation.
+        ToolResult: A message indicating the success or failure of the operation.
     """
     tool = WriteFileTool(ui)
     return await tool.execute(filepath, content)

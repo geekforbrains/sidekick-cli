@@ -1,6 +1,5 @@
 import json
 from asyncio.exceptions import CancelledError
-from typing import Any
 
 from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.application.current import get_app
@@ -9,19 +8,19 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 from sidekick import config
 from sidekick.core.agents import main as agent
 from sidekick.core.agents.main import patch_tool_messages
-from sidekick.core.state import StateManager
 from sidekick.core.tool_handler import ToolHandler
 from sidekick.exceptions import AgentError, SidekickAbort, ValidationError
 from sidekick.ui import console as ui
 from sidekick.ui.tool_ui import ToolUI
 
-from .commands import CommandContext, CommandRegistry
+from ..types import CommandContext, CommandResult, StateManager, ToolArgs
+from .commands import CommandRegistry
 
 # Tool UI instance
 _tool_ui = ToolUI()
 
 
-def _parse_args(args):
+def _parse_args(args) -> ToolArgs:
     """
     Parse tool arguments from a JSON string or dictionary.
 
@@ -121,7 +120,7 @@ _command_registry = CommandRegistry()
 _command_registry.register_all_default_commands()
 
 
-async def _handle_command(command: str, state_manager: StateManager) -> Any:
+async def _handle_command(command: str, state_manager: StateManager) -> CommandResult:
     """
     Handles a command string using the command registry.
 
@@ -133,7 +132,7 @@ async def _handle_command(command: str, state_manager: StateManager) -> Any:
         Command result (varies by command).
     """
     # Create command context
-    context = CommandContext(state_manager=state_manager)
+    context = CommandContext(state_manager=state_manager, process_request=process_request)
 
     try:
         # Set the process_request callback for commands that need it

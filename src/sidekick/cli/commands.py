@@ -1,21 +1,13 @@
 """Command system for Sidekick CLI."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from .. import config, utils
-from ..core.state import StateManager
 from ..exceptions import ValidationError
 from ..services.undo_service import perform_undo
+from ..types import CommandArgs, CommandContext, CommandResult, ProcessRequestCallback
 from ..ui import console as ui
-
-
-@dataclass
-class CommandContext:
-    """Context provided to commands during execution."""
-
-    state_manager: StateManager
 
 
 class Command(ABC):
@@ -29,7 +21,7 @@ class Command(ABC):
 
     @property
     @abstractmethod
-    def aliases(self) -> List[str]:
+    def aliases(self) -> CommandArgs:
         """Alternative names/aliases for the command."""
         pass
 
@@ -39,7 +31,7 @@ class Command(ABC):
         return ""
 
     @abstractmethod
-    async def execute(self, args: List[str], context: CommandContext) -> Any:
+    async def execute(self, args: CommandArgs, context: CommandContext) -> CommandResult:
         """
         Execute the command.
 
@@ -61,7 +53,7 @@ class YoloCommand(Command):
         return "yolo"
 
     @property
-    def aliases(self) -> List[str]:
+    def aliases(self) -> CommandArgs:
         return ["/yolo"]
 
     @property
@@ -85,7 +77,7 @@ class DumpCommand(Command):
         return "dump"
 
     @property
-    def aliases(self) -> List[str]:
+    def aliases(self) -> CommandArgs:
         return ["/dump"]
 
     @property
@@ -104,7 +96,7 @@ class ClearCommand(Command):
         return "clear"
 
     @property
-    def aliases(self) -> List[str]:
+    def aliases(self) -> CommandArgs:
         return ["/clear"]
 
     @property
@@ -124,7 +116,7 @@ class HelpCommand(Command):
         return "help"
 
     @property
-    def aliases(self) -> List[str]:
+    def aliases(self) -> CommandArgs:
         return ["/help"]
 
     @property
@@ -143,7 +135,7 @@ class UndoCommand(Command):
         return "undo"
 
     @property
-    def aliases(self) -> List[str]:
+    def aliases(self) -> CommandArgs:
         return ["/undo"]
 
     @property
@@ -166,7 +158,7 @@ class CompactCommand(Command):
         return "compact"
 
     @property
-    def aliases(self) -> List[str]:
+    def aliases(self) -> CommandArgs:
         return ["/compact"]
 
     @property
@@ -193,14 +185,14 @@ class ModelCommand(Command):
         return "model"
 
     @property
-    def aliases(self) -> List[str]:
+    def aliases(self) -> CommandArgs:
         return ["/model"]
 
     @property
     def description(self) -> str:
         return "List models or select a model (e.g., /model 3 or /model 3 default)"
 
-    async def execute(self, args: List[str], context: CommandContext) -> Optional[str]:
+    async def execute(self, args: CommandArgs, context: CommandContext) -> Optional[str]:
         if not args:
             # No arguments - list models
             await ui.models()
@@ -239,7 +231,7 @@ class CommandRegistry:
 
     def __init__(self):
         self._commands: Dict[str, Command] = {}
-        self._process_request_callback: Optional[Callable] = None
+        self._process_request_callback: Optional[ProcessRequestCallback] = None
 
     def register(self, command: Command) -> None:
         """Register a command and its aliases."""
@@ -260,7 +252,7 @@ class CommandRegistry:
         self.register(CompactCommand())
         self.register(ModelCommand())
 
-    def set_process_request_callback(self, callback: Callable) -> None:
+    def set_process_request_callback(self, callback: ProcessRequestCallback) -> None:
         """Set the process_request callback for commands that need it."""
         self._process_request_callback = callback
 
@@ -319,6 +311,6 @@ class CommandRegistry:
 
         return parts[0].lower() in self._commands
 
-    def get_command_names(self) -> List[str]:
+    def get_command_names(self) -> CommandArgs:
         """Get all registered command names (including aliases)."""
         return sorted(self._commands.keys())

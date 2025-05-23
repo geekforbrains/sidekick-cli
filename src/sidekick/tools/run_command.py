@@ -1,6 +1,7 @@
 import subprocess
 
 from sidekick.tools.base import BaseTool
+from sidekick.types import ToolResult
 from sidekick.ui import console as ui
 
 
@@ -11,14 +12,14 @@ class RunCommandTool(BaseTool):
     def tool_name(self) -> str:
         return "Shell"
 
-    async def _execute(self, command: str) -> str:
+    async def _execute(self, command: str) -> ToolResult:
         """Run a shell command and return the output.
 
         Args:
             command: The command to run.
 
         Returns:
-            str: The output of the command (stdout and stderr).
+            ToolResult: The output of the command (stdout and stderr).
 
         Raises:
             FileNotFoundError: If command not found
@@ -46,7 +47,7 @@ class RunCommandTool(BaseTool):
 
         return resp
 
-    async def _handle_error(self, error: Exception, command: str = None) -> str:
+    async def _handle_error(self, error: Exception, command: str = None) -> ToolResult:
         """Handle errors with specific messages for common cases."""
         if isinstance(error, FileNotFoundError):
             err_msg = f"Error: Command not found or failed to execute: {command}. Details: {error}"
@@ -66,7 +67,7 @@ class RunCommandTool(BaseTool):
 
 
 # Create the function that maintains the existing interface
-async def run_command(command: str) -> str:
+async def run_command(command: str) -> ToolResult:
     """
     Run a shell command and return the output. User must confirm risky commands.
 
@@ -74,7 +75,7 @@ async def run_command(command: str) -> str:
         command (str): The command to run.
 
     Returns:
-        str: The output of the command (stdout and stderr) or an error message.
+        ToolResult: The output of the command (stdout and stderr) or an error message.
     """
     tool = RunCommandTool(ui)
     return await tool.execute(command)

@@ -3,6 +3,7 @@ import os
 from pydantic_ai.exceptions import ModelRetry
 
 from sidekick.tools.base import FileBasedTool
+from sidekick.types import FileContent, FilePath, ToolResult
 from sidekick.ui import console as ui
 
 
@@ -13,7 +14,9 @@ class UpdateFileTool(FileBasedTool):
     def tool_name(self) -> str:
         return "Update"
 
-    async def _execute(self, filepath: str, target: str, patch: str) -> str:
+    async def _execute(
+        self, filepath: FilePath, target: FileContent, patch: FileContent
+    ) -> ToolResult:
         """Update an existing file by replacing a target text block with a patch.
 
         Args:
@@ -22,7 +25,7 @@ class UpdateFileTool(FileBasedTool):
             patch: The new block of text to insert.
 
         Returns:
-            str: A message indicating success.
+            ToolResult: A message indicating success.
 
         Raises:
             ModelRetry: If file not found or target not found
@@ -63,7 +66,9 @@ class UpdateFileTool(FileBasedTool):
 
         return f"File '{filepath}' updated successfully."
 
-    def _format_args(self, filepath: str, target: str = None, patch: str = None) -> str:
+    def _format_args(
+        self, filepath: FilePath, target: FileContent = None, patch: FileContent = None
+    ) -> str:
         """Format arguments, truncating target and patch for display."""
         args = [repr(filepath)]
 
@@ -83,18 +88,18 @@ class UpdateFileTool(FileBasedTool):
 
 
 # Create the function that maintains the existing interface
-async def update_file(filepath: str, target: str, patch: str) -> str:
+async def update_file(filepath: FilePath, target: FileContent, patch: FileContent) -> ToolResult:
     """
     Update an existing file by replacing a target text block with a patch.
     Requires confirmation with diff before applying.
 
     Args:
-        filepath (str): The path to the file to update.
-        target (str): The entire, exact block of text to be replaced.
-        patch (str): The new block of text to insert.
+        filepath (FilePath): The path to the file to update.
+        target (FileContent): The entire, exact block of text to be replaced.
+        patch (FileContent): The new block of text to insert.
 
     Returns:
-        str: A message indicating the success or failure of the operation.
+        ToolResult: A message indicating the success or failure of the operation.
     """
     tool = UpdateFileTool(ui)
     return await tool.execute(filepath, target, patch)

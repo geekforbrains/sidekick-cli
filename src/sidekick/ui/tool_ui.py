@@ -2,10 +2,9 @@
 Tool confirmation UI components, separated from business logic.
 """
 
-from typing import Any, Dict
-
 from sidekick import config
 from sidekick.core.tool_handler import ToolConfirmationRequest, ToolConfirmationResponse
+from sidekick.types import ToolArgs
 from sidekick.ui import console as ui
 from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
 
@@ -46,7 +45,7 @@ class ToolUI:
         code_block = f"```{lang}\n{content}\n```"
         return ui.markdown(code_block)
 
-    def _render_args(self, tool_name: str, args: Dict[str, Any]) -> str:
+    def _render_args(self, tool_name: str, args: ToolArgs) -> str:
         """
         Render the tool arguments for display.
 
@@ -147,7 +146,7 @@ class ToolUI:
         else:
             return ToolConfirmationResponse(approved=True)
 
-    async def log_mcp(self, title: str, args: Dict[str, Any]):
+    async def log_mcp(self, title: str, args: ToolArgs):
         """
         Display MCP tool with its arguments.
 

@@ -9,12 +9,13 @@ from abc import ABC, abstractmethod
 from pydantic_ai.exceptions import ModelRetry
 
 from sidekick.exceptions import FileOperationError
+from sidekick.types import FilePath, ToolName, ToolResult, UILogger
 
 
 class BaseTool(ABC):
     """Base class for all Sidekick tools providing common functionality."""
 
-    def __init__(self, ui_logger=None):
+    def __init__(self, ui_logger: UILogger = None):
         """Initialize the base tool.
 
         Args:
@@ -22,7 +23,7 @@ class BaseTool(ABC):
         """
         self.ui = ui_logger
 
-    async def execute(self, *args, **kwargs) -> str:
+    async def execute(self, *args, **kwargs) -> ToolResult:
         """Execute the tool with error handling and logging.
 
         This method wraps the tool-specific logic with:
@@ -50,12 +51,12 @@ class BaseTool(ABC):
 
     @property
     @abstractmethod
-    def tool_name(self) -> str:
+    def tool_name(self) -> ToolName:
         """Return the display name for this tool."""
         pass
 
     @abstractmethod
-    async def _execute(self, *args, **kwargs) -> str:
+    async def _execute(self, *args, **kwargs) -> ToolResult:
         """Implement tool-specific logic here.
 
         This method should contain the core functionality of the tool.
@@ -69,7 +70,7 @@ class BaseTool(ABC):
         """
         pass
 
-    async def _handle_error(self, error: Exception, *args, **kwargs) -> str:
+    async def _handle_error(self, error: Exception, *args, **kwargs) -> ToolResult:
         """Handle errors in a consistent way.
 
         Args:
@@ -141,7 +142,7 @@ class FileBasedTool(BaseTool):
     - Encoding handling
     """
 
-    def _format_args(self, filepath: str, *args, **kwargs) -> str:
+    def _format_args(self, filepath: FilePath, *args, **kwargs) -> str:
         """Format arguments with filepath as first argument."""
         # Always show the filepath first
         all_args = [repr(filepath)]
@@ -162,13 +163,13 @@ class FileBasedTool(BaseTool):
 
         return ", ".join(all_args)
 
-    def _get_error_context(self, filepath: str = None, *args, **kwargs) -> str:
+    def _get_error_context(self, filepath: FilePath = None, *args, **kwargs) -> str:
         """Get error context including file path."""
         if filepath:
             return f"handling file '{filepath}'"
         return super()._get_error_context(*args, **kwargs)
 
-    async def _handle_error(self, error: Exception, *args, **kwargs) -> str:
+    async def _handle_error(self, error: Exception, *args, **kwargs) -> ToolResult:
         """Handle file-specific errors.
 
         Overrides base class to create FileOperationError for file-related issues.

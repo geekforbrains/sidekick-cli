@@ -6,6 +6,7 @@ from sidekick.configuration.models import ModelRegistry
 from sidekick.core.setup.base import BaseSetup
 from sidekick.core.state import StateManager
 from sidekick.exceptions import SidekickConfigError
+from sidekick.types import ConfigFile, ConfigPath, UserConfig
 from sidekick.ui import console as ui
 from sidekick.utils import system, user_config
 from sidekick.utils.text_utils import key_to_title
@@ -16,8 +17,8 @@ class ConfigSetup(BaseSetup):
 
     def __init__(self, state_manager: StateManager):
         super().__init__(state_manager)
-        self.config_dir = Path.home() / ".config"
-        self.config_file = self.config_dir / "sidekick.json"
+        self.config_dir: ConfigPath = Path.home() / ".config"
+        self.config_file: ConfigFile = self.config_dir / "sidekick.json"
         self.model_registry = ModelRegistry()
 
     @property
@@ -75,7 +76,7 @@ class ConfigSetup(BaseSetup):
 
         return True
 
-    def _merge_with_defaults(self, loaded_config):
+    def _merge_with_defaults(self, loaded_config: UserConfig) -> UserConfig:
         """Merge loaded config with defaults to ensure all required keys exist."""
         # Start with loaded config if available, otherwise use defaults
         if loaded_config:

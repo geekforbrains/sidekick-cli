@@ -1,15 +1,16 @@
 import json
 from json import JSONDecodeError
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sidekick import config
 from sidekick.exceptions import SidekickConfigError
+from sidekick.types import MCPServers, ModelName, UserConfig
 
 if TYPE_CHECKING:
     from sidekick.core.state import StateManager
 
 
-def load_config():
+def load_config() -> Optional[UserConfig]:
     """Load user config from file"""
     try:
         with open(config.CONFIG_FILE, "r") as f:
@@ -32,12 +33,12 @@ def save_config(state_manager: "StateManager") -> bool:
         return False
 
 
-def get_mcp_servers(state_manager: "StateManager") -> list:
+def get_mcp_servers(state_manager: "StateManager") -> MCPServers:
     """Retrieve MCP server configurations from user config"""
     return state_manager.session.user_config.get("mcpServers", [])
 
 
-def set_default_model(model_name: str, state_manager: "StateManager") -> bool:
+def set_default_model(model_name: ModelName, state_manager: "StateManager") -> bool:
     """Set the default model in the user config and save"""
     state_manager.session.user_config["default_model"] = model_name
     return save_config(state_manager)

@@ -1,23 +1,28 @@
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
+from sidekick.types import (DeviceId, InputSessions, MessageHistory, ModelName, SessionId, ToolName,
+                            UserConfig)
 
 
 @dataclass
 class SessionState:
-    user_config: Dict[str, Any] = field(default_factory=dict)
-    agents: Dict[str, Any] = field(default_factory=dict)
-    messages: List[Any] = field(default_factory=list)
+    user_config: UserConfig = field(default_factory=dict)
+    agents: dict[str, Any] = field(
+        default_factory=dict
+    )  # Keep as dict[str, Any] for agent instances
+    messages: MessageHistory = field(default_factory=list)
     total_cost: float = 0.0
-    current_model: str = "openai:gpt-4o"
+    current_model: ModelName = "openai:gpt-4o"
     spinner: Optional[Any] = None
-    tool_ignore: List[str] = field(default_factory=list)
+    tool_ignore: list[ToolName] = field(default_factory=list)
     yolo: bool = False
     undo_initialized: bool = False
-    session_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    device_id: Optional[str] = None
+    session_id: SessionId = field(default_factory=lambda: str(uuid.uuid4()))
+    device_id: Optional[DeviceId] = None
     telemetry_enabled: bool = True
-    input_sessions: Dict[str, Any] = field(default_factory=dict)
+    input_sessions: InputSessions = field(default_factory=dict)
     current_task: Optional[Any] = None
 
 

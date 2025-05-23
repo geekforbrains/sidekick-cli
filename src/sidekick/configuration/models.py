@@ -1,24 +1,12 @@
-from dataclasses import dataclass
-from typing import Dict
-
-
-@dataclass
-class ModelPricing:
-    input: float
-    cached_input: float
-    output: float
-
-
-@dataclass
-class ModelConfig:
-    pricing: ModelPricing
+from sidekick.types import ModelConfig, ModelName, ModelPricing
+from sidekick.types import ModelRegistry as ModelRegistryType
 
 
 class ModelRegistry:
     def __init__(self):
         self._models = self._load_default_models()
 
-    def _load_default_models(self) -> Dict[str, ModelConfig]:
+    def _load_default_models(self) -> ModelRegistryType:
         return {
             "anthropic:claude-opus-4-20250514": ModelConfig(
                 pricing=ModelPricing(input=3.00, cached_input=1.50, output=15.00)
@@ -55,11 +43,11 @@ class ModelRegistry:
             ),
         }
 
-    def get_model(self, name: str) -> ModelConfig:
+    def get_model(self, name: ModelName) -> ModelConfig:
         return self._models.get(name)
 
-    def list_models(self) -> Dict[str, ModelConfig]:
+    def list_models(self) -> ModelRegistryType:
         return self._models.copy()
 
-    def list_model_ids(self) -> list[str]:
+    def list_model_ids(self) -> list[ModelName]:
         return list(self._models.keys())

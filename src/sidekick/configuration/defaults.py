@@ -1,4 +1,6 @@
-DEFAULT_USER_CONFIG = {
+from sidekick.types import UserConfig
+
+DEFAULT_USER_CONFIG: UserConfig = {
     "default_model": "",
     "env": {
         "ANTHROPIC_API_KEY": "",
