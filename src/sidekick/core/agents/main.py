@@ -33,7 +33,7 @@ def get_or_create_agent(model, state_manager: StateManager):
                 Tool(update_file, max_retries=max_retries),
                 Tool(write_file, max_retries=max_retries),
             ],
-            mcp_servers=get_mcp_servers(),
+            mcp_servers=get_mcp_servers(state_manager),
         )
     return state_manager.session.agents[model]
 

@@ -1,0 +1,165 @@
+"""
+Tool confirmation UI components, separated from business logic.
+"""
+
+from typing import Any, Dict
+
+from sidekick import config
+from sidekick.core.tool_handler import ToolConfirmationRequest, ToolConfirmationResponse
+from sidekick.ui import console as ui
+from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
+
+
+class ToolUI:
+    """Handles tool confirmation UI presentation."""
+
+    def __init__(self):
+        pass
+
+    def _get_tool_title(self, tool_name: str) -> str:
+        """
+        Get the display title for a tool.
+
+        Args:
+            tool_name: Name of the tool.
+
+        Returns:
+            str: Display title.
+        """
+        if tool_name in config.INTERNAL_TOOLS:
+            return f"Tool({tool_name})"
+        else:
+            return f"MCP({tool_name})"
+
+    def _create_code_block(self, filepath: str, content: str):
+        """
+        Create a code block for the given file path and content.
+
+        Args:
+            filepath: The path to the file.
+            content: The content of the file.
+
+        Returns:
+            Markdown: A Markdown object representing the code block.
+        """
+        lang = ext_to_lang(filepath)
+        code_block = f"```{lang}\n{content}\n```"
+        return ui.markdown(code_block)
+
+    def _render_args(self, tool_name: str, args: Dict[str, Any]) -> str:
+        """
+        Render the tool arguments for display.
+
+        Args:
+            tool_name: Name of the tool.
+            args: Tool arguments.
+
+        Returns:
+            str: Formatted arguments for display.
+        """
+        # Show diff between `target` and `patch` on file updates
+        if tool_name == "update_file":
+            return render_file_diff(args["target"], args["patch"], ui.colors)
+
+        # Show file content on write_file
+        elif tool_name == "write_file":
+            return self._create_code_block(args["filepath"], args["content"])
+
+        # Default to showing key and value on new line
+        content = ""
+        for key, value in args.items():
+            if isinstance(value, list):
+                content += f"{key_to_title(key)}:\n"
+                for item in value:
+                    content += f"  - {item}\n"
+                content += "\n"
+            else:
+                # If string length is over 200 characters, split to new line
+                value = str(value)
+                content += f"{key_to_title(key)}:"
+                if len(value) > 200:
+                    content += f"\n{value}\n\n"
+                else:
+                    content += f" {value}\n\n"
+        return content.strip()
+
+    async def show_confirmation(self, request: ToolConfirmationRequest) -> ToolConfirmationResponse:
+        """
+        Show tool confirmation UI and get user response.
+
+        Args:
+            request: The confirmation request.
+
+        Returns:
+            ToolConfirmationResponse: User's response to the confirmation.
+        """
+        title = self._get_tool_title(request.tool_name)
+        content = self._render_args(request.tool_name, request.args)
+
+        await ui.tool_confirm(title, content, filepath=request.filepath)
+
+        # If tool call has filepath, show it under panel
+        if request.filepath:
+            await ui.usage(f"File: {request.filepath}")
+
+        await ui.print("  1. Yes (default)")
+        await ui.print("  2. Yes, and don't ask again for commands like this")
+        await ui.print("  3. No, and tell Sidekick what to do differently")
+        resp = (
+            await ui.input(session_key="tool_confirm", pretext="  Choose an option [1/2/3]: ")
+            or "1"
+        )
+
+        if resp == "2":
+            return ToolConfirmationResponse(approved=True, skip_future=True)
+        elif resp == "3":
+            return ToolConfirmationResponse(approved=False, abort=True)
+        else:
+            return ToolConfirmationResponse(approved=True)
+
+    def show_sync_confirmation(self, request: ToolConfirmationRequest) -> ToolConfirmationResponse:
+        """
+        Show tool confirmation UI synchronously and get user response.
+
+        Args:
+            request: The confirmation request.
+
+        Returns:
+            ToolConfirmationResponse: User's response to the confirmation.
+        """
+        title = self._get_tool_title(request.tool_name)
+        content = self._render_args(request.tool_name, request.args)
+
+        # Display styled confirmation panel using sync UI functions
+        ui.sync_tool_confirm(title, content)
+        if request.filepath:
+            ui.sync_print(f"File: {request.filepath}", style=ui.colors.muted)
+
+        ui.sync_print("  1. Yes (default)")
+        ui.sync_print("  2. Yes, and don't ask again for commands like this")
+        ui.sync_print("  3. No, and tell Sidekick what to do differently")
+        resp = input("  Choose an option [1/2/3]: ").strip() or "1"
+
+        if resp == "2":
+            return ToolConfirmationResponse(approved=True, skip_future=True)
+        elif resp == "3":
+            return ToolConfirmationResponse(approved=False, abort=True)
+        else:
+            return ToolConfirmationResponse(approved=True)
+
+    async def log_mcp(self, title: str, args: Dict[str, Any]):
+        """
+        Display MCP tool with its arguments.
+
+        Args:
+            title: Title to display.
+            args: Arguments to display.
+        """
+        if not args:
+            return
+
+        await ui.info(title)
+        for key, value in args.items():
+            if isinstance(value, list):
+                value = ", ".join(value)
+            await ui.muted(f"{key}: {value}", spaces=4)

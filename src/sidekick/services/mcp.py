@@ -1,9 +1,11 @@
 import os
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
 from pydantic_ai.mcp import MCPServerStdio
 
-from sidekick import session
+if TYPE_CHECKING:
+    from sidekick.core.state import StateManager
 
 
 class QuietMCPServer(MCPServerStdio):
@@ -39,8 +41,8 @@ class QuietMCPServer(MCPServerStdio):
                 yield read_stream, write_stream
 
 
-def get_mcp_servers():
-    mcp_servers = session.user_config.get("mcpServers", {})
+def get_mcp_servers(state_manager: "StateManager"):
+    mcp_servers = state_manager.session.user_config.get("mcpServers", {})
     loaded_servers = []
     MCPServerStdio.log_level = "critical"
 

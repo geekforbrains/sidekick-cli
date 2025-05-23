@@ -10,11 +10,15 @@ from sidekick import config
 from sidekick.core.agents import main as agent
 from sidekick.core.agents.main import patch_tool_messages
 from sidekick.core.state import StateManager
+from sidekick.core.tool_handler import ToolHandler
 from sidekick.exceptions import SidekickAbort
 from sidekick.ui import console as ui
-from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
+from sidekick.ui.tool_ui import ToolUI
 
 from .commands import CommandContext, CommandRegistry
+
+# Tool UI instance
+_tool_ui = ToolUI()
 
 
 def _parse_args(args):
@@ -41,106 +45,31 @@ def _parse_args(args):
         raise ValueError(f"Invalid args type: {type(args)}")
 
 
-def _get_tool_title(tool_name):
-    """
-    Checks if the tool exists within this system. If it does
-    it return "Tool" otherwise assumed to be an MCP so returns "MCP"
-    """
-    if tool_name in config.INTERNAL_TOOLS:
-        return f"Tool({tool_name})"
-    else:
-        return f"MCP({tool_name})"
-
-
-def _create_code_block(filepath: str, content: str) -> ui.Markdown:
-    """
-    Create a code block for the given file path and content.
-
-    Args:
-        filepath (str): The path to the file.
-        content (str): The content of the file.
-
-    Returns:
-        Markdown: A Markdown object representing the code block.
-    """
-    lang = ext_to_lang(filepath)
-    code_block = f"```{lang}\n{content}\n```"
-    return ui.markdown(code_block)
-
-
-def _render_args(tool_name, args):
-    """
-    Render the tool arguments for a given tool.
-
-    """
-    # Show diff between `target` and `patch` on file updates
-    if tool_name == "update_file":
-        return render_file_diff(args["target"], args["patch"], ui.colors)
-
-    # Show file content on read_file
-    elif tool_name == "write_file":
-        return _create_code_block(args["filepath"], args["content"])
-
-    # Default to showing key and value on new line
-    content = ""
-    for key, value in args.items():
-        if isinstance(value, list):
-            content += f"{key_to_title(key)}:\n"
-            for item in value:
-                content += f"  - {item}\n"
-            content += "\n"
-        else:
-            # If string length is over 200 characters
-            # split to new line
-            value = str(value)
-            content += f"{key_to_title(key)}:"
-            if len(value) > 200:
-                content += f"\n{value}\n\n"
-            else:
-                content += f" {value}\n\n"
-    return content.strip()
-
-
-async def _log_mcp(title, args):
-    """Display MCP tool with its arguments."""
-    if not args:
-        return
-
-    await ui.info(title)
-    for key, value in args.items():
-        if isinstance(value, list):
-            value = ", ".join(value)
-        await ui.muted(f"{key}: {value}", spaces=4)
-
-
 async def _tool_confirm(tool_call, node, state_manager: StateManager):
-    title = _get_tool_title(tool_call.tool_name)
+    """Confirm tool execution with separated business logic and UI."""
+    # Create tool handler with state
+    tool_handler = ToolHandler(state_manager)
     args = _parse_args(tool_call.args)
 
-    # If we're skipping confirmation on this tool, log its output if MCP
-    if state_manager.session.yolo or tool_call.tool_name in state_manager.session.tool_ignore:
+    # Check if confirmation is needed
+    if not tool_handler.should_confirm(tool_call.tool_name):
+        # Log MCP tools when skipping confirmation
         if tool_call.tool_name not in config.INTERNAL_TOOLS:
-            _log_mcp(title, args)
+            title = _tool_ui._get_tool_title(tool_call.tool_name)
+            await _tool_ui.log_mcp(title, args)
         return
 
+    # Stop spinner during user interaction
     state_manager.session.spinner.stop()
-    content = _render_args(tool_call.tool_name, args)
-    filepath = args.get("filepath")
 
-    await ui.tool_confirm(title, content, filepath=filepath)
+    # Create confirmation request
+    request = tool_handler.create_confirmation_request(tool_call.tool_name, args)
 
-    # If tool call has filepath, show it under panel
-    if filepath:
-        await ui.usage(f"File: {filepath}")
+    # Show UI and get response
+    response = await _tool_ui.show_confirmation(request)
 
-    await ui.print("  1. Yes (default)")
-    await ui.print("  2. Yes, and don't ask again for commands like this")
-    await ui.print("  3. No, and tell Sidekick what to do differently")
-    resp = await ui.input(session_key="tool_confirm", pretext="  Choose an option [1/2/3]: ") or "1"
-
-    if resp == "2":
-        state_manager.session.tool_ignore.append(tool_call.tool_name)
-    elif resp == "3":
+    # Process the response
+    if not tool_handler.process_confirmation(response, tool_call.tool_name):
         raise SidekickAbort("User aborted.")
 
     await ui.line()  # Add line after user input
@@ -148,36 +77,29 @@ async def _tool_confirm(tool_call, node, state_manager: StateManager):
 
 
 async def _tool_handler(part, node, state_manager: StateManager):
+    """Handle tool execution with separated business logic and UI."""
     await ui.info(f"Tool({part.tool_name})")
     state_manager.session.spinner.stop()
 
     try:
+        # Create tool handler with state
+        tool_handler = ToolHandler(state_manager)
+        args = _parse_args(part.args)
+
         # Use a synchronous function in run_in_terminal to avoid async deadlocks
         def confirm_func():
-            title = _get_tool_title(part.tool_name)
-            args = _parse_args(part.args)
-
-            # Skip confirmation if needed
-            if state_manager.session.yolo or part.tool_name in state_manager.session.tool_ignore:
+            # Skip confirmation if not needed
+            if not tool_handler.should_confirm(part.tool_name):
                 return False
 
-            content = _render_args(part.tool_name, args)
-            filepath = args.get("filepath")
+            # Create confirmation request
+            request = tool_handler.create_confirmation_request(part.tool_name, args)
 
-            # Display styled confirmation panel using sync UI functions
-            ui.sync_tool_confirm(title, content)
-            if filepath:
-                ui.sync_print(f"File: {filepath}", style=ui.colors.muted)
+            # Show sync UI and get response
+            response = _tool_ui.show_sync_confirmation(request)
 
-            ui.sync_print("  1. Yes (default)")
-            ui.sync_print("  2. Yes, and don't ask again for commands like this")
-            ui.sync_print("  3. No, and tell Sidekick what to do differently")
-            resp = input("  Choose an option [1/2/3]: ").strip() or "1"
-
-            if resp == "2":
-                state_manager.session.tool_ignore.append(part.tool_name)
-                return False
-            elif resp == "3":
+            # Process the response
+            if not tool_handler.process_confirmation(response, part.tool_name):
                 return True  # Abort
             return False  # Continue
 

@@ -224,7 +224,7 @@ class ModelCommand(Command):
 
         # Check if setting as default
         if len(args) > 1 and args[1] == "default":
-            utils.user_config.set_default_model(model)
+            utils.user_config.set_default_model(model, context.state_manager)
             await ui.muted("Updating default model")
             return "restart"
         else:

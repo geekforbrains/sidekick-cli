@@ -23,7 +23,7 @@ def _load_or_create_config(state_manager: StateManager):
         return False
     else:
         state_manager.session.user_config = DEFAULT_CONFIG.copy()
-        user_config.save_config()
+        user_config.save_config(state_manager)
         return True
 
 
@@ -48,6 +48,25 @@ def _key_to_title(key):
     """Convert a provider env key to a title string."""
     words = [word.title() for word in key.split("_")]
     return " ".join(words).replace("Api", "API")
+
+
+def _merge_with_defaults(loaded_config):
+    """Merge loaded config with defaults to ensure all required keys exist."""
+    # Start with loaded config if available, otherwise use defaults
+    if loaded_config:
+        merged = loaded_config.copy()
+
+        # Only add missing top-level keys from defaults
+        for key, default_value in DEFAULT_CONFIG.items():
+            if key not in merged:
+                # Don't add empty env vars
+                if key == "env":
+                    continue
+                merged[key] = default_value
+
+        return merged
+    else:
+        return DEFAULT_CONFIG.copy()
 
 
 async def _step1(state_manager: StateManager):
@@ -99,7 +118,7 @@ async def _onboarding(state_manager: StateManager):
         # Compare configs to see if anything changed
         current_config = json.dumps(state_manager.session.user_config, sort_keys=True)
         if initial_config != current_config:
-            if user_config.save_config():
+            if user_config.save_config(state_manager):
                 message = f"Config saved to: [bold]{CONFIG_FILE}[/bold]"
                 await ui.panel("Finished", message, top=0, border_style=ui.colors.success)
             else:
@@ -129,14 +148,15 @@ async def _setup_config(run_setup, state_manager: StateManager):
 
     if loaded_config and not run_setup:
         await ui.muted(f"Loading config from: {CONFIG_FILE}")
-        state_manager.session.user_config = loaded_config
+        # Merge loaded config with defaults to ensure all required keys exist
+        state_manager.session.user_config = _merge_with_defaults(loaded_config)
     else:
         if run_setup:
             await ui.muted("Running setup process, resetting config")
         else:
             await ui.muted("No user configuration found, running setup")
         state_manager.session.user_config = DEFAULT_CONFIG.copy()
-        user_config.save_config()  # Save the default config initially
+        user_config.save_config(state_manager)  # Save the default config initially
         await _onboarding(state_manager)
 
     if not state_manager.session.user_config.get("default_model"):
