@@ -148,7 +148,8 @@ class ToolUI:
         panel_obj = Panel(
             Padding(content, 1), title=title, title_align="left", border_style=self.colors.warning
         )
-        ui.console.print(Padding(panel_obj, (0, 0, 0, 0)))
+        # Add consistent spacing above panels
+        ui.console.print(Padding(panel_obj, (1, 0, 0, 0)))
 
         if request.filepath:
             ui.console.print(f"File: {request.filepath}", style=self.colors.muted)
@@ -157,6 +158,9 @@ class ToolUI:
         ui.console.print("  2. Yes, and don't ask again for commands like this")
         ui.console.print(f"  3. No, and tell {APP_NAME} what to do differently")
         resp = input("  Choose an option [1/2/3]: ").strip() or "1"
+
+        # Add spacing after user choice for better readability
+        print()
 
         if resp == "2":
             return ToolConfirmationResponse(approved=True, skip_future=True)
