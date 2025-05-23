@@ -148,8 +148,12 @@ async def error(text: str):
     await panel("Error", text, style=colors.error)
 
 
-async def dump_messages():
-    messages = Pretty(session.messages)
+async def dump_messages(messages_list=None):
+    if messages_list is None:
+        # Fallback to global session for backward compatibility
+        messages = Pretty(session.messages)
+    else:
+        messages = Pretty(messages_list)
     await panel("Message History", messages, style=colors.muted)
 
 

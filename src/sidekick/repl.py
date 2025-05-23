@@ -6,9 +6,9 @@ from prompt_toolkit.application.current import get_app
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from sidekick import config, ui
-from sidekick.core.state import StateManager
 from sidekick.agents import main as agent
 from sidekick.agents.main import patch_tool_messages
+from sidekick.core.state import StateManager
 from sidekick.exceptions import SidekickAbort
 from sidekick.utils import user_config
 from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
@@ -200,8 +200,8 @@ async def _toggle_yolo(state_manager: StateManager):
         await ui.info("Pfft, boring...\n")
 
 
-async def _dump_messages():
-    await ui.dump_messages()
+async def _dump_messages(state_manager: StateManager):
+    await ui.dump_messages(state_manager.session.messages)
 
 
 async def _clear_screen(state_manager: StateManager):
@@ -228,7 +228,9 @@ async def _compact_context(state_manager: StateManager):
     state_manager.session.messages = state_manager.session.messages[-2:]
 
 
-async def _handle_model_command(state_manager: StateManager, model_index: int = None, action: str = None):
+async def _handle_model_command(
+    state_manager: StateManager, model_index: int = None, action: str = None
+):
     if model_index:
         models = list(config.MODELS.keys())
         model = models[int(model_index)]
@@ -261,12 +263,12 @@ async def _handle_command(command: str, state_manager: StateManager) -> bool:
         "/yolo": lambda: _toggle_yolo(state_manager),
         "/clear": lambda: _clear_screen(state_manager),
         "/compact": lambda: _compact_context(state_manager),
+        "/dump": lambda: _dump_messages(state_manager),
         "/model": lambda *args: _handle_model_command(state_manager, *args),
     }
-    
+
     # Commands that don't need state_manager
     static_commands = {
-        "/dump": _dump_messages,
         "/help": _show_help,
         "/undo": _perform_undo,
     }
@@ -289,7 +291,7 @@ async def process_request(text: str, state_manager: StateManager, output: bool =
         # Create a partial function that includes state_manager
         def tool_callback_with_state(part, node):
             return _tool_handler(part, node, state_manager)
-        
+
         res = await agent.process_request(
             state_manager.session.current_model,
             text,
@@ -314,7 +316,9 @@ async def process_request(text: str, state_manager: StateManager, output: bool =
 
         # Force refresh of the multiline input prompt to restore placeholder
         if "multiline" in state_manager.session.input_sessions:
-            await run_in_terminal(lambda: state_manager.session.input_sessions["multiline"].app.invalidate())
+            await run_in_terminal(
+                lambda: state_manager.session.input_sessions["multiline"].app.invalidate()
+            )
 
 
 async def repl(state_manager: StateManager):
@@ -350,7 +354,9 @@ async def repl(state_manager: StateManager):
                 await ui.muted("Agent is busy, press esc to interrupt.")
                 continue
 
-            state_manager.session.current_task = get_app().create_background_task(process_request(line, state_manager))
+            state_manager.session.current_task = get_app().create_background_task(
+                process_request(line, state_manager)
+            )
 
     if action == "restart":
         await repl(state_manager)
