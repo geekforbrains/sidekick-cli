@@ -10,6 +10,8 @@ from sidekick.constants import (MSG_UPDATE_AVAILABLE, MSG_UPDATE_INSTRUCTION, MS
 from sidekick.core.state import StateManager
 from sidekick.utils.file_utils import DotDict
 
+from .constants import SPINNER_TYPE
+
 console = Console()
 colors = DotDict(UI_COLORS)
 
@@ -87,7 +89,7 @@ async def update_available(latest_version: str) -> None:
 
 async def spinner(show: bool = True, spinner_obj=None, state_manager: StateManager = None):
     """Manage a spinner display."""
-    icon = "star2"
+    icon = SPINNER_TYPE
     message = UI_THINKING_MESSAGE
 
     # Get spinner from state manager if available

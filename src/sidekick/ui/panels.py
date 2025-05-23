@@ -17,6 +17,7 @@ from sidekick.constants import (APP_NAME, CMD_CLEAR, CMD_COMPACT, CMD_DUMP, CMD_
 from sidekick.core.state import StateManager
 from sidekick.utils.file_utils import DotDict
 
+from .constants import DEFAULT_PANEL_PADDING
 from .output import print
 
 colors = DotDict(UI_COLORS)
@@ -25,10 +26,10 @@ colors = DotDict(UI_COLORS)
 async def panel(
     title: str,
     text: Union[str, Markdown, Pretty],
-    top: int = 1,
-    right: int = 0,
-    bottom: int = 1,
-    left: int = 1,
+    top: int = DEFAULT_PANEL_PADDING["top"],
+    right: int = DEFAULT_PANEL_PADDING["right"],
+    bottom: int = DEFAULT_PANEL_PADDING["bottom"],
+    left: int = DEFAULT_PANEL_PADDING["left"],
     border_style: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
@@ -144,10 +145,10 @@ async def tool_confirm(
 def sync_panel(
     title: str,
     text: Union[str, Markdown, Pretty],
-    top: int = 1,
-    right: int = 0,
-    bottom: int = 1,
-    left: int = 1,
+    top: int = DEFAULT_PANEL_PADDING["top"],
+    right: int = DEFAULT_PANEL_PADDING["right"],
+    bottom: int = DEFAULT_PANEL_PADDING["bottom"],
+    left: int = DEFAULT_PANEL_PADDING["left"],
     border_style: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
