@@ -9,7 +9,7 @@ from sidekick.configuration.settings import ApplicationSettings
 from sidekick.core.agents import main as agent
 from sidekick.core.agents.main import patch_tool_messages
 from sidekick.core.tool_handler import ToolHandler
-from sidekick.exceptions import AgentError, SidekickAbort, ValidationError
+from sidekick.exceptions import AgentError, UserAbortError, ValidationError
 from sidekick.ui import console as ui
 from sidekick.ui.tool_ui import ToolUI
 
@@ -70,7 +70,7 @@ async def _tool_confirm(tool_call, node, state_manager: StateManager):
 
     # Process the response
     if not tool_handler.process_confirmation(response, tool_call.tool_name):
-        raise SidekickAbort("User aborted.")
+        raise UserAbortError("User aborted.")
 
     await ui.line()  # Add line after user input
     state_manager.session.spinner.start()
@@ -107,9 +107,9 @@ async def _tool_handler(part, node, state_manager: StateManager):
         should_abort = await run_in_terminal(confirm_func)
 
         if should_abort:
-            raise SidekickAbort("User aborted.")
+            raise UserAbortError("User aborted.")
 
-    except SidekickAbort:
+    except UserAbortError:
         patch_tool_messages("Operation aborted by user.", state_manager)
         raise
     finally:
@@ -165,7 +165,7 @@ async def process_request(text: str, state_manager: StateManager, output: bool =
             await ui.agent(res.result.output)
     except CancelledError:
         await ui.muted("Request cancelled")
-    except SidekickAbort:
+    except UserAbortError:
         await ui.muted("Operation aborted.")
     except UnexpectedModelBehavior as e:
         error_message = str(e)

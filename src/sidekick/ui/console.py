@@ -20,7 +20,7 @@ from sidekick.constants import (APP_NAME, CMD_CLEAR, CMD_COMPACT, CMD_DUMP, CMD_
                                 PANEL_AVAILABLE_COMMANDS, PANEL_ERROR, PANEL_MESSAGE_HISTORY,
                                 PANEL_MODELS, UI_COLORS, UI_PROMPT_PREFIX, UI_THINKING_MESSAGE)
 from sidekick.core.state import StateManager
-from sidekick.exceptions import SidekickAbort
+from sidekick.exceptions import UserAbortError
 from sidekick.utils.file_utils import DotDict
 
 BANNER = """\
@@ -330,9 +330,9 @@ async def input(
             resp = resp.strip()
         return resp
     except KeyboardInterrupt:
-        raise SidekickAbort
+        raise UserAbortError
     except EOFError:
-        raise SidekickAbort
+        raise UserAbortError
 
 
 async def multiline_input():

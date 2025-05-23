@@ -6,7 +6,7 @@ from sidekick.configuration.models import ModelRegistry
 from sidekick.constants import APP_NAME, CONFIG_FILE_NAME
 from sidekick.core.setup.base import BaseSetup
 from sidekick.core.state import StateManager
-from sidekick.exceptions import SidekickConfigError
+from sidekick.exceptions import ConfigurationError
 from sidekick.types import ConfigFile, ConfigPath, UserConfig
 from sidekick.ui import console as ui
 from sidekick.utils import system, user_config
@@ -49,7 +49,7 @@ class ConfigSetup(BaseSetup):
             await self._onboarding()
 
         if not self.state_manager.session.user_config.get("default_model"):
-            raise SidekickConfigError(
+            raise ConfigurationError(
                 (
                     f"No default model found in config at [bold]{self.config_file}[/bold]\n\n"
                     "Run [code]sidekick --setup[/code] to rerun the setup process."

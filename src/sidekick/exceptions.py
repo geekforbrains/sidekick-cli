@@ -21,21 +21,9 @@ class ConfigurationError(SidekickError):
     pass
 
 
-class SidekickConfigError(ConfigurationError):
-    """Legacy alias for ConfigurationError. Kept for backward compatibility."""
-
-    pass
-
-
 # User Interaction Exceptions
 class UserAbortError(SidekickError):
     """Raised when user aborts an operation."""
-
-    pass
-
-
-class SidekickAbort(UserAbortError):
-    """Legacy alias for UserAbortError. Kept for backward compatibility."""
 
     pass
 

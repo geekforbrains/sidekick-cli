@@ -3,7 +3,7 @@ from json import JSONDecodeError
 from typing import TYPE_CHECKING, Optional
 
 from sidekick.configuration.settings import ApplicationSettings
-from sidekick.exceptions import SidekickConfigError
+from sidekick.exceptions import ConfigurationError
 from sidekick.types import MCPServers, ModelName, UserConfig
 
 if TYPE_CHECKING:
@@ -19,11 +19,9 @@ def load_config() -> Optional[UserConfig]:
     except FileNotFoundError:
         return None
     except JSONDecodeError:
-        raise SidekickConfigError(
-            f"Invalid JSON in config file at {app_settings.paths.config_file}"
-        )
+        raise ConfigurationError(f"Invalid JSON in config file at {app_settings.paths.config_file}")
     except Exception as e:
-        raise SidekickConfigError(e)
+        raise ConfigurationError(e)
 
 
 def save_config(state_manager: "StateManager") -> bool:
