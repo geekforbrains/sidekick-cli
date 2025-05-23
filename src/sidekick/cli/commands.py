@@ -1,6 +1,7 @@
 """Command system for Sidekick CLI."""
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from .. import utils
@@ -46,20 +47,48 @@ class Command(ABC):
         pass
 
 
-class YoloCommand(Command):
-    """Toggle YOLO mode (skip confirmations)."""
+@dataclass
+class CommandSpec:
+    """Specification for a command's metadata."""
+
+    name: str
+    aliases: List[str]
+    description: str
+
+
+class SimpleCommand(Command):
+    """Base class for simple commands without complex logic."""
+
+    def __init__(self, spec: CommandSpec):
+        self.spec = spec
 
     @property
     def name(self) -> str:
-        return "yolo"
+        """The primary name of the command."""
+        return self.spec.name
 
     @property
     def aliases(self) -> CommandArgs:
-        return ["/yolo"]
+        """Alternative names/aliases for the command."""
+        return self.spec.aliases
 
     @property
     def description(self) -> str:
-        return "Toggle YOLO mode (skip tool confirmations)"
+        """Description of what the command does."""
+        return self.spec.description
+
+
+class YoloCommand(SimpleCommand):
+    """Toggle YOLO mode (skip confirmations)."""
+
+    def __init__(self):
+        super().__init__(
+            CommandSpec(
+                name="yolo",
+                aliases=["/yolo"],
+                description="Toggle YOLO mode (skip tool confirmations)",
+            )
+        )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
         state = context.state_manager.session
@@ -70,78 +99,54 @@ class YoloCommand(Command):
             await ui.info("Pfft, boring...\n")
 
 
-class DumpCommand(Command):
+class DumpCommand(SimpleCommand):
     """Dump message history."""
 
-    @property
-    def name(self) -> str:
-        return "dump"
-
-    @property
-    def aliases(self) -> CommandArgs:
-        return ["/dump"]
-
-    @property
-    def description(self) -> str:
-        return "Dump the current message history"
+    def __init__(self):
+        super().__init__(
+            CommandSpec(
+                name="dump", aliases=["/dump"], description="Dump the current message history"
+            )
+        )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
         await ui.dump_messages(context.state_manager.session.messages)
 
 
-class ClearCommand(Command):
+class ClearCommand(SimpleCommand):
     """Clear screen and message history."""
 
-    @property
-    def name(self) -> str:
-        return "clear"
-
-    @property
-    def aliases(self) -> CommandArgs:
-        return ["/clear"]
-
-    @property
-    def description(self) -> str:
-        return "Clear the screen and message history"
+    def __init__(self):
+        super().__init__(
+            CommandSpec(
+                name="clear", aliases=["/clear"], description="Clear the screen and message history"
+            )
+        )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
         await ui.clear()
         context.state_manager.session.messages = []
 
 
-class HelpCommand(Command):
+class HelpCommand(SimpleCommand):
     """Show help information."""
 
-    @property
-    def name(self) -> str:
-        return "help"
-
-    @property
-    def aliases(self) -> CommandArgs:
-        return ["/help"]
-
-    @property
-    def description(self) -> str:
-        return "Show help information"
+    def __init__(self):
+        super().__init__(
+            CommandSpec(name="help", aliases=["/help"], description="Show help information")
+        )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
         await ui.help()
 
 
-class UndoCommand(Command):
+class UndoCommand(SimpleCommand):
     """Undo the last file operation."""
 
-    @property
-    def name(self) -> str:
-        return "undo"
-
-    @property
-    def aliases(self) -> CommandArgs:
-        return ["/undo"]
-
-    @property
-    def description(self) -> str:
-        return "Undo the last file operation"
+    def __init__(self):
+        super().__init__(
+            CommandSpec(name="undo", aliases=["/undo"], description="Undo the last file operation")
+        )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
         success, message = perform_undo(context.state_manager)
@@ -151,20 +156,17 @@ class UndoCommand(Command):
             await ui.warning(message)
 
 
-class CompactCommand(Command):
+class CompactCommand(SimpleCommand):
     """Compact conversation context."""
 
-    @property
-    def name(self) -> str:
-        return "compact"
-
-    @property
-    def aliases(self) -> CommandArgs:
-        return ["/compact"]
-
-    @property
-    def description(self) -> str:
-        return "Summarize and compact the conversation history"
+    def __init__(self):
+        super().__init__(
+            CommandSpec(
+                name="compact",
+                aliases=["/compact"],
+                description="Summarize and compact the conversation history",
+            )
+        )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
         # Import here to avoid circular dependency
@@ -178,20 +180,17 @@ class CompactCommand(Command):
         context.state_manager.session.messages = context.state_manager.session.messages[-2:]
 
 
-class ModelCommand(Command):
+class ModelCommand(SimpleCommand):
     """Manage model selection."""
 
-    @property
-    def name(self) -> str:
-        return "model"
-
-    @property
-    def aliases(self) -> CommandArgs:
-        return ["/model"]
-
-    @property
-    def description(self) -> str:
-        return "List models or select a model (e.g., /model 3 or /model 3 default)"
+    def __init__(self):
+        super().__init__(
+            CommandSpec(
+                name="model",
+                aliases=["/model"],
+                description="List models or select a model (e.g., /model 3 or /model 3 default)",
+            )
+        )
 
     async def execute(self, args: CommandArgs, context: CommandContext) -> Optional[str]:
         if not args:
