@@ -2,12 +2,14 @@ import asyncio
 
 import typer
 
-from sidekick import config, session, ui
+from sidekick import config, ui
+from sidekick.core.state import StateManager
 from sidekick.repl import repl
 from sidekick.setup import setup
 from sidekick.utils.system import check_for_updates
 
 app = typer.Typer(help=config.NAME)
+state_manager = StateManager()
 
 
 @app.command()
@@ -30,11 +32,11 @@ def main(
         asyncio.run(ui.show_update_message(latest_version))
 
     if no_telemetry:
-        session.telemetry_enabled = False
+        state_manager.session.telemetry_enabled = False
 
     try:
-        asyncio.run(setup(run_setup))
-        asyncio.run(repl())
+        asyncio.run(setup(run_setup, state_manager))
+        asyncio.run(repl(state_manager))
     except Exception as e:
         asyncio.run(ui.error(str(e)))
 

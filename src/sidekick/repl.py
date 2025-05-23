@@ -5,7 +5,8 @@ from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.application.current import get_app
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
-from sidekick import config, session, ui
+from sidekick import config, ui
+from sidekick.core.state import StateManager
 from sidekick.agents import main as agent
 from sidekick.agents.main import patch_tool_messages
 from sidekick.exceptions import SidekickAbort
@@ -110,17 +111,17 @@ async def _log_mcp(title, args):
         await ui.muted(f"{key}: {value}", spaces=4)
 
 
-async def _tool_confirm(tool_call, node):
+async def _tool_confirm(tool_call, node, state_manager: StateManager):
     title = _get_tool_title(tool_call.tool_name)
     args = _parse_args(tool_call.args)
 
     # If we're skipping confirmation on this tool, log its output if MCP
-    if session.yolo or tool_call.tool_name in session.tool_ignore:
+    if state_manager.session.yolo or tool_call.tool_name in state_manager.session.tool_ignore:
         if tool_call.tool_name not in config.INTERNAL_TOOLS:
             _log_mcp(title, args)
         return
 
-    session.spinner.stop()
+    state_manager.session.spinner.stop()
     content = _render_args(tool_call.tool_name, args)
     filepath = args.get("filepath")
 
@@ -136,17 +137,17 @@ async def _tool_confirm(tool_call, node):
     resp = await ui.input(session_key="tool_confirm", pretext="  Choose an option [1/2/3]: ") or "1"
 
     if resp == "2":
-        session.tool_ignore.append(tool_call.tool_name)
+        state_manager.session.tool_ignore.append(tool_call.tool_name)
     elif resp == "3":
         raise SidekickAbort("User aborted.")
 
     await ui.line()  # Add line after user input
-    session.spinner.start()
+    state_manager.session.spinner.start()
 
 
-async def _tool_handler(part, node):
+async def _tool_handler(part, node, state_manager: StateManager):
     await ui.info(f"Tool({part.tool_name})")
-    session.spinner.stop()
+    state_manager.session.spinner.stop()
 
     try:
         # Use a synchronous function in run_in_terminal to avoid async deadlocks
@@ -155,7 +156,7 @@ async def _tool_handler(part, node):
             args = _parse_args(part.args)
 
             # Skip confirmation if needed
-            if session.yolo or part.tool_name in session.tool_ignore:
+            if state_manager.session.yolo or part.tool_name in state_manager.session.tool_ignore:
                 return False
 
             content = _render_args(part.tool_name, args)
@@ -172,7 +173,7 @@ async def _tool_handler(part, node):
             resp = input("  Choose an option [1/2/3]: ").strip() or "1"
 
             if resp == "2":
-                session.tool_ignore.append(part.tool_name)
+                state_manager.session.tool_ignore.append(part.tool_name)
                 return False
             elif resp == "3":
                 return True  # Abort
@@ -185,15 +186,15 @@ async def _tool_handler(part, node):
             raise SidekickAbort("User aborted.")
 
     except SidekickAbort:
-        patch_tool_messages("Operation aborted by user.")
+        patch_tool_messages("Operation aborted by user.", state_manager)
         raise
     finally:
-        session.spinner.start()
+        state_manager.session.spinner.start()
 
 
-async def _toggle_yolo():
-    session.yolo = not session.yolo
-    if session.yolo:
+async def _toggle_yolo(state_manager: StateManager):
+    state_manager.session.yolo = not state_manager.session.yolo
+    if state_manager.session.yolo:
         await ui.success("Ooh shit, its YOLO time!\n")
     else:
         await ui.info("Pfft, boring...\n")
@@ -203,9 +204,9 @@ async def _dump_messages():
     await ui.dump_messages()
 
 
-async def _clear_screen():
+async def _clear_screen(state_manager: StateManager):
     await ui.clear()
-    session.messages = []
+    state_manager.session.messages = []
 
 
 async def _show_help():
@@ -220,18 +221,18 @@ async def _perform_undo():
         await ui.warning(message)
 
 
-async def _compact_context():
+async def _compact_context(state_manager: StateManager):
     """Get the current agent, create a summary of contenxt, and trim message history"""
-    await process_request("Summarize the conversation so far", output=False)
+    await process_request("Summarize the conversation so far", state_manager, output=False)
     await ui.success("Context history has been summarized and truncated.")
-    session.messages = session.messages[-2:]
+    state_manager.session.messages = state_manager.session.messages[-2:]
 
 
-async def _handle_model_command(model_index: int = None, action: str = None):
+async def _handle_model_command(state_manager: StateManager, model_index: int = None, action: str = None):
     if model_index:
         models = list(config.MODELS.keys())
         model = models[int(model_index)]
-        session.current_model = model
+        state_manager.session.current_model = model
         if action == "default":
             user_config.set_default_model(model)
             await ui.muted("Updating default model")
@@ -240,12 +241,13 @@ async def _handle_model_command(model_index: int = None, action: str = None):
         await ui.models()
 
 
-async def _handle_command(command: str) -> bool:
+async def _handle_command(command: str, state_manager: StateManager) -> bool:
     """
     Handles a command string.
 
     Args:
         command: The command string entered by the user.
+        state_manager: The state manager instance.
 
     Returns:
         True if the command was handled, False otherwise.
@@ -254,33 +256,45 @@ async def _handle_command(command: str) -> bool:
     parts = cmd_lower.split()
     base_command = parts[0]
 
-    COMMANDS = {
-        "/yolo": _toggle_yolo,
+    # Commands that need state_manager
+    state_commands = {
+        "/yolo": lambda: _toggle_yolo(state_manager),
+        "/clear": lambda: _clear_screen(state_manager),
+        "/compact": lambda: _compact_context(state_manager),
+        "/model": lambda *args: _handle_model_command(state_manager, *args),
+    }
+    
+    # Commands that don't need state_manager
+    static_commands = {
         "/dump": _dump_messages,
-        "/clear": _clear_screen,
         "/help": _show_help,
         "/undo": _perform_undo,
-        "/compact": _compact_context,
-        "/model": _handle_model_command,
     }
 
-    if base_command in COMMANDS:
-        if base_command == "/compact":
-            return await _compact_context()
+    if base_command in state_commands:
+        if base_command == "/model":
+            return await state_commands[base_command](*parts[1:])
         else:
-            return await COMMANDS[base_command](*parts[1:])
+            return await state_commands[base_command]()
+    elif base_command in static_commands:
+        return await static_commands[base_command]()
     else:
         await ui.error(f"Unknown command: {command}")
 
 
-async def process_request(text: str, output: bool = True):
+async def process_request(text: str, state_manager: StateManager, output: bool = True):
     """Process input using the agent, handling cancellation safely."""
     await ui.spinner(True)
     try:
+        # Create a partial function that includes state_manager
+        def tool_callback_with_state(part, node):
+            return _tool_handler(part, node, state_manager)
+        
         res = await agent.process_request(
-            session.current_model,
+            state_manager.session.current_model,
             text,
-            tool_callback=_tool_handler,
+            state_manager,
+            tool_callback=tool_callback_with_state,
         )
         if output:
             await ui.agent(res.result.output)
@@ -291,23 +305,23 @@ async def process_request(text: str, output: bool = True):
     except UnexpectedModelBehavior as e:
         error_message = str(e)
         await ui.muted(error_message)
-        patch_tool_messages(error_message)
+        patch_tool_messages(error_message, state_manager)
     except Exception as e:
         await ui.error(str(e))
     finally:
         await ui.spinner(False)
-        session.current_task = None
+        state_manager.session.current_task = None
 
         # Force refresh of the multiline input prompt to restore placeholder
-        if "multiline" in session.input_sessions:
-            await run_in_terminal(lambda: session.input_sessions["multiline"].app.invalidate())
+        if "multiline" in state_manager.session.input_sessions:
+            await run_in_terminal(lambda: state_manager.session.input_sessions["multiline"].app.invalidate())
 
 
-async def repl():
+async def repl(state_manager: StateManager):
     action = None
 
-    await ui.info(f"Using model {session.current_model}")
-    instance = agent.get_or_create_agent(session.current_model)
+    await ui.info(f"Using model {state_manager.session.current_model}")
+    instance = agent.get_or_create_agent(state_manager.session.current_model, state_manager)
 
     await ui.info("Attaching MCP servers")
     await ui.line()
@@ -326,19 +340,19 @@ async def repl():
                 break
 
             if line.startswith("/"):
-                action = await _handle_command(line)
+                action = await _handle_command(line, state_manager)
                 if action == "restart":
                     break
                 continue
 
             # Check if another task is already running
-            if session.current_task and not session.current_task.done():
+            if state_manager.session.current_task and not state_manager.session.current_task.done():
                 await ui.muted("Agent is busy, press esc to interrupt.")
                 continue
 
-            session.current_task = get_app().create_background_task(process_request(line))
+            state_manager.session.current_task = get_app().create_background_task(process_request(line, state_manager))
 
     if action == "restart":
-        await repl()
+        await repl(state_manager)
     else:
         await ui.info("Thanks for all the fish.")
