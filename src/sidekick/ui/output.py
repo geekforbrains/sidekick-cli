@@ -1,0 +1,114 @@
+"""Output and display functions for Sidekick UI."""
+
+from prompt_toolkit.application import run_in_terminal
+from rich.console import Console
+from rich.padding import Padding
+
+from sidekick.configuration.settings import ApplicationSettings
+from sidekick.constants import (MSG_UPDATE_AVAILABLE, MSG_UPDATE_INSTRUCTION, MSG_VERSION_DISPLAY,
+                                UI_COLORS, UI_THINKING_MESSAGE)
+from sidekick.core.state import StateManager
+from sidekick.utils.file_utils import DotDict
+
+console = Console()
+colors = DotDict(UI_COLORS)
+
+BANNER = """\
+███████╗██╗██████╗ ███████╗██╗  ██╗██╗ ██████╗██╗  ██╗
+██╔════╝██║██╔══██╗██╔════╝██║ ██╔╝██║██╔════╝██║ ██╔╝
+███████╗██║██║  ██║█████╗  █████╔╝ ██║██║     █████╔╝
+╚════██║██║██║  ██║██╔══╝  ██╔═██╗ ██║██║     ██╔═██╗
+███████║██║██████╔╝███████╗██║  ██╗██║╚██████╗██║  ██╗
+╚══════╝╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝ ╚═════╝╚═╝  ╚═╝"""
+
+
+async def print(message, **kwargs):
+    """Print a message to the console."""
+    await run_in_terminal(lambda: console.print(message, **kwargs))
+
+
+async def line():
+    """Print a line to the console."""
+    await run_in_terminal(lambda: console.line())
+
+
+async def info(text: str):
+    """Print an informational message."""
+    await print(f"• {text}", style=colors.primary)
+
+
+async def success(message: str):
+    """Print a success message."""
+    await print(f"• {message}", style=colors.success)
+
+
+async def warning(text: str):
+    """Print a warning message."""
+    await print(f"• {text}", style=colors.warning)
+
+
+async def muted(text: str, spaces=0):
+    """Print a muted message."""
+    await print(f"{' ' * spaces}• {text}", style=colors.muted)
+
+
+async def usage(usage):
+    """Print usage information."""
+    await print(Padding(usage, (0, 0, 1, 2)), style=colors.muted)
+
+
+async def version():
+    """Print version information."""
+    app_settings = ApplicationSettings()
+    await info(MSG_VERSION_DISPLAY.format(version=app_settings.version))
+
+
+async def banner():
+    """Display the application banner."""
+    console.clear()
+    banner_padding = Padding(BANNER, (1, 0, 0, 2))
+    app_settings = ApplicationSettings()
+    version_padding = Padding(f"v{app_settings.version}", (0, 0, 1, 2))
+    await print(banner_padding, style=colors.primary)
+    await print(version_padding, style=colors.muted)
+
+
+async def clear():
+    """Clear the console and display the banner."""
+    console.clear()
+    await banner()
+
+
+async def update_available(latest_version):
+    """Display update available notification."""
+    await warning(MSG_UPDATE_AVAILABLE.format(latest_version=latest_version))
+    await muted(MSG_UPDATE_INSTRUCTION)
+
+
+async def spinner(show=True, spinner_obj=None, state_manager: StateManager = None):
+    """Manage a spinner display."""
+    icon = "star2"
+    message = UI_THINKING_MESSAGE
+
+    # Get spinner from state manager if available
+    if spinner_obj is None and state_manager:
+        spinner_obj = state_manager.session.spinner
+
+    if not spinner_obj:
+        spinner_obj = await run_in_terminal(lambda: console.status(message, spinner=icon))
+        # Store it back in state manager if available
+        if state_manager:
+            state_manager.session.spinner = spinner_obj
+
+    if show:
+        spinner_obj.start()
+    else:
+        spinner_obj.stop()
+
+    return spinner_obj
+
+
+# Synchronous version for use with run_in_terminal
+def sync_print(text, **kwargs):
+    """Synchronous version of print."""
+    console.print(text, **kwargs)
