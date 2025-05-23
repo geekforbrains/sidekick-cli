@@ -9,7 +9,7 @@ from pathlib import Path
 
 from sidekick.configuration.defaults import DEFAULT_USER_CONFIG
 from sidekick.configuration.models import ModelRegistry
-from sidekick.constants import APP_NAME, CONFIG_FILE_NAME
+from sidekick.constants import APP_NAME, CONFIG_FILE_NAME, UI_COLORS
 from sidekick.core.setup.base import BaseSetup
 from sidekick.core.state import StateManager
 from sidekick.exceptions import ConfigurationError
@@ -61,6 +61,18 @@ class ConfigSetup(BaseSetup):
                     "Run [code]sidekick --setup[/code] to rerun the setup process."
                 )
             )
+
+        # Check if the configured model still exists
+        default_model = self.state_manager.session.user_config["default_model"]
+        if not self.model_registry.get_model(default_model):
+            await ui.panel(
+                "Model Not Found",
+                f"The configured model '[bold]{default_model}[/bold]' is no longer available.\n"
+                "Please select a new default model.",
+                border_style=UI_COLORS["warning"],
+            )
+            await self._step2_default_model()
+            user_configuration.save_config(self.state_manager)
 
         self.state_manager.session.current_model = self.state_manager.session.user_config[
             "default_model"
@@ -117,14 +129,14 @@ class ConfigSetup(BaseSetup):
             if initial_config != current_config:
                 if user_configuration.save_config(self.state_manager):
                     message = f"Config saved to: [bold]{self.config_file}[/bold]"
-                    await ui.panel("Finished", message, top=0, border_style=ui.colors.success)
+                    await ui.panel("Finished", message, top=0, border_style=UI_COLORS["success"])
                 else:
                     await ui.error("Failed to save configuration.")
         else:
             await ui.panel(
                 "Setup canceled",
                 "At least one API key is required.",
-                border_style=ui.colors.warning,
+                border_style=UI_COLORS["warning"],
             )
 
     async def _step1_api_keys(self):
@@ -134,7 +146,7 @@ class ConfigSetup(BaseSetup):
             "Let's get you setup. First, we'll need to set some environment variables.\n"
             "Skip the ones you don't need."
         )
-        await ui.panel("Setup", message, border_style=ui.colors.primary)
+        await ui.panel("Setup", message, border_style=UI_COLORS["primary"])
         env_keys = self.state_manager.session.user_config["env"].copy()
         for key in env_keys:
             provider = key_to_title(key)
@@ -157,7 +169,7 @@ class ConfigSetup(BaseSetup):
             message += f"  {index} - {model_id}\n"
         message = message.strip()
 
-        await ui.panel("Default Model", message, border_style=ui.colors.primary)
+        await ui.panel("Default Model", message, border_style=UI_COLORS["primary"])
         choice = await ui.input(
             "step2",
             pretext="  Default model (#): ",
