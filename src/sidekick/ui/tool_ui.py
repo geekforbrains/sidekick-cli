@@ -2,7 +2,7 @@
 Tool confirmation UI components, separated from business logic.
 """
 
-from sidekick import config
+from sidekick.configuration.settings import ApplicationSettings
 from sidekick.constants import APP_NAME, TOOL_UPDATE_FILE, TOOL_WRITE_FILE
 from sidekick.core.tool_handler import ToolConfirmationRequest, ToolConfirmationResponse
 from sidekick.types import ToolArgs
@@ -26,7 +26,8 @@ class ToolUI:
         Returns:
             str: Display title.
         """
-        if tool_name in config.INTERNAL_TOOLS:
+        app_settings = ApplicationSettings()
+        if tool_name in app_settings.internal_tools:
             return f"Tool({tool_name})"
         else:
             return f"MCP({tool_name})"

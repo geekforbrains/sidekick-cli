@@ -4,7 +4,7 @@ import subprocess
 import uuid
 from pathlib import Path
 
-from .. import config
+from ..configuration.settings import ApplicationSettings
 from ..constants import DEVICE_ID_FILE, ENV_FILE, SESSIONS_SUBDIR, SIDEKICK_HOME_DIR
 
 # Default ignore patterns if .gitignore is not found
@@ -245,7 +245,8 @@ def check_for_updates():
             - latest_version (str): The latest version available
     """
 
-    current_version = config.VERSION
+    app_settings = ApplicationSettings()
+    current_version = app_settings.version
     try:
         result = subprocess.run(
             ["pip", "index", "versions", "sidekick-cli"], capture_output=True, text=True, check=True

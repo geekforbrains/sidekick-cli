@@ -5,7 +5,7 @@ from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.application.current import get_app
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
-from sidekick import config
+from sidekick.configuration.settings import ApplicationSettings
 from sidekick.core.agents import main as agent
 from sidekick.core.agents.main import patch_tool_messages
 from sidekick.core.tool_handler import ToolHandler
@@ -53,7 +53,8 @@ async def _tool_confirm(tool_call, node, state_manager: StateManager):
     # Check if confirmation is needed
     if not tool_handler.should_confirm(tool_call.tool_name):
         # Log MCP tools when skipping confirmation
-        if tool_call.tool_name not in config.INTERNAL_TOOLS:
+        app_settings = ApplicationSettings()
+        if tool_call.tool_name not in app_settings.internal_tools:
             title = _tool_ui._get_tool_title(tool_call.tool_name)
             await _tool_ui.log_mcp(title, args)
         return

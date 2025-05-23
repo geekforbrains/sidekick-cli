@@ -10,7 +10,8 @@ from rich.panel import Panel
 from rich.pretty import Pretty
 from rich.table import Table
 
-from sidekick import config
+from sidekick.configuration.models import ModelRegistry
+from sidekick.configuration.settings import ApplicationSettings
 from sidekick.constants import (APP_NAME, CMD_CLEAR, CMD_COMPACT, CMD_DUMP, CMD_EXIT, CMD_HELP,
                                 CMD_MODEL, CMD_UNDO, CMD_YOLO, DESC_CLEAR, DESC_COMPACT, DESC_DUMP,
                                 DESC_EXIT, DESC_HELP, DESC_MODEL, DESC_MODEL_DEFAULT,
@@ -171,7 +172,8 @@ async def dump_messages(messages_list=None, state_manager: StateManager = None):
 
 
 async def models(state_manager: StateManager = None):
-    model_ids = list(config.MODELS.keys())
+    model_registry = ModelRegistry()
+    model_ids = list(model_registry.list_models().keys())
     model_list = "\n".join([f"{index} - {model}" for index, model in enumerate(model_ids)])
     current_model = state_manager.session.current_model if state_manager else "unknown"
     text = f"Current model: {current_model}\n\n{model_list}"
@@ -252,13 +254,15 @@ async def usage(usage):
 
 
 async def version():
-    await info(MSG_VERSION_DISPLAY.format(version=config.VERSION))
+    app_settings = ApplicationSettings()
+    await info(MSG_VERSION_DISPLAY.format(version=app_settings.version))
 
 
 async def banner():
     console.clear()
     banner = Padding(BANNER, (1, 0, 0, 2))
-    version = Padding(f"v{config.VERSION}", (0, 0, 1, 2))
+    app_settings = ApplicationSettings()
+    version = Padding(f"v{app_settings.version}", (0, 0, 1, 2))
     await print(banner, style=colors.primary)
     await print(version, style=colors.muted)
 

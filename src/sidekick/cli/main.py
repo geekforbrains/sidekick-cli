@@ -2,14 +2,15 @@ import asyncio
 
 import typer
 
-from sidekick import config
 from sidekick.cli.repl import repl
+from sidekick.configuration.settings import ApplicationSettings
 from sidekick.core.state import StateManager
 from sidekick.setup import setup
 from sidekick.ui import console as ui
 from sidekick.utils.system import check_for_updates
 
-app = typer.Typer(help=config.NAME)
+app_settings = ApplicationSettings()
+app = typer.Typer(help=app_settings.name)
 state_manager = StateManager()
 
 

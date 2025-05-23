@@ -3,7 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-from .. import config, utils
+from .. import utils
+from ..configuration.models import ModelRegistry
 from ..exceptions import ValidationError
 from ..services.undo_service import perform_undo
 from ..types import CommandArgs, CommandContext, CommandResult, ProcessRequestCallback
@@ -206,7 +207,8 @@ class ModelCommand(Command):
             return None
 
         # Get model list
-        models = list(config.MODELS.keys())
+        model_registry = ModelRegistry()
+        models = list(model_registry.list_models().keys())
         if model_index < 0 or model_index >= len(models):
             await ui.error(f"Model index {model_index} out of range")
             return None
