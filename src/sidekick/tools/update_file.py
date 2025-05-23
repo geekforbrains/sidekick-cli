@@ -4,7 +4,7 @@ from pydantic_ai.exceptions import ModelRetry
 
 from sidekick.tools.base import FileBasedTool
 from sidekick.types import FileContent, FilePath, ToolResult
-from sidekick.ui import console as ui
+from sidekick.ui import console as default_ui
 
 
 class UpdateFileTool(FileBasedTool):
@@ -101,5 +101,5 @@ async def update_file(filepath: FilePath, target: FileContent, patch: FileConten
     Returns:
         ToolResult: A message indicating the success or failure of the operation.
     """
-    tool = UpdateFileTool(ui)
+    tool = UpdateFileTool(default_ui)
     return await tool.execute(filepath, target, patch)

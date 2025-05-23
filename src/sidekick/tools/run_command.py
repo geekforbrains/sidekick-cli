@@ -6,7 +6,7 @@ from sidekick.constants import (CMD_OUTPUT_FORMAT, CMD_OUTPUT_NO_ERRORS, CMD_OUT
                                 ERROR_COMMAND_EXECUTION, MAX_COMMAND_OUTPUT)
 from sidekick.tools.base import BaseTool
 from sidekick.types import ToolResult
-from sidekick.ui import console as ui
+from sidekick.ui import console as default_ui
 
 
 class RunCommandTool(BaseTool):
@@ -85,5 +85,5 @@ async def run_command(command: str) -> ToolResult:
     Returns:
         ToolResult: The output of the command (stdout and stderr) or an error message.
     """
-    tool = RunCommandTool(ui)
+    tool = RunCommandTool(default_ui)
     return await tool.execute(command)

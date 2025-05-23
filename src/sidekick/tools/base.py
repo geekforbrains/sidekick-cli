@@ -15,7 +15,7 @@ from sidekick.types import FilePath, ToolName, ToolResult, UILogger
 class BaseTool(ABC):
     """Base class for all Sidekick tools providing common functionality."""
 
-    def __init__(self, ui_logger: UILogger = None):
+    def __init__(self, ui_logger: UILogger | None = None):
         """Initialize the base tool.
 
         Args:

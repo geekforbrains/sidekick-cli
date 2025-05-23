@@ -4,7 +4,7 @@ from pydantic_ai.exceptions import ModelRetry
 
 from sidekick.tools.base import FileBasedTool
 from sidekick.types import FileContent, FilePath, ToolResult
-from sidekick.ui import console as ui
+from sidekick.ui import console as default_ui
 
 
 class WriteFileTool(FileBasedTool):
@@ -66,5 +66,5 @@ async def write_file(filepath: FilePath, content: FileContent) -> ToolResult:
     Returns:
         ToolResult: A message indicating the success or failure of the operation.
     """
-    tool = WriteFileTool(ui)
+    tool = WriteFileTool(default_ui)
     return await tool.execute(filepath, content)

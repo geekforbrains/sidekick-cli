@@ -4,7 +4,7 @@ from sidekick.constants import (ERROR_FILE_DECODE, ERROR_FILE_DECODE_DETAILS, ER
                                 ERROR_FILE_TOO_LARGE, MAX_FILE_SIZE, MSG_FILE_SIZE_LIMIT)
 from sidekick.tools.base import FileBasedTool
 from sidekick.types import FilePath, ToolResult
-from sidekick.ui import console as ui
+from sidekick.ui import console as default_ui
 
 
 class ReadFileTool(FileBasedTool):
@@ -67,5 +67,5 @@ async def read_file(filepath: FilePath) -> ToolResult:
     Returns:
         ToolResult: The contents of the file or an error message.
     """
-    tool = ReadFileTool(ui)
+    tool = ReadFileTool(default_ui)
     return await tool.execute(filepath)
