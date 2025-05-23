@@ -7,7 +7,8 @@ from sidekick.constants import APP_NAME, TOOL_UPDATE_FILE, TOOL_WRITE_FILE
 from sidekick.core.tool_handler import ToolConfirmationRequest, ToolConfirmationResponse
 from sidekick.types import ToolArgs
 from sidekick.ui import console as ui
-from sidekick.utils.helpers import ext_to_lang, key_to_title, render_file_diff
+from sidekick.utils.diff_utils import render_file_diff
+from sidekick.utils.text_utils import ext_to_lang, key_to_title
 
 
 class ToolUI:
