@@ -71,27 +71,63 @@ async def models(state_manager: StateManager = None) -> None:
     await panel(PANEL_MODELS, text, border_style=colors.muted)
 
 
-async def help() -> None:
-    """Display the available commands."""
+async def help(command_registry=None) -> None:
+    """Display the available commands organized by category."""
     table = Table(show_header=False, box=None, padding=(0, 2, 0, 0))
     table.add_column("Command", style="white", justify="right")
     table.add_column("Description", style="white")
 
-    commands = [
-        (CMD_HELP, DESC_HELP),
-        (CMD_CLEAR, DESC_CLEAR),
-        (CMD_DUMP, DESC_DUMP),
-        (CMD_YOLO, DESC_YOLO),
-        (CMD_UNDO, DESC_UNDO),
-        (CMD_COMPACT, DESC_COMPACT),
-        (CMD_MODEL, DESC_MODEL),
-        (f"{CMD_MODEL} <n>", DESC_MODEL_SWITCH),
-        (f"{CMD_MODEL} <n> default", DESC_MODEL_DEFAULT),
-        (CMD_EXIT, DESC_EXIT),
-    ]
+    if command_registry:
+        # Use the new command registry to display commands by category
+        from ..cli.commands import CommandCategory
 
-    for cmd, desc in commands:
-        table.add_row(cmd, desc)
+        category_order = [
+            CommandCategory.SYSTEM,
+            CommandCategory.NAVIGATION,
+            CommandCategory.DEVELOPMENT,
+            CommandCategory.MODEL,
+            CommandCategory.DEBUG,
+        ]
+
+        for category in category_order:
+            commands = command_registry.get_commands_by_category(category)
+            if commands:
+                # Add category header
+                table.add_row("", "")
+                table.add_row(f"[bold]{category.value.title()}[/bold]", "")
+
+                # Add commands in this category
+                for command in commands:
+                    # Show primary command name
+                    cmd_display = f"/{command.name}"
+                    table.add_row(cmd_display, command.description)
+
+                    # Special handling for model command variations
+                    if command.name == "model":
+                        table.add_row(f"{cmd_display} <n>", DESC_MODEL_SWITCH)
+                        table.add_row(f"{cmd_display} <n> default", DESC_MODEL_DEFAULT)
+
+        # Add built-in commands
+        table.add_row("", "")
+        table.add_row("[bold]Built-in[/bold]", "")
+        table.add_row(CMD_EXIT, DESC_EXIT)
+    else:
+        # Fallback to static command list
+        commands = [
+            (CMD_HELP, DESC_HELP),
+            (CMD_CLEAR, DESC_CLEAR),
+            (CMD_DUMP, DESC_DUMP),
+            (CMD_YOLO, DESC_YOLO),
+            (CMD_UNDO, DESC_UNDO),
+            (CMD_COMPACT, DESC_COMPACT),
+            (CMD_MODEL, DESC_MODEL),
+            (f"{CMD_MODEL} <n>", DESC_MODEL_SWITCH),
+            (f"{CMD_MODEL} <n> default", DESC_MODEL_DEFAULT),
+            (CMD_EXIT, DESC_EXIT),
+        ]
+
+        for cmd, desc in commands:
+            table.add_row(cmd, desc)
 
     await panel(PANEL_AVAILABLE_COMMANDS, table, border_style=colors.muted)
 

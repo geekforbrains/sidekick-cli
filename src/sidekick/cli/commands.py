@@ -2,7 +2,8 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from enum import Enum
+from typing import Any, Dict, List, Optional, Type
 
 from .. import utils
 from ..configuration.models import ModelRegistry
@@ -10,6 +11,16 @@ from ..exceptions import ValidationError
 from ..services.undo_service import perform_undo
 from ..types import CommandArgs, CommandContext, CommandResult, ProcessRequestCallback
 from ..ui import console as ui
+
+
+class CommandCategory(Enum):
+    """Categories for organizing commands."""
+
+    SYSTEM = "system"
+    NAVIGATION = "navigation"
+    DEVELOPMENT = "development"
+    MODEL = "model"
+    DEBUG = "debug"
 
 
 class Command(ABC):
@@ -31,6 +42,11 @@ class Command(ABC):
     def description(self) -> str:
         """Description of what the command does."""
         return ""
+
+    @property
+    def category(self) -> CommandCategory:
+        """Category this command belongs to."""
+        return CommandCategory.SYSTEM
 
     @abstractmethod
     async def execute(self, args: CommandArgs, context: CommandContext) -> CommandResult:
@@ -54,6 +70,7 @@ class CommandSpec:
     name: str
     aliases: List[str]
     description: str
+    category: CommandCategory = CommandCategory.SYSTEM
 
 
 class SimpleCommand(Command):
@@ -77,6 +94,11 @@ class SimpleCommand(Command):
         """Description of what the command does."""
         return self.spec.description
 
+    @property
+    def category(self) -> CommandCategory:
+        """Category this command belongs to."""
+        return self.spec.category
+
 
 class YoloCommand(SimpleCommand):
     """Toggle YOLO mode (skip confirmations)."""
@@ -87,6 +109,7 @@ class YoloCommand(SimpleCommand):
                 name="yolo",
                 aliases=["/yolo"],
                 description="Toggle YOLO mode (skip tool confirmations)",
+                category=CommandCategory.DEVELOPMENT,
             )
         )
 
@@ -105,7 +128,10 @@ class DumpCommand(SimpleCommand):
     def __init__(self):
         super().__init__(
             CommandSpec(
-                name="dump", aliases=["/dump"], description="Dump the current message history"
+                name="dump",
+                aliases=["/dump"],
+                description="Dump the current message history",
+                category=CommandCategory.DEBUG,
             )
         )
 
@@ -119,7 +145,10 @@ class ClearCommand(SimpleCommand):
     def __init__(self):
         super().__init__(
             CommandSpec(
-                name="clear", aliases=["/clear"], description="Clear the screen and message history"
+                name="clear",
+                aliases=["/clear"],
+                description="Clear the screen and message history",
+                category=CommandCategory.NAVIGATION,
             )
         )
 
@@ -131,13 +160,19 @@ class ClearCommand(SimpleCommand):
 class HelpCommand(SimpleCommand):
     """Show help information."""
 
-    def __init__(self):
+    def __init__(self, command_registry=None):
         super().__init__(
-            CommandSpec(name="help", aliases=["/help"], description="Show help information")
+            CommandSpec(
+                name="help",
+                aliases=["/help"],
+                description="Show help information",
+                category=CommandCategory.SYSTEM,
+            )
         )
+        self._command_registry = command_registry
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
-        await ui.help()
+        await ui.help(self._command_registry)
 
 
 class UndoCommand(SimpleCommand):
@@ -145,7 +180,12 @@ class UndoCommand(SimpleCommand):
 
     def __init__(self):
         super().__init__(
-            CommandSpec(name="undo", aliases=["/undo"], description="Undo the last file operation")
+            CommandSpec(
+                name="undo",
+                aliases=["/undo"],
+                description="Undo the last file operation",
+                category=CommandCategory.DEVELOPMENT,
+            )
         )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
@@ -159,18 +199,24 @@ class UndoCommand(SimpleCommand):
 class CompactCommand(SimpleCommand):
     """Compact conversation context."""
 
-    def __init__(self):
+    def __init__(self, process_request_callback: Optional[ProcessRequestCallback] = None):
         super().__init__(
             CommandSpec(
                 name="compact",
                 aliases=["/compact"],
                 description="Summarize and compact the conversation history",
+                category=CommandCategory.SYSTEM,
             )
         )
+        self._process_request = process_request_callback
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
-        # Import here to avoid circular dependency
-        from .repl import process_request
+        # Use the injected callback or get it from context
+        process_request = self._process_request or context.process_request
+
+        if not process_request:
+            await ui.error("Compact command not available - process_request not configured")
+            return
 
         # Get the current agent, create a summary of context, and trim message history
         await process_request(
@@ -189,6 +235,7 @@ class ModelCommand(SimpleCommand):
                 name="model",
                 aliases=["/model"],
                 description="List models or select a model (e.g., /model 3 or /model 3 default)",
+                category=CommandCategory.MODEL,
             )
         )
 
@@ -227,12 +274,51 @@ class ModelCommand(SimpleCommand):
             return None
 
 
-class CommandRegistry:
-    """Registry for managing commands."""
+@dataclass
+class CommandDependencies:
+    """Container for command dependencies."""
 
-    def __init__(self):
+    process_request_callback: Optional[ProcessRequestCallback] = None
+    command_registry: Optional[Any] = None  # Reference to the registry itself
+
+
+class CommandFactory:
+    """Factory for creating commands with proper dependency injection."""
+
+    def __init__(self, dependencies: Optional[CommandDependencies] = None):
+        self.dependencies = dependencies or CommandDependencies()
+
+    def create_command(self, command_class: Type[Command]) -> Command:
+        """Create a command instance with proper dependencies."""
+        # Special handling for commands that need dependencies
+        if command_class == CompactCommand:
+            return CompactCommand(self.dependencies.process_request_callback)
+        elif command_class == HelpCommand:
+            return HelpCommand(self.dependencies.command_registry)
+
+        # Default creation for commands without dependencies
+        return command_class()
+
+    def update_dependencies(self, **kwargs) -> None:
+        """Update factory dependencies."""
+        for key, value in kwargs.items():
+            if hasattr(self.dependencies, key):
+                setattr(self.dependencies, key, value)
+
+
+class CommandRegistry:
+    """Registry for managing commands with auto-discovery and categories."""
+
+    def __init__(self, factory: Optional[CommandFactory] = None):
         self._commands: Dict[str, Command] = {}
-        self._process_request_callback: Optional[ProcessRequestCallback] = None
+        self._categories: Dict[CommandCategory, List[Command]] = {
+            category: [] for category in CommandCategory
+        }
+        self._factory = factory or CommandFactory()
+        self._discovered = False
+
+        # Set registry reference in factory dependencies
+        self._factory.update_dependencies(command_registry=self)
 
     def register(self, command: Command) -> None:
         """Register a command and its aliases."""
@@ -243,19 +329,48 @@ class CommandRegistry:
         for alias in command.aliases:
             self._commands[alias.lower()] = command
 
+        # Add to category
+        if command not in self._categories[command.category]:
+            self._categories[command.category].append(command)
+
+    def register_command_class(self, command_class: Type[Command]) -> None:
+        """Register a command class using the factory."""
+        command = self._factory.create_command(command_class)
+        self.register(command)
+
+    def discover_commands(self) -> None:
+        """Auto-discover and register all command classes."""
+        if self._discovered:
+            return
+
+        # List of all command classes to register
+        command_classes = [
+            YoloCommand,
+            DumpCommand,
+            ClearCommand,
+            HelpCommand,
+            UndoCommand,
+            CompactCommand,
+            ModelCommand,
+        ]
+
+        # Register all discovered commands
+        for command_class in command_classes:
+            self.register_command_class(command_class)
+
+        self._discovered = True
+
     def register_all_default_commands(self) -> None:
-        """Register all default commands."""
-        self.register(YoloCommand())
-        self.register(DumpCommand())
-        self.register(ClearCommand())
-        self.register(HelpCommand())
-        self.register(UndoCommand())
-        self.register(CompactCommand())
-        self.register(ModelCommand())
+        """Register all default commands (backward compatibility)."""
+        self.discover_commands()
 
     def set_process_request_callback(self, callback: ProcessRequestCallback) -> None:
         """Set the process_request callback for commands that need it."""
-        self._process_request_callback = callback
+        self._factory.update_dependencies(process_request_callback=callback)
+
+        # Re-register CompactCommand with new dependency if already registered
+        if "compact" in self._commands:
+            self.register_command_class(CompactCommand)
 
     async def execute(self, command_text: str, context: CommandContext) -> Any:
         """
@@ -271,6 +386,9 @@ class CommandRegistry:
         Raises:
             ValidationError: If command is not found or empty
         """
+        # Ensure commands are discovered
+        self.discover_commands()
+
         parts = command_text.split()
         if not parts:
             raise ValidationError("Empty command")
@@ -282,23 +400,6 @@ class CommandRegistry:
             raise ValidationError(f"Unknown command: {command_name}")
 
         command = self._commands[command_name]
-
-        # Special handling for CompactCommand to inject process_request
-        if isinstance(command, CompactCommand) and self._process_request_callback:
-            # Temporarily inject the callback
-            import sys
-
-            module = sys.modules[command.__module__]
-            original_process_request = getattr(module, "process_request", None)
-            setattr(module, "process_request", self._process_request_callback)
-            try:
-                return await command.execute(args, context)
-            finally:
-                if original_process_request is None:
-                    delattr(module, "process_request")
-                else:
-                    setattr(module, "process_request", original_process_request)
-
         return await command.execute(args, context)
 
     def is_command(self, text: str) -> bool:
@@ -314,4 +415,15 @@ class CommandRegistry:
 
     def get_command_names(self) -> CommandArgs:
         """Get all registered command names (including aliases)."""
+        self.discover_commands()
         return sorted(self._commands.keys())
+
+    def get_commands_by_category(self, category: CommandCategory) -> List[Command]:
+        """Get all commands in a specific category."""
+        self.discover_commands()
+        return self._categories.get(category, [])
+
+    def get_all_categories(self) -> Dict[CommandCategory, List[Command]]:
+        """Get all commands organized by category."""
+        self.discover_commands()
+        return self._categories.copy()
