@@ -9,7 +9,7 @@ from sidekick.core.state import StateManager
 from sidekick.exceptions import ConfigurationError
 from sidekick.types import ConfigFile, ConfigPath, UserConfig
 from sidekick.ui import console as ui
-from sidekick.utils import system, user_config
+from sidekick.utils import system, user_configuration
 from sidekick.utils.text_utils import key_to_title
 
 
@@ -33,7 +33,7 @@ class ConfigSetup(BaseSetup):
     async def execute(self, force_setup: bool = False) -> None:
         """Setup configuration and run onboarding if needed."""
         self.state_manager.session.device_id = system.get_device_id()
-        loaded_config = user_config.load_config()
+        loaded_config = user_configuration.load_config()
 
         if loaded_config and not force_setup:
             await ui.muted(f"Loading config from: {self.config_file}")
@@ -45,7 +45,7 @@ class ConfigSetup(BaseSetup):
             else:
                 await ui.muted("No user configuration found, running setup")
             self.state_manager.session.user_config = DEFAULT_USER_CONFIG.copy()
-            user_config.save_config(self.state_manager)  # Save the default config initially
+            user_configuration.save_config(self.state_manager)  # Save the default config initially
             await self._onboarding()
 
         if not self.state_manager.session.user_config.get("default_model"):
@@ -109,7 +109,7 @@ class ConfigSetup(BaseSetup):
             # Compare configs to see if anything changed
             current_config = json.dumps(self.state_manager.session.user_config, sort_keys=True)
             if initial_config != current_config:
-                if user_config.save_config(self.state_manager):
+                if user_configuration.save_config(self.state_manager):
                     message = f"Config saved to: [bold]{self.config_file}[/bold]"
                     await ui.panel("Finished", message, top=0, border_style=ui.colors.success)
                 else:
