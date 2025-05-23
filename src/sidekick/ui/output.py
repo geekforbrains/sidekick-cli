@@ -22,48 +22,48 @@ BANNER = """\
 ╚══════╝╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝ ╚═════╝╚═╝  ╚═╝"""
 
 
-async def print(message, **kwargs):
+async def print(message, **kwargs) -> None:
     """Print a message to the console."""
     await run_in_terminal(lambda: console.print(message, **kwargs))
 
 
-async def line():
+async def line() -> None:
     """Print a line to the console."""
     await run_in_terminal(lambda: console.line())
 
 
-async def info(text: str):
+async def info(text: str) -> None:
     """Print an informational message."""
     await print(f"• {text}", style=colors.primary)
 
 
-async def success(message: str):
+async def success(message: str) -> None:
     """Print a success message."""
     await print(f"• {message}", style=colors.success)
 
 
-async def warning(text: str):
+async def warning(text: str) -> None:
     """Print a warning message."""
     await print(f"• {text}", style=colors.warning)
 
 
-async def muted(text: str, spaces=0):
+async def muted(text: str, spaces: int = 0) -> None:
     """Print a muted message."""
     await print(f"{' ' * spaces}• {text}", style=colors.muted)
 
 
-async def usage(usage):
+async def usage(usage: str) -> None:
     """Print usage information."""
     await print(Padding(usage, (0, 0, 1, 2)), style=colors.muted)
 
 
-async def version():
+async def version() -> None:
     """Print version information."""
     app_settings = ApplicationSettings()
     await info(MSG_VERSION_DISPLAY.format(version=app_settings.version))
 
 
-async def banner():
+async def banner() -> None:
     """Display the application banner."""
     console.clear()
     banner_padding = Padding(BANNER, (1, 0, 0, 2))
@@ -73,19 +73,19 @@ async def banner():
     await print(version_padding, style=colors.muted)
 
 
-async def clear():
+async def clear() -> None:
     """Clear the console and display the banner."""
     console.clear()
     await banner()
 
 
-async def update_available(latest_version):
+async def update_available(latest_version: str) -> None:
     """Display update available notification."""
     await warning(MSG_UPDATE_AVAILABLE.format(latest_version=latest_version))
     await muted(MSG_UPDATE_INSTRUCTION)
 
 
-async def spinner(show=True, spinner_obj=None, state_manager: StateManager = None):
+async def spinner(show: bool = True, spinner_obj=None, state_manager: StateManager = None):
     """Manage a spinner display."""
     icon = "star2"
     message = UI_THINKING_MESSAGE
@@ -109,6 +109,6 @@ async def spinner(show=True, spinner_obj=None, state_manager: StateManager = Non
 
 
 # Synchronous version for use with run_in_terminal
-def sync_print(text, **kwargs):
+def sync_print(text, **kwargs) -> None:
     """Synchronous version of print."""
     console.print(text, **kwargs)

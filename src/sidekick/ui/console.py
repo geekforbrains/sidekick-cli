@@ -25,7 +25,7 @@ kb = create_key_bindings()
 
 
 # Re-export markdown utility for backward compatibility
-def markdown(text: str):
+def markdown(text: str) -> Markdown:
     """Create a Markdown object."""
     return Markdown(text)
 

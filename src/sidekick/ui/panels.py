@@ -1,5 +1,7 @@
 """Panel display functions for Sidekick UI."""
 
+from typing import Any, Optional, Union
+
 from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.panel import Panel
@@ -21,25 +23,32 @@ colors = DotDict(UI_COLORS)
 
 
 async def panel(
-    title: str, text: str, top=1, right=0, bottom=1, left=1, border_style=None, **kwargs
-):
+    title: str,
+    text: Union[str, Markdown, Pretty],
+    top: int = 1,
+    right: int = 0,
+    bottom: int = 1,
+    left: int = 1,
+    border_style: Optional[str] = None,
+    **kwargs: Any,
+) -> None:
     """Display a rich panel."""
     border_style = border_style or kwargs.get("style")
     panel_obj = Panel(Padding(text, 1), title=title, title_align="left", border_style=border_style)
     await print(Padding(panel_obj, (top, right, bottom, left)), **kwargs)
 
 
-async def agent(text: str, bottom=1):
+async def agent(text: str, bottom: int = 1) -> None:
     """Display an agent panel."""
     await panel(APP_NAME, Markdown(text), bottom=bottom, border_style=colors.primary)
 
 
-async def error(text: str):
+async def error(text: str) -> None:
     """Display an error panel."""
     await panel(PANEL_ERROR, text, style=colors.error)
 
 
-async def dump_messages(messages_list=None, state_manager: StateManager = None):
+async def dump_messages(messages_list=None, state_manager: StateManager = None) -> None:
     """Display message history panel."""
     if messages_list is None and state_manager:
         # Get messages from state manager
@@ -52,7 +61,7 @@ async def dump_messages(messages_list=None, state_manager: StateManager = None):
     await panel(PANEL_MESSAGE_HISTORY, messages, style=colors.muted)
 
 
-async def models(state_manager: StateManager = None):
+async def models(state_manager: StateManager = None) -> None:
     """Display available models panel."""
     model_registry = ModelRegistry()
     model_ids = list(model_registry.list_models().keys())
@@ -62,7 +71,7 @@ async def models(state_manager: StateManager = None):
     await panel(PANEL_MODELS, text, border_style=colors.muted)
 
 
-async def help():
+async def help() -> None:
     """Display the available commands."""
     table = Table(show_header=False, box=None, padding=(0, 2, 0, 0))
     table.add_column("Command", style="white", justify="right")
@@ -87,14 +96,25 @@ async def help():
     await panel(PANEL_AVAILABLE_COMMANDS, table, border_style=colors.muted)
 
 
-async def tool_confirm(title, content, filepath=None):
+async def tool_confirm(
+    title: str, content: Union[str, Markdown], filepath: Optional[str] = None
+) -> None:
     """Display a tool confirmation panel."""
     bottom_padding = 0 if filepath else 1
     await panel(title, content, bottom=bottom_padding, border_style=colors.warning)
 
 
 # Synchronous versions for use with run_in_terminal
-def sync_panel(title, text, top=1, right=0, bottom=1, left=1, border_style=None, **kwargs):
+def sync_panel(
+    title: str,
+    text: Union[str, Markdown, Pretty],
+    top: int = 1,
+    right: int = 0,
+    bottom: int = 1,
+    left: int = 1,
+    border_style: Optional[str] = None,
+    **kwargs: Any,
+) -> None:
     """Synchronous version of panel display."""
     from rich.console import Console
 
@@ -104,7 +124,9 @@ def sync_panel(title, text, top=1, right=0, bottom=1, left=1, border_style=None,
     console.print(Padding(panel_obj, (top, right, bottom, left)), **kwargs)
 
 
-def sync_tool_confirm(title, content, filepath=None):
+def sync_tool_confirm(
+    title: str, content: Union[str, Markdown], filepath: Optional[str] = None
+) -> None:
     """Synchronous version of tool confirmation panel."""
     bottom_padding = 0 if filepath else 1
     sync_panel(title, content, bottom=bottom_padding, border_style=colors.warning)

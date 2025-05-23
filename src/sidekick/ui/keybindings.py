@@ -3,7 +3,7 @@
 from prompt_toolkit.key_binding import KeyBindings
 
 
-def create_key_bindings():
+def create_key_bindings() -> KeyBindings:
     """Create and configure key bindings for the UI."""
     kb = KeyBindings()
 

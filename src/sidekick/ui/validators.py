@@ -9,7 +9,7 @@ class ModelValidator(Validator):
     def __init__(self, index):
         self.index = index
 
-    def validate(self, document):
+    def validate(self, document) -> None:
         text = document.text.strip()
         if not text:
             raise ValidationError(message="Provider number cannot be empty")

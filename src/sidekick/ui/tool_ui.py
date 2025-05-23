@@ -2,6 +2,8 @@
 Tool confirmation UI components, separated from business logic.
 """
 
+from rich.markdown import Markdown
+
 from sidekick.configuration.settings import ApplicationSettings
 from sidekick.constants import APP_NAME, TOOL_UPDATE_FILE, TOOL_WRITE_FILE
 from sidekick.core.tool_handler import ToolConfirmationRequest, ToolConfirmationResponse
@@ -33,7 +35,7 @@ class ToolUI:
         else:
             return f"MCP({tool_name})"
 
-    def _create_code_block(self, filepath: str, content: str):
+    def _create_code_block(self, filepath: str, content: str) -> Markdown:
         """
         Create a code block for the given file path and content.
 
@@ -155,7 +157,7 @@ class ToolUI:
         else:
             return ToolConfirmationResponse(approved=True)
 
-    async def log_mcp(self, title: str, args: ToolArgs):
+    async def log_mcp(self, title: str, args: ToolArgs) -> None:
         """
         Display MCP tool with its arguments.
 

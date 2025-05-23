@@ -1,6 +1,9 @@
 """User input handling functions for Sidekick UI."""
 
+from typing import Optional
+
 from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.validation import Validator
 
 from sidekick.constants import UI_PROMPT_PREFIX
@@ -10,7 +13,7 @@ from .keybindings import create_key_bindings
 from .prompt_manager import PromptConfig, PromptManager
 
 
-def formatted_text(text: str):
+def formatted_text(text: str) -> HTML:
     """Create formatted HTML text."""
     return HTML(text)
 
@@ -19,13 +22,13 @@ async def input(
     session_key: str,
     pretext: str = UI_PROMPT_PREFIX,
     is_password: bool = False,
-    validator: Validator = None,
-    multiline=False,
-    key_bindings=None,
-    placeholder=None,
-    timeoutlen=0.05,
-    state_manager: StateManager = None,
-):
+    validator: Optional[Validator] = None,
+    multiline: bool = False,
+    key_bindings: Optional[KeyBindings] = None,
+    placeholder: Optional[HTML] = None,
+    timeoutlen: float = 0.05,
+    state_manager: Optional[StateManager] = None,
+) -> str:
     """
     Prompt for user input using simplified prompt management.
 
@@ -60,7 +63,7 @@ async def input(
     return await manager.get_input(session_key, pretext, config)
 
 
-async def multiline_input():
+async def multiline_input() -> str:
     """Get multiline input from the user."""
     kb = create_key_bindings()
     placeholder = formatted_text(
