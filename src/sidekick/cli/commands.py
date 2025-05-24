@@ -81,22 +81,18 @@ class SimpleCommand(Command):
 
     @property
     def name(self) -> str:
-        """The primary name of the command."""
         return self.spec.name
 
     @property
     def aliases(self) -> CommandArgs:
-        """Alternative names/aliases for the command."""
         return self.spec.aliases
 
     @property
     def description(self) -> str:
-        """Description of what the command does."""
         return self.spec.description
 
     @property
     def category(self) -> CommandCategory:
-        """Category this command belongs to."""
         return self.spec.category
 
 

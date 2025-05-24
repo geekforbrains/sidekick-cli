@@ -60,10 +60,9 @@ class UpdateFileTool(FileBasedTool):
                 f"File starts with:\n---\n{snippet}\n---"
             )
 
-        new_content = original.replace(target, patch, 1)  # Replace only the first occurrence
+        new_content = original.replace(target, patch, 1)
 
         if original == new_content:
-            # This could happen if target and patch are identical
             raise ModelRetry(
                 f"Update target found, but replacement resulted in no changes to '{filepath}'. "
                 "Was the `target` identical to the `patch`? Please check the file content."

@@ -64,15 +64,12 @@ class ToolUI:
         Returns:
             str: Formatted arguments for display.
         """
-        # Show diff between `target` and `patch` on file updates
         if tool_name == TOOL_UPDATE_FILE:
             return render_file_diff(args["target"], args["patch"], self.colors)
 
-        # Show file content on write_file
         elif tool_name == TOOL_WRITE_FILE:
             return self._create_code_block(args["filepath"], args["content"])
 
-        # Default to showing key and value on new line
         content = ""
         for key, value in args.items():
             if isinstance(value, list):
@@ -81,7 +78,6 @@ class ToolUI:
                     content += f"  - {item}\n"
                 content += "\n"
             else:
-                # If string length is over 200 characters, split to new line
                 value = str(value)
                 content += f"{key_to_title(key)}:"
                 if len(value) > 200:
@@ -107,7 +103,6 @@ class ToolUI:
 
         await ui.tool_confirm(title, content, filepath=request.filepath)
 
-        # If tool call has filepath, show it under panel
         if request.filepath:
             await ui.usage(f"File: {request.filepath}")
 

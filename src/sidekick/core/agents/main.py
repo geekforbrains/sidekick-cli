@@ -66,10 +66,9 @@ def patch_tool_messages(
     if not messages:
         return
 
-    # Map tool calls to their tool returns
-    tool_calls: dict[ToolCallId, ToolName] = {}  # tool_call_id -> tool_name
-    tool_returns: set[ToolCallId] = set()  # set of tool_call_ids with returns
-    retry_prompts: set[ToolCallId] = set()  # set of tool_call_ids with retry prompts
+    tool_calls: dict[ToolCallId, ToolName] = {}
+    tool_returns: set[ToolCallId] = set()
+    retry_prompts: set[ToolCallId] = set()
 
     for message in messages:
         if hasattr(message, "parts"):
@@ -86,7 +85,6 @@ def patch_tool_messages(
                     elif part.part_kind == "retry-prompt":
                         retry_prompts.add(part.tool_call_id)
 
-    # Identify orphaned tools (those without responses and not being retried)
     for tool_call_id, tool_name in list(tool_calls.items()):
         if tool_call_id not in tool_returns and tool_call_id not in retry_prompts:
             messages.append(

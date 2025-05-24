@@ -49,9 +49,7 @@ class RunCommandTool(BaseTool):
         error = stderr.strip() or CMD_OUTPUT_NO_ERRORS
         resp = CMD_OUTPUT_FORMAT.format(output=output, error=error).strip()
 
-        # Truncate if the output is too long to prevent issues
         if len(resp) > MAX_COMMAND_OUTPUT:
-            # Include both the beginning and end of the output
             start_part = resp[:COMMAND_OUTPUT_START_INDEX]
             end_part = (
                 resp[-COMMAND_OUTPUT_END_SIZE:]
@@ -72,9 +70,8 @@ class RunCommandTool(BaseTool):
         if isinstance(error, FileNotFoundError):
             err_msg = ERROR_COMMAND_EXECUTION.format(command=command, error=error)
         else:
-            # Use parent class handling for other errors
             await super()._handle_error(error, command)
-            return  # super() will raise, this is unreachable
+            return
 
         if self.ui:
             await self.ui.error(err_msg)

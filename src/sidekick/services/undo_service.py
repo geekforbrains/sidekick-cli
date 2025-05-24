@@ -168,10 +168,8 @@ def init_undo_system(state_manager: StateManager) -> bool:
         # Make an initial commit
         git_dir_arg = f"--git-dir={sidekick_git_dir}"
 
-        # Add all files
         subprocess.run(["git", git_dir_arg, "add", "."], capture_output=True, check=True, timeout=5)
 
-        # Create initial commit
         subprocess.run(
             ["git", git_dir_arg, "commit", "-m", UNDO_INITIAL_COMMIT],
             capture_output=True,
@@ -211,10 +209,8 @@ def commit_for_undo(
     try:
         git_dir_arg = f"--git-dir={sidekick_git_dir}"
 
-        # Add all files
         subprocess.run(["git", git_dir_arg, "add", "."], capture_output=True, timeout=5)
 
-        # Create commit with timestamp
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
         commit_message = f"{message_prefix} - {timestamp}"
 
@@ -225,7 +221,6 @@ def commit_for_undo(
             timeout=5,
         )
 
-        # Handle case where there are no changes to commit
         if "nothing to commit" in result.stdout or "nothing to commit" in result.stderr:
             return False
 
@@ -289,8 +284,6 @@ def perform_undo(state_manager: StateManager) -> Tuple[bool, str]:
             timeout=5,
         )
 
-        # Add a system message to the chat history to inform the AI
-        # about the undo operation
         state_manager.session.messages.append(
             ModelResponse(
                 parts=[
