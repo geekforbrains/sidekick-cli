@@ -18,26 +18,84 @@ from sidekick.exceptions import GitOperationError
 from sidekick.utils.system import get_session_dir
 
 
-def is_in_git_project(directory: Optional[Path] = None) -> bool:
+def is_system_directory(directory: Path) -> bool:
     """
-    Recursively check if the given directory is inside a git project.
+    Check if directory is a system directory that should not have undo enabled.
 
     Args:
-        directory (Path, optional): Directory to check. Defaults to current working directory.
+        directory: Directory path to check.
 
     Returns:
-        bool: True if in a git project, False otherwise
+        bool: True if directory is a system directory, False otherwise
+    """
+    system_paths = {
+        "/", "/usr", "/var", "/etc", "/bin", "/sbin", "/System", "/Library", 
+        "/Applications", "/Users", "/Windows", "/Program Files", "/Program Files (x86)"
+    }
+    
+    system_prefixes = [
+        "/usr/", "/var/", "/etc/", "/bin/", "/sbin/", "/System/", "/Library/", 
+        "/Applications/", "/Windows/", "/Program Files/"
+    ]
+    
+    normalized_path = str(directory.absolute())
+    
+    if normalized_path in system_paths:
+        return True
+        
+    for prefix in system_prefixes:
+        if normalized_path.startswith(prefix):
+            return True
+            
+    return False
+
+
+def count_files_in_directory(directory: Path, limit: int = 5000) -> int:
+    """
+    Count files in directory up to the specified limit.
+
+    Args:
+        directory: Directory to scan.
+        limit: Maximum number of files to count before stopping.
+
+    Returns:
+        int: Number of files found, up to limit
+    """
+    try:
+        count = 0
+        for entry in directory.iterdir():
+            count += 1
+            if count >= limit:
+                break
+        return count
+    except (PermissionError, OSError, FileNotFoundError):
+        return 0
+
+
+def is_safe_for_undo(directory: Optional[Path] = None) -> Tuple[bool, str]:
+    """
+    Check if directory is safe for undo operations.
+
+    Args:
+        directory: Directory to check. Defaults to current working directory.
+
+    Returns:
+        tuple: (is_safe, reason)
     """
     if directory is None:
         directory = Path.cwd()
 
-    if (directory / ".git").exists():
-        return True
+    if is_system_directory(directory):
+        return False, "System directory"
 
-    if directory == directory.parent:
-        return False
+    if len(directory.parts) < 3:
+        return False, "Too close to filesystem root"
 
-    return is_in_git_project(directory.parent)
+    file_count = count_files_in_directory(directory, 5000)
+    if file_count >= 5000:
+        return False, "Directory contains too many files"
+
+    return True, "Safe for undo operations"
 
 
 def get_undo_status(state_manager: StateManager) -> Tuple[bool, str]:
@@ -56,8 +114,9 @@ def get_undo_status(state_manager: StateManager) -> Tuple[bool, str]:
     if cwd == home_dir:
         return False, "Disabled (running from home directory)"
 
-    if not is_in_git_project():
-        return False, "Disabled (not in a Git project)"
+    is_safe, reason = is_safe_for_undo()
+    if not is_safe:
+        return False, f"Disabled ({reason.lower()})"
 
     session_dir = get_session_dir(state_manager)
     sidekick_git_dir = session_dir / ".git"
@@ -88,28 +147,15 @@ def init_undo_system(state_manager: StateManager) -> bool:
     Initialize the undo system by creating a Git repository
     in the ~/.sidekick/sessions/<session-id> directory.
 
-    Skip initialization if running from home directory or not in a git project.
-
     Args:
         state_manager: The StateManager instance.
 
     Returns:
         bool: True if the undo system was initialized, False otherwise.
     """
-    cwd = Path.cwd()
-    home_dir = Path.home()
-
-    if cwd == home_dir:
-        return False
-
-    if not is_in_git_project():
-        return False
-
-    # Get the session directory path
     session_dir = get_session_dir(state_manager)
     sidekick_git_dir = session_dir / ".git"
 
-    # Check if already initialized
     if sidekick_git_dir.exists():
         return True
 
