@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Type
 from .. import utils
 from ..configuration.models import ModelRegistry
 from ..exceptions import ValidationError
-from ..services.undo_service import perform_undo
+from ..services.undo_service import perform_undo, get_undo_status
 from ..types import CommandArgs, CommandContext, CommandResult, ProcessRequestCallback
 from ..ui import console as ui
 
@@ -173,6 +173,10 @@ class HelpCommand(SimpleCommand):
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
         await ui.help(self._command_registry)
+        
+        if context.state_manager:
+            available, status = get_undo_status(context.state_manager)
+            await ui.muted(f"Undo: {status}")
 
 
 class UndoCommand(SimpleCommand):
@@ -193,7 +197,13 @@ class UndoCommand(SimpleCommand):
         if success:
             await ui.success(message)
         else:
-            await ui.warning(message)
+            if "not initialized" in message.lower():
+                await ui.warning("Undo system not available")
+                await ui.muted("Ensure you're in a Git project and not in home directory")
+            elif "nothing to undo" in message.lower():
+                await ui.info("No changes to undo - no commits found")
+            else:
+                await ui.warning(message)
 
 
 class CompactCommand(SimpleCommand):

@@ -46,6 +46,7 @@ async def success(message: str) -> None:
     await print(f"• {message}", style=colors.success)
 
 
+@create_sync_wrapper
 async def warning(text: str) -> None:
     """Print a warning message."""
     await print(f"• {text}", style=colors.warning)
@@ -112,5 +113,6 @@ async def spinner(show: bool = True, spinner_obj=None, state_manager: StateManag
     return spinner_obj
 
 
-# Auto-generated sync version
+# Auto-generated sync versions
 sync_print = print.sync  # type: ignore
+sync_warning = warning.sync  # type: ignore

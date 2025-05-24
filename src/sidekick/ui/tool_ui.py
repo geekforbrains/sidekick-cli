@@ -143,13 +143,14 @@ class ToolUI:
         title = self._get_tool_title(request.tool_name)
         content = self._render_args(request.tool_name, request.args)
 
-        # Display styled confirmation panel using direct console output
-        # Avoid using sync wrappers that might create event loop conflicts
         panel_obj = Panel(
             Padding(content, 1), title=title, title_align="left", border_style=self.colors.warning
         )
-        # Add consistent spacing above panels
-        ui.console.print(Padding(panel_obj, (1, 0, 0, 0)))
+        
+        bottom_padding = 0 if request.filepath else 1
+        outer_padding = (1, 0, bottom_padding, 1)
+        
+        ui.console.print(Padding(panel_obj, outer_padding))
 
         if request.filepath:
             ui.console.print(f"File: {request.filepath}", style=self.colors.muted)
@@ -159,7 +160,6 @@ class ToolUI:
         ui.console.print(f"  3. No, and tell {APP_NAME} what to do differently")
         resp = input("  Choose an option [1/2/3]: ").strip() or "1"
 
-        # Add spacing after user choice for better readability
         print()
 
         if resp == "2":
