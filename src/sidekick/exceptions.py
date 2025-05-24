@@ -14,14 +14,12 @@ class SidekickError(Exception):
     pass
 
 
-# Configuration and Setup Exceptions
 class ConfigurationError(SidekickError):
     """Raised when there's a configuration issue."""
 
     pass
 
 
-# User Interaction Exceptions
 class UserAbortError(SidekickError):
     """Raised when user aborts an operation."""
 
@@ -34,7 +32,6 @@ class ValidationError(SidekickError):
     pass
 
 
-# Tool and Agent Exceptions
 class ToolExecutionError(SidekickError):
     """Raised when a tool fails to execute."""
 
@@ -52,14 +49,12 @@ class AgentError(SidekickError):
     pass
 
 
-# State Management Exceptions
 class StateError(SidekickError):
     """Raised when there's an issue with application state."""
 
     pass
 
 
-# External Service Exceptions
 class ServiceError(SidekickError):
     """Base exception for external service failures."""
 
@@ -92,7 +87,6 @@ class GitOperationError(ServiceError):
         super().__init__(f"Git {operation} failed: {message}")
 
 
-# File System Exceptions
 class FileOperationError(SidekickError):
     """Raised when file system operations fail."""
 

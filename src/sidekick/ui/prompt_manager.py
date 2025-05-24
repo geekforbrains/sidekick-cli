@@ -80,7 +80,6 @@ class PromptManager:
         session = self.get_session(session_key, config)
 
         try:
-            # Get user input
             response = await session.prompt_async(
                 prompt,
                 is_password=config.is_password,
@@ -88,7 +87,6 @@ class PromptManager:
                 multiline=config.multiline,
             )
 
-            # Clean up response
             if isinstance(response, str):
                 response = response.strip()
 

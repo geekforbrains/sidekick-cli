@@ -46,7 +46,6 @@ async def input(
     Returns:
         User input string
     """
-    # Create prompt configuration
     config = PromptConfig(
         multiline=multiline,
         is_password=is_password,
@@ -56,10 +55,8 @@ async def input(
         timeoutlen=timeoutlen,
     )
 
-    # Create prompt manager
     manager = PromptManager(state_manager)
 
-    # Get user input
     return await manager.get_input(session_key, pretext, config)
 
 

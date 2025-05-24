@@ -94,7 +94,6 @@ class UpdateFileTool(FileBasedTool):
         return ", ".join(args)
 
 
-# Create the function that maintains the existing interface
 async def update_file(filepath: FilePath, target: FileContent, patch: FileContent) -> ToolResult:
     """
     Update an existing file by replacing a target text block with a patch.
@@ -112,5 +111,4 @@ async def update_file(filepath: FilePath, target: FileContent, patch: FileConten
     try:
         return await tool.execute(filepath, target, patch)
     except ToolExecutionError as e:
-        # Return error message for pydantic-ai compatibility
         return str(e)

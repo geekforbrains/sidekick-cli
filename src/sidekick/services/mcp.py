@@ -72,9 +72,7 @@ def get_mcp_servers(state_manager: "StateManager") -> List[MCPServerStdio]:
 
     for server_name, conf in mcp_servers.items():
         try:
-            # loaded_servers.append(QuietMCPServer(**conf))
             mcp_instance = MCPServerStdio(**conf)
-            # mcp_instance.log_level = "critical"
             loaded_servers.append(mcp_instance)
         except Exception as e:
             raise MCPError(

@@ -54,12 +54,10 @@ async def error(text: str) -> None:
 async def dump_messages(messages_list=None, state_manager: StateManager = None) -> None:
     """Display message history panel."""
     if messages_list is None and state_manager:
-        # Get messages from state manager
         messages = Pretty(state_manager.session.messages)
     elif messages_list is not None:
         messages = Pretty(messages_list)
     else:
-        # No messages available
         messages = Pretty([])
     await panel(PANEL_MESSAGE_HISTORY, messages, style=colors.muted)
 

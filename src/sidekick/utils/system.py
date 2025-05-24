@@ -85,9 +85,7 @@ def _load_gitignore_patterns(filepath=".gitignore"):
                 line = line.strip()
                 if line and not line.startswith("#"):
                     patterns.add(line)
-        # print(f"Loaded {len(patterns)} patterns from {filepath}") # Debug print (optional)
     except FileNotFoundError:
-        # print(f"{filepath} not found.") # Debug print (optional)
         return None
     except Exception as e:
         print(f"Error reading {filepath}: {e}")
@@ -322,8 +320,6 @@ def list_cwd(max_depth=3):
             dir_rel_path = os.path.join(rel_root, d) if rel_root else d
             if not _is_ignored(dir_rel_path, d, ignore_patterns):
                 dirs.append(d)
-            # else: # Optional debug print
-            #     print(f"Ignoring dir: {dir_rel_path}")
 
         # --- File Processing ---
         if current_depth <= max_depth:

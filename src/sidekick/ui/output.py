@@ -95,13 +95,11 @@ async def spinner(show: bool = True, spinner_obj=None, state_manager: StateManag
     icon = SPINNER_TYPE
     message = UI_THINKING_MESSAGE
 
-    # Get spinner from state manager if available
     if spinner_obj is None and state_manager:
         spinner_obj = state_manager.session.spinner
 
     if not spinner_obj:
         spinner_obj = await run_in_terminal(lambda: console.status(message, spinner=icon))
-        # Store it back in state manager if available
         if state_manager:
             state_manager.session.spinner = spinner_obj
 

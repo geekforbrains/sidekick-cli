@@ -23,7 +23,6 @@ from sidekick.ui.tool_ui import ToolUI
 from ..types import CommandContext, CommandResult, StateManager, ToolArgs
 from .commands import CommandRegistry
 
-# Tool UI instance
 _tool_ui = ToolUI()
 
 
@@ -59,7 +58,6 @@ async def _tool_confirm(tool_call, node, state_manager: StateManager):
 
     # Check if confirmation is needed
     if not tool_handler.should_confirm(tool_call.tool_name):
-        # Log MCP tools when skipping confirmation
         app_settings = ApplicationSettings()
         if tool_call.tool_name not in app_settings.internal_tools:
             title = _tool_ui._get_tool_title(tool_call.tool_name)
@@ -95,7 +93,6 @@ async def _tool_handler(part, node, state_manager: StateManager):
 
         # Use a synchronous function in run_in_terminal to avoid async deadlocks
         def confirm_func():
-            # Skip confirmation if not needed
             if not tool_handler.should_confirm(part.tool_name):
                 return False
 
@@ -179,7 +176,6 @@ async def process_request(text: str, state_manager: StateManager, output: bool =
         await ui.muted(error_message)
         patch_tool_messages(error_message, state_manager)
     except Exception as e:
-        # Wrap unexpected exceptions in AgentError for better tracking
         agent_error = AgentError(f"Agent processing failed: {str(e)}")
         agent_error.__cause__ = e  # Preserve the original exception chain
         await ui.error(str(e))

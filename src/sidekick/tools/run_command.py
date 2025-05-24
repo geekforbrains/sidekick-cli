@@ -85,7 +85,6 @@ class RunCommandTool(BaseTool):
         return super()._get_error_context()
 
 
-# Create the function that maintains the existing interface
 async def run_command(command: str) -> ToolResult:
     """
     Run a shell command and return the output. User must confirm risky commands.
@@ -100,5 +99,4 @@ async def run_command(command: str) -> ToolResult:
     try:
         return await tool.execute(command)
     except ToolExecutionError as e:
-        # Return error message for pydantic-ai compatibility
         return str(e)

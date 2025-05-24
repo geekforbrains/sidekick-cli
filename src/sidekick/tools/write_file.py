@@ -61,7 +61,6 @@ class WriteFileTool(FileBasedTool):
         return super()._format_args(filepath, content)
 
 
-# Create the function that maintains the existing interface
 async def write_file(filepath: FilePath, content: FileContent) -> ToolResult:
     """
     Write content to a new file. Fails if the file already exists.
@@ -78,5 +77,4 @@ async def write_file(filepath: FilePath, content: FileContent) -> ToolResult:
     try:
         return await tool.execute(filepath, content)
     except ToolExecutionError as e:
-        # Return error message for pydantic-ai compatibility
         return str(e)
