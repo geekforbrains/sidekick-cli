@@ -11,7 +11,7 @@ from rich.markdown import Markdown
 from .input import formatted_text, input, multiline_input
 from .keybindings import create_key_bindings
 from .output import (banner, clear, info, line, muted, print, spinner, success, sync_print,
-                     update_available, usage, version, warning)
+                     sync_warning, update_available, usage, version, warning)
 from .panels import (agent, dump_messages, error, help, models, panel, sync_panel,
                      sync_tool_confirm, tool_confirm)
 from .prompt_manager import PromptConfig, PromptManager
@@ -50,6 +50,7 @@ __all__ = [
     "spinner",
     "success",
     "sync_print",
+    "sync_warning",
     "update_available",
     "usage",
     "version",

@@ -12,11 +12,9 @@ from typing import Optional, Tuple
 
 from pydantic_ai.messages import ModelResponse, TextPart
 
-from sidekick.constants import (ERROR_UNDO_INIT, UNDO_DISABLED_HOME, UNDO_DISABLED_NO_GIT,
-                                UNDO_GIT_TIMEOUT, UNDO_INITIAL_COMMIT)
+from sidekick.constants import UNDO_INITIAL_COMMIT
 from sidekick.core.state import StateManager
 from sidekick.exceptions import GitOperationError
-from sidekick.ui import console as ui
 from sidekick.utils.system import get_session_dir
 
 
@@ -42,6 +40,49 @@ def is_in_git_project(directory: Optional[Path] = None) -> bool:
     return is_in_git_project(directory.parent)
 
 
+def get_undo_status(state_manager: StateManager) -> Tuple[bool, str]:
+    """
+    Get the current status of the undo system.
+
+    Args:
+        state_manager: The StateManager instance.
+
+    Returns:
+        tuple: (bool, str) - (is_available, status_message)
+    """
+    cwd = Path.cwd()
+    home_dir = Path.home()
+
+    if cwd == home_dir:
+        return False, "Disabled (running from home directory)"
+
+    if not is_in_git_project():
+        return False, "Disabled (not in a Git project)"
+
+    session_dir = get_session_dir(state_manager)
+    sidekick_git_dir = session_dir / ".git"
+
+    if not sidekick_git_dir.exists():
+        return False, "Not initialized"
+
+    try:
+        git_dir_arg = f"--git-dir={sidekick_git_dir}"
+        result = subprocess.run(
+            ["git", git_dir_arg, "log", "--format=%H", "-n", "2"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5,
+        )
+        commits = result.stdout.strip().split("\n")
+        if len(commits) < 2:
+            return True, "Available (no changes to undo)"
+        else:
+            return True, f"Available ({len(commits) - 1} commits to undo)"
+    except Exception:
+        return False, "Error checking status"
+
+
 def init_undo_system(state_manager: StateManager) -> bool:
     """
     Initialize the undo system by creating a Git repository
@@ -59,11 +100,9 @@ def init_undo_system(state_manager: StateManager) -> bool:
     home_dir = Path.home()
 
     if cwd == home_dir:
-        ui.warning(UNDO_DISABLED_HOME)
         return False
 
     if not is_in_git_project():
-        ui.warning(UNDO_DISABLED_NO_GIT)
         return False
 
     # Get the session directory path
@@ -96,12 +135,8 @@ def init_undo_system(state_manager: StateManager) -> bool:
 
         return True
     except subprocess.TimeoutExpired as e:
-        error = GitOperationError(operation="init", message=UNDO_GIT_TIMEOUT, original_error=e)
-        ui.warning(str(error))
         return False
     except Exception as e:
-        error = GitOperationError(operation="init", message=str(e), original_error=e)
-        ui.warning(ERROR_UNDO_INIT.format(e=e))
         return False
 
 
@@ -150,14 +185,8 @@ def commit_for_undo(
 
         return True
     except subprocess.TimeoutExpired as e:
-        error = GitOperationError(
-            operation="commit", message="Git commit timed out", original_error=e
-        )
-        ui.warning(str(error))
         return False
     except Exception as e:
-        error = GitOperationError(operation="commit", message=str(e), original_error=e)
-        ui.warning(f"Error creating undo commit: {e}")
         return False
 
 
