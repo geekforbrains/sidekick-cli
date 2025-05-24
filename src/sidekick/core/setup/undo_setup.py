@@ -31,18 +31,18 @@ class UndoSetup(BaseSetup):
         """Initialize the undo system."""
         cwd = Path.cwd()
         home_dir = Path.home()
-        
+
         if cwd == home_dir:
             await ui.muted(UNDO_DISABLED_HOME)
             self.state_manager.session.undo_initialized = True
             return
-            
+
         is_safe, reason = is_safe_for_undo()
         if not is_safe:
             await ui.muted(f"{UNDO_DISABLED_UNSAFE}: {reason}")
             self.state_manager.session.undo_initialized = True
             return
-            
+
         success = init_undo_system(self.state_manager)
         if not success:
             await ui.warning("Failed to initialize undo system")

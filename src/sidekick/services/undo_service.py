@@ -29,24 +29,43 @@ def is_system_directory(directory: Path) -> bool:
         bool: True if directory is a system directory, False otherwise
     """
     system_paths = {
-        "/", "/usr", "/var", "/etc", "/bin", "/sbin", "/System", "/Library", 
-        "/Applications", "/Users", "/Windows", "/Program Files", "/Program Files (x86)"
+        "/",
+        "/usr",
+        "/var",
+        "/etc",
+        "/bin",
+        "/sbin",
+        "/System",
+        "/Library",
+        "/Applications",
+        "/Users",
+        "/Windows",
+        "/Program Files",
+        "/Program Files (x86)",
     }
-    
+
     system_prefixes = [
-        "/usr/", "/var/", "/etc/", "/bin/", "/sbin/", "/System/", "/Library/", 
-        "/Applications/", "/Windows/", "/Program Files/"
+        "/usr/",
+        "/var/",
+        "/etc/",
+        "/bin/",
+        "/sbin/",
+        "/System/",
+        "/Library/",
+        "/Applications/",
+        "/Windows/",
+        "/Program Files/",
     ]
-    
+
     normalized_path = str(directory.absolute())
-    
+
     if normalized_path in system_paths:
         return True
-        
+
     for prefix in system_prefixes:
         if normalized_path.startswith(prefix):
             return True
-            
+
     return False
 
 
@@ -178,9 +197,9 @@ def init_undo_system(state_manager: StateManager) -> bool:
         )
 
         return True
-    except subprocess.TimeoutExpired as e:
+    except subprocess.TimeoutExpired:
         return False
-    except Exception as e:
+    except Exception:
         return False
 
 
@@ -225,9 +244,9 @@ def commit_for_undo(
             return False
 
         return True
-    except subprocess.TimeoutExpired as e:
+    except subprocess.TimeoutExpired:
         return False
-    except Exception as e:
+    except Exception:
         return False
 
 

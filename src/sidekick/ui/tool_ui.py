@@ -141,10 +141,10 @@ class ToolUI:
         panel_obj = Panel(
             Padding(content, 1), title=title, title_align="left", border_style=self.colors.warning
         )
-        
+
         bottom_padding = 0 if request.filepath else 1
         outer_padding = (1, 0, bottom_padding, 1)
-        
+
         ui.console.print(Padding(panel_obj, outer_padding))
 
         if request.filepath:

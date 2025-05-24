@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Type
 from .. import utils
 from ..configuration.models import ModelRegistry
 from ..exceptions import ValidationError
-from ..services.undo_service import perform_undo, get_undo_status
+from ..services.undo_service import get_undo_status, perform_undo
 from ..types import CommandArgs, CommandContext, CommandResult, ProcessRequestCallback
 from ..ui import console as ui
 
@@ -169,7 +169,7 @@ class HelpCommand(SimpleCommand):
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
         await ui.help(self._command_registry)
-        
+
         if context.state_manager:
             available, status = get_undo_status(context.state_manager)
             await ui.muted(f"Undo: {status}")
