@@ -267,11 +267,12 @@ class ModelCommand(SimpleCommand):
         if len(args) > 1 and args[1] == "default":
             utils.user_configuration.set_default_model(model, context.state_manager)
             await ui.muted("Updating default model")
-            return "restart"
         else:
             # Show success message with the new model
             await ui.success(f"Switched to model: {model}")
-            return None
+
+        # Always restart to reload MCP servers when switching models
+        return "restart"
 
 
 @dataclass
