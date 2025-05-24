@@ -6,10 +6,10 @@ Sets up file tracking and state management for undo operations.
 
 from pathlib import Path
 
-from sidekick.constants import UNDO_DISABLED_HOME, UNDO_DISABLED_NO_GIT
+from sidekick.constants import UNDO_DISABLED_HOME, UNDO_DISABLED_UNSAFE
 from sidekick.core.setup.base import BaseSetup
 from sidekick.core.state import StateManager
-from sidekick.services.undo_service import init_undo_system, is_in_git_project
+from sidekick.services.undo_service import init_undo_system, is_safe_for_undo
 from sidekick.ui import console as ui
 
 
@@ -34,15 +34,15 @@ class UndoSetup(BaseSetup):
         
         if cwd == home_dir:
             await ui.muted(UNDO_DISABLED_HOME)
-            self.state_manager.session.undo_initialized = True  # Setup completed, but disabled
+            self.state_manager.session.undo_initialized = True
             return
             
-        if not is_in_git_project():
-            await ui.muted(UNDO_DISABLED_NO_GIT)
-            self.state_manager.session.undo_initialized = True  # Setup completed, but disabled
+        is_safe, reason = is_safe_for_undo()
+        if not is_safe:
+            await ui.muted(f"{UNDO_DISABLED_UNSAFE}: {reason}")
+            self.state_manager.session.undo_initialized = True
             return
             
-        # Try to actually initialize undo system
         success = init_undo_system(self.state_manager)
         if not success:
             await ui.warning("Failed to initialize undo system")
