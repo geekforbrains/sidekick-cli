@@ -7,10 +7,9 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.validation import Validator
 
 from sidekick.constants import UI_PROMPT_PREFIX
-from sidekick.core.state import StateManager
-
-from .keybindings import create_key_bindings
-from .prompt_manager import PromptConfig, PromptManager
+from sidekick.types import SessionState
+from sidekick.ui.keybindings import create_key_bindings
+from sidekick.ui.prompt_manager import PromptConfig, PromptManager
 
 
 def formatted_text(text: str) -> HTML:
@@ -27,7 +26,7 @@ async def input(
     key_bindings: Optional[KeyBindings] = None,
     placeholder: Optional[HTML] = None,
     timeoutlen: float = 0.05,
-    state_manager: Optional[StateManager] = None,
+    session: Optional[SessionState] = None,
 ) -> str:
     """
     Prompt for user input using simplified prompt management.
@@ -41,7 +40,7 @@ async def input(
         key_bindings: Optional custom key bindings
         placeholder: Optional placeholder text
         timeoutlen: Timeout length for input
-        state_manager: The state manager for session storage
+        session: The session state for session storage
 
     Returns:
         User input string
@@ -55,7 +54,7 @@ async def input(
         timeoutlen=timeoutlen,
     )
 
-    manager = PromptManager(state_manager)
+    manager = PromptManager(session)
 
     return await manager.get_input(session_key, pretext, config)
 

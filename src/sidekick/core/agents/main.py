@@ -7,49 +7,41 @@ Provides agent creation, message processing, and tool call management.
 from datetime import datetime, timezone
 from typing import Optional
 
-from pydantic_ai import Agent, Tool
+from pydantic_ai import Agent
 from pydantic_ai.messages import ModelRequest, ToolReturnPart
 
-from sidekick.core.state import StateManager
+from sidekick.core.tool_handler import create_tools_with_config
 from sidekick.services.mcp import get_mcp_servers
-from sidekick.tools.read_file import read_file
-from sidekick.tools.run_command import run_command
-from sidekick.tools.update_file import update_file
-from sidekick.tools.write_file import write_file
-from sidekick.types import (AgentRun, ErrorMessage, ModelName, PydanticAgent, ToolCallback,
-                            ToolCallId, ToolName)
+from sidekick.tools import TOOLS
+from sidekick.types import (AgentRun, ErrorMessage, ModelName, PydanticAgent, SessionState,
+                            ToolCallback, ToolCallId, ToolName)
 
 
-async def _process_node(node, tool_callback: Optional[ToolCallback], state_manager: StateManager):
+async def _process_node(node, tool_callback: Optional[ToolCallback], session: SessionState):
     if hasattr(node, "request"):
-        state_manager.session.messages.append(node.request)
+        session.messages.append(node.request)
 
     if hasattr(node, "model_response"):
-        state_manager.session.messages.append(node.model_response)
+        session.messages.append(node.model_response)
         for part in node.model_response.parts:
             if part.part_kind == "tool-call" and tool_callback:
                 await tool_callback(part, node)
 
 
-def get_or_create_agent(model: ModelName, state_manager: StateManager) -> PydanticAgent:
-    if model not in state_manager.session.agents:
-        max_retries = state_manager.session.user_config["settings"]["max_retries"]
-        state_manager.session.agents[model] = Agent(
+def get_or_create_agent(model: ModelName, session: SessionState) -> PydanticAgent:
+    if model not in session.agents:
+        max_retries = session.user_config["settings"]["max_retries"]
+        session.agents[model] = Agent(
             model=model,
-            tools=[
-                Tool(read_file, max_retries=max_retries),
-                Tool(run_command, max_retries=max_retries),
-                Tool(update_file, max_retries=max_retries),
-                Tool(write_file, max_retries=max_retries),
-            ],
-            mcp_servers=get_mcp_servers(state_manager),
+            tools=create_tools_with_config(TOOLS, max_retries),
+            mcp_servers=get_mcp_servers(session),
         )
-    return state_manager.session.agents[model]
+    return session.agents[model]
 
 
 def patch_tool_messages(
     error_message: ErrorMessage = "Tool operation failed",
-    state_manager: StateManager = None,
+    session: SessionState = None,
 ):
     """
     Find any tool calls without responses and add synthetic error responses for them.
@@ -58,10 +50,10 @@ def patch_tool_messages(
     Ignores tools that have corresponding retry prompts as the model is already
     addressing them.
     """
-    if state_manager is None:
-        raise ValueError("state_manager is required for patch_tool_messages")
+    if session is None:
+        raise ValueError("session is required for patch_tool_messages")
 
-    messages = state_manager.session.messages
+    messages = session.messages
 
     if not messages:
         return
@@ -106,12 +98,12 @@ def patch_tool_messages(
 async def process_request(
     model: ModelName,
     message: str,
-    state_manager: StateManager,
+    session: SessionState,
     tool_callback: Optional[ToolCallback] = None,
 ) -> AgentRun:
-    agent = get_or_create_agent(model, state_manager)
-    mh = state_manager.session.messages.copy()
+    agent = get_or_create_agent(model, session)
+    mh = session.messages.copy()
     async with agent.iter(message, message_history=mh) as agent_run:
         async for node in agent_run:
-            await _process_node(node, tool_callback, state_manager)
+            await _process_node(node, tool_callback, session)
         return agent_run

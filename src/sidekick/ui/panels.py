@@ -3,73 +3,69 @@
 from typing import Any, Optional, Union
 
 from rich.markdown import Markdown
-from rich.padding import Padding
-from rich.panel import Panel
 from rich.pretty import Pretty
 from rich.table import Table
 
-from sidekick.configuration.models import ModelRegistry
+from sidekick.configuration import ModelRegistry
 from sidekick.constants import (APP_NAME, CMD_CLEAR, CMD_COMPACT, CMD_DUMP, CMD_EXIT, CMD_HELP,
                                 CMD_MODEL, CMD_UNDO, CMD_YOLO, DESC_CLEAR, DESC_COMPACT, DESC_DUMP,
                                 DESC_EXIT, DESC_HELP, DESC_MODEL, DESC_MODEL_DEFAULT,
                                 DESC_MODEL_SWITCH, DESC_UNDO, DESC_YOLO, PANEL_AVAILABLE_COMMANDS,
-                                PANEL_ERROR, PANEL_MESSAGE_HISTORY, PANEL_MODELS, UI_COLORS)
-from sidekick.core.state import StateManager
-from sidekick.utils.file_utils import DotDict
-
-from .constants import DEFAULT_PANEL_PADDING
-from .decorators import create_sync_wrapper
-from .output import print
-
-colors = DotDict(UI_COLORS)
+                                PANEL_ERROR, PANEL_MESSAGE_HISTORY, PANEL_MODELS)
+from sidekick.types import SessionState
+from sidekick.ui.decorators import create_sync_wrapper
+from sidekick.ui.output import print
+from sidekick.ui.shared import create_padded_panel, theme
 
 
 @create_sync_wrapper
 async def panel(
     title: str,
     text: Union[str, Markdown, Pretty],
-    top: int = DEFAULT_PANEL_PADDING["top"],
-    right: int = DEFAULT_PANEL_PADDING["right"],
-    bottom: int = DEFAULT_PANEL_PADDING["bottom"],
-    left: int = DEFAULT_PANEL_PADDING["left"],
     border_style: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
     """Display a rich panel."""
     border_style = border_style or kwargs.get("style")
-    panel_obj = Panel(Padding(text, 1), title=title, title_align="left", border_style=border_style)
-    await print(Padding(panel_obj, (top, right, bottom, left)), **kwargs)
+    panel_obj = create_padded_panel(title, text, border_style=border_style)
+    await print(panel_obj, **kwargs)
 
 
 async def agent(text: str, bottom: int = 1) -> None:
     """Display an agent panel."""
-    await panel(APP_NAME, Markdown(text), bottom=bottom, border_style=colors.primary)
+    panel_obj = create_padded_panel(
+        APP_NAME, Markdown(text), border_style=theme.primary, padding_bottom=bottom
+    )
+    await print(panel_obj)
 
 
 async def error(text: str) -> None:
     """Display an error panel."""
-    await panel(PANEL_ERROR, text, style=colors.error)
+    panel_obj = create_padded_panel(PANEL_ERROR, text, border_style=theme.error)
+    await print(panel_obj)
 
 
-async def dump_messages(messages_list=None, state_manager: StateManager = None) -> None:
+async def dump_messages(messages_list=None, session: SessionState = None) -> None:
     """Display message history panel."""
-    if messages_list is None and state_manager:
-        messages = Pretty(state_manager.session.messages)
+    if messages_list is None and session:
+        messages = Pretty(session.messages)
     elif messages_list is not None:
         messages = Pretty(messages_list)
     else:
         messages = Pretty([])
-    await panel(PANEL_MESSAGE_HISTORY, messages, style=colors.muted)
+    panel_obj = create_padded_panel(PANEL_MESSAGE_HISTORY, messages, border_style=theme.muted)
+    await print(panel_obj)
 
 
-async def models(state_manager: StateManager = None) -> None:
+async def models(session: SessionState = None) -> None:
     """Display available models panel."""
     model_registry = ModelRegistry()
     model_ids = list(model_registry.list_models().keys())
     model_list = "\n".join([f"{index} - {model}" for index, model in enumerate(model_ids)])
-    current_model = state_manager.session.current_model if state_manager else "unknown"
+    current_model = session.current_model if session else "unknown"
     text = f"Current model: {current_model}\n\n{model_list}"
-    await panel(PANEL_MODELS, text, border_style=colors.muted)
+    panel_obj = create_padded_panel(PANEL_MODELS, text, border_style=theme.muted)
+    await print(panel_obj)
 
 
 async def help(command_registry=None) -> None:
@@ -130,7 +126,8 @@ async def help(command_registry=None) -> None:
         for cmd, desc in commands:
             table.add_row(cmd, desc)
 
-    await panel(PANEL_AVAILABLE_COMMANDS, table, border_style=colors.muted)
+    panel_obj = create_padded_panel(PANEL_AVAILABLE_COMMANDS, table, border_style=theme.muted)
+    await print(panel_obj)
 
 
 @create_sync_wrapper
@@ -139,7 +136,10 @@ async def tool_confirm(
 ) -> None:
     """Display a tool confirmation panel."""
     bottom_padding = 0 if filepath else 1
-    await panel(title, content, bottom=bottom_padding, border_style=colors.warning)
+    panel_obj = create_padded_panel(
+        title, content, border_style=theme.warning, padding_bottom=bottom_padding
+    )
+    await print(panel_obj)
 
 
 # Auto-generated sync versions

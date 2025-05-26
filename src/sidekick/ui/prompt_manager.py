@@ -8,8 +8,8 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.validation import Validator
 
-from sidekick.core.state import StateManager
 from sidekick.exceptions import UserAbortError
+from sidekick.types import SessionState
 
 
 @dataclass
@@ -27,14 +27,14 @@ class PromptConfig:
 class PromptManager:
     """Manages prompt sessions and their lifecycle."""
 
-    def __init__(self, state_manager: Optional[StateManager] = None):
+    def __init__(self, session: Optional[SessionState] = None):
         """Initialize the prompt manager.
 
         Args:
-            state_manager: Optional state manager for session persistence
+            session: Optional session state for session persistence
         """
-        self.state_manager = state_manager
-        self._temp_sessions = {}  # For when no state manager is available
+        self.session = session
+        self._temp_sessions = {}  # For when no session state is available
 
     def get_session(self, session_key: str, config: PromptConfig) -> PromptSession:
         """Get or create a prompt session.
@@ -46,14 +46,14 @@ class PromptManager:
         Returns:
             PromptSession instance
         """
-        if self.state_manager:
-            # Use state manager's session storage
-            if session_key not in self.state_manager.session.input_sessions:
-                self.state_manager.session.input_sessions[session_key] = PromptSession(
+        if self.session:
+            # Use session state's session storage
+            if session_key not in self.session.input_sessions:
+                self.session.input_sessions[session_key] = PromptSession(
                     key_bindings=config.key_bindings,
                     placeholder=config.placeholder,
                 )
-            return self.state_manager.session.input_sessions[session_key]
+            return self.session.input_sessions[session_key]
         else:
             # Use temporary storage
             if session_key not in self._temp_sessions:

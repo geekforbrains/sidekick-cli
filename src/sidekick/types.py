@@ -155,9 +155,10 @@ class SessionState:
     input_sessions: dict[str, Any] = field(default_factory=dict)
     current_task: Optional[Any] = None
 
+    def reset(self):
+        """Reset the session state to initial values."""
+        self.__init__()
 
-# Forward reference for StateManager to avoid circular imports
-StateManager = Any  # Will be replaced with actual StateManager type
 
 # =============================================================================
 # Command Types
@@ -166,14 +167,14 @@ StateManager = Any  # Will be replaced with actual StateManager type
 # Command execution types
 CommandArgs = list[str]
 CommandResult = Optional[Any]
-ProcessRequestCallback = Callable[[str, StateManager, bool], Awaitable[Any]]
+ProcessRequestCallback = Callable[[str, "SessionState", bool], Awaitable[Any]]
 
 
 @dataclass
 class CommandContext:
     """Context passed to command handlers."""
 
-    state_manager: StateManager
+    session: SessionState
     process_request: Optional[ProcessRequestCallback] = None
 
 

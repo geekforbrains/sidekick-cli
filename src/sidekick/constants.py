@@ -87,7 +87,7 @@ PANEL_MESSAGE_HISTORY = "Message History"
 PANEL_MODELS = "Models"
 PANEL_AVAILABLE_COMMANDS = "Available Commands"
 
-# Error messages
+# Error message templates
 ERROR_PROVIDER_EMPTY = "Provider number cannot be empty"
 ERROR_INVALID_PROVIDER = "Invalid provider number"
 ERROR_FILE_NOT_FOUND = "Error: File not found at '{filepath}'."
@@ -100,6 +100,15 @@ ERROR_COMMAND_EXECUTION = (
 )
 ERROR_UNDO_INIT = "Error initializing undo system: {e}"
 
+# Standard error format templates
+ERROR_TOOL_FAILED = "Tool '{tool_name}' failed: {message}"
+ERROR_SERVICE_FAILED = "Service '{service_name}' failed: {message}"
+ERROR_OPERATION_FAILED = "Operation '{operation}' failed: {message}"
+ERROR_VALIDATION_FAILED = "Validation failed: {message}"
+ERROR_CONFIG_INVALID = "Configuration error: {message}"
+ERROR_NETWORK_FAILED = "Network operation failed: {message}"
+ERROR_TIMEOUT = "Operation timed out: {message}"
+
 # Command output messages
 CMD_OUTPUT_NO_OUTPUT = "No output."
 CMD_OUTPUT_NO_ERRORS = "No errors."
@@ -111,6 +120,11 @@ UNDO_DISABLED_HOME = "Undo system disabled, running from home directory"
 UNDO_DISABLED_UNSAFE = "Undo system disabled, directory not safe for tracking"
 UNDO_INITIAL_COMMIT = "Initial commit for sidekick undo history"
 UNDO_GIT_TIMEOUT = "Git initialization timed out"
+
+# Success message templates
+SUCCESS_TOOL_COMPLETED = "Tool '{tool_name}' completed successfully"
+SUCCESS_OPERATION_COMPLETED = "Operation '{operation}' completed successfully"
+SUCCESS_FILE_OPERATION = "File operation completed: {message}"
 
 # Log/status messages
 MSG_UPDATE_AVAILABLE = "Update available: v{latest_version}"

@@ -10,17 +10,17 @@ from typing import Any, Callable, Dict, List, Optional
 
 import sentry_sdk
 
-from sidekick.core.state import StateManager
+from sidekick.types import SessionState
 
 
 def _create_before_send_callback(
-    state_manager: StateManager,
+    session: SessionState,
 ) -> Callable[[Dict[str, Any], Dict[str, Any]], Optional[Dict[str, Any]]]:
-    """Create a before_send callback with access to state_manager."""
+    """Create a before_send callback with access to session."""
 
     def _before_send(event: Dict[str, Any], hint: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Filter sensitive data from Sentry events."""
-        if not state_manager.session.telemetry_enabled:
+        if not session.telemetry_enabled:
             return None
 
         if event.get("request") and event["request"].get("headers"):
@@ -43,9 +43,9 @@ def _create_before_send_callback(
     return _before_send
 
 
-def setup(state_manager: StateManager) -> None:
+def setup(session: SessionState) -> None:
     """Setup Sentry for error reporting if telemetry is enabled."""
-    if not state_manager.session.telemetry_enabled:
+    if not session.telemetry_enabled:
         return
 
     IS_DEV = os.environ.get("IS_DEV", False) == "True"
@@ -56,15 +56,13 @@ def setup(state_manager: StateManager) -> None:
         traces_sample_rate=0.1,  # Sample only 10% of transactions
         profiles_sample_rate=0.1,  # Sample only 10% of profiles
         send_default_pii=False,  # Don't send personally identifiable information
-        before_send=_create_before_send_callback(state_manager),  # Filter sensitive data
+        before_send=_create_before_send_callback(session),  # Filter sensitive data
         environment=environment,
         debug=False,
         shutdown_timeout=0,
     )
 
-    sentry_sdk.set_user(
-        {"id": state_manager.session.device_id, "session_id": state_manager.session.session_id}
-    )
+    sentry_sdk.set_user({"id": session.device_id, "session_id": session.session_id})
 
 
 def capture_exception(*args: Any, **kwargs: Any) -> Optional[str]:

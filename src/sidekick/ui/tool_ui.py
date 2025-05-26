@@ -2,20 +2,17 @@
 Tool confirmation UI components, separated from business logic.
 """
 
-from rich.console import Console
 from rich.markdown import Markdown as RichMarkdown
-from rich.padding import Padding
-from rich.panel import Panel
 
-from sidekick.configuration.settings import ApplicationSettings
-from sidekick.constants import APP_NAME, TOOL_UPDATE_FILE, TOOL_WRITE_FILE, UI_COLORS
+from sidekick.configuration import ApplicationSettings
+from sidekick.constants import APP_NAME, TOOL_UPDATE_FILE, TOOL_WRITE_FILE
 from sidekick.core.tool_handler import ToolConfirmationRequest, ToolConfirmationResponse
 from sidekick.types import ToolArgs
 from sidekick.ui.input import input
 from sidekick.ui.output import info, muted, print, usage
 from sidekick.ui.panels import tool_confirm
+from sidekick.ui.shared import console, create_padded_panel, theme
 from sidekick.utils.diff_utils import render_file_diff
-from sidekick.utils.file_utils import DotDict
 from sidekick.utils.text_utils import ext_to_lang, key_to_title
 
 
@@ -23,8 +20,8 @@ class ToolUI:
     """Handles tool confirmation UI presentation."""
 
     def __init__(self):
-        self.colors = DotDict(UI_COLORS)
-        self.console = Console()
+        self.theme = theme
+        self.console = console
 
     def _get_tool_title(self, tool_name: str) -> str:
         """
@@ -69,7 +66,7 @@ class ToolUI:
             str: Formatted arguments for display.
         """
         if tool_name == TOOL_UPDATE_FILE:
-            return render_file_diff(args["target"], args["patch"], self.colors)
+            return render_file_diff(args["target"], args["patch"], self.theme.colors)
 
         elif tool_name == TOOL_WRITE_FILE:
             return self._create_code_block(args["filepath"], args["content"])
@@ -91,43 +88,19 @@ class ToolUI:
         return content.strip()
 
     async def show_confirmation(
-        self, request: ToolConfirmationRequest, state_manager=None
+        self, request: ToolConfirmationRequest, session=None
     ) -> ToolConfirmationResponse:
         """
         Show tool confirmation UI and get user response.
 
         Args:
             request: The confirmation request.
+            session: Session for async input.
 
         Returns:
             ToolConfirmationResponse: User's response to the confirmation.
         """
-        title = self._get_tool_title(request.tool_name)
-        content = self._render_args(request.tool_name, request.args)
-
-        await tool_confirm(title, content, filepath=request.filepath)
-
-        if request.filepath:
-            await usage(f"File: {request.filepath}")
-
-        await print("  1. Yes (default)")
-        await print("  2. Yes, and don't ask again for commands like this")
-        await print(f"  3. No, and tell {APP_NAME} what to do differently")
-        resp = (
-            await input(
-                session_key="tool_confirm",
-                pretext="  Choose an option [1/2/3]: ",
-                state_manager=state_manager,
-            )
-            or "1"
-        )
-
-        if resp == "2":
-            return ToolConfirmationResponse(approved=True, skip_future=True)
-        elif resp == "3":
-            return ToolConfirmationResponse(approved=False, abort=True)
-        else:
-            return ToolConfirmationResponse(approved=True)
+        return await self._show_confirmation_common(request, is_async=True, session=session)
 
     def show_sync_confirmation(self, request: ToolConfirmationRequest) -> ToolConfirmationResponse:
         """
@@ -139,28 +112,66 @@ class ToolUI:
         Returns:
             ToolConfirmationResponse: User's response to the confirmation.
         """
+        import asyncio
+
+        return asyncio.run(self._show_confirmation_common(request, is_async=False))
+
+    async def _show_confirmation_common(
+        self, request: ToolConfirmationRequest, is_async: bool = True, session=None
+    ) -> ToolConfirmationResponse:
+        """
+        Common confirmation logic for both async and sync modes.
+
+        Args:
+            request: The confirmation request.
+            is_async: Whether to use async UI components.
+            session: Session for async input.
+
+        Returns:
+            ToolConfirmationResponse: User's response to the confirmation.
+        """
         title = self._get_tool_title(request.tool_name)
         content = self._render_args(request.tool_name, request.args)
 
-        panel_obj = Panel(
-            Padding(content, 1), title=title, title_align="left", border_style=self.colors.warning
-        )
+        # Display confirmation panel
+        if is_async:
+            await tool_confirm(title, content, filepath=request.filepath)
+            if request.filepath:
+                await usage(f"File: {request.filepath}")
+        else:
+            bottom_padding = 0 if request.filepath else 1
+            panel_obj = create_padded_panel(
+                title, content, border_style=self.theme.warning, padding_bottom=bottom_padding
+            )
+            self.console.print(panel_obj)
+            if request.filepath:
+                self.console.print(f"File: {request.filepath}", style=self.theme.muted)
 
-        bottom_padding = 0 if request.filepath else 1
-        outer_padding = (1, 0, bottom_padding, 1)
+        # Display options
+        options = [
+            "  1. Yes (default)",
+            "  2. Yes, and don't ask again for commands like this",
+            f"  3. No, and tell {APP_NAME} what to do differently",
+        ]
 
-        self.console.print(Padding(panel_obj, outer_padding))
+        if is_async:
+            for option in options:
+                await print(option)
+            resp = (
+                await input(
+                    session_key="tool_confirm",
+                    pretext="  Choose an option [1/2/3]: ",
+                    session=session,
+                )
+                or "1"
+            )
+        else:
+            for option in options:
+                self.console.print(option)
+            resp = input("  Choose an option [1/2/3]: ").strip() or "1"
+            print()
 
-        if request.filepath:
-            self.console.print(f"File: {request.filepath}", style=self.colors.muted)
-
-        self.console.print("  1. Yes (default)")
-        self.console.print("  2. Yes, and don't ask again for commands like this")
-        self.console.print(f"  3. No, and tell {APP_NAME} what to do differently")
-        resp = input("  Choose an option [1/2/3]: ").strip() or "1"
-
-        print()
-
+        # Process response
         if resp == "2":
             return ToolConfirmationResponse(approved=True, skip_future=True)
         elif resp == "3":

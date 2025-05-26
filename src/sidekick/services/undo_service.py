@@ -13,8 +13,8 @@ from typing import Optional, Tuple
 from pydantic_ai.messages import ModelResponse, TextPart
 
 from sidekick.constants import UNDO_INITIAL_COMMIT
-from sidekick.core.state import StateManager
 from sidekick.exceptions import GitOperationError
+from sidekick.types import SessionState
 from sidekick.utils.system import get_session_dir
 
 
@@ -117,12 +117,12 @@ def is_safe_for_undo(directory: Optional[Path] = None) -> Tuple[bool, str]:
     return True, "Safe for undo operations"
 
 
-def get_undo_status(state_manager: StateManager) -> Tuple[bool, str]:
+def get_undo_status(session: SessionState) -> Tuple[bool, str]:
     """
     Get the current status of the undo system.
 
     Args:
-        state_manager: The StateManager instance.
+        session: The SessionState instance.
 
     Returns:
         tuple: (bool, str) - (is_available, status_message)
@@ -137,7 +137,7 @@ def get_undo_status(state_manager: StateManager) -> Tuple[bool, str]:
     if not is_safe:
         return False, f"Disabled ({reason.lower()})"
 
-    session_dir = get_session_dir(state_manager)
+    session_dir = get_session_dir(session)
     sidekick_git_dir = session_dir / ".git"
 
     if not sidekick_git_dir.exists():
@@ -161,18 +161,18 @@ def get_undo_status(state_manager: StateManager) -> Tuple[bool, str]:
         return False, "Error checking status"
 
 
-def init_undo_system(state_manager: StateManager) -> bool:
+def init_undo_system(session: SessionState) -> bool:
     """
     Initialize the undo system by creating a Git repository
     in the ~/.sidekick/sessions/<session-id> directory.
 
     Args:
-        state_manager: The StateManager instance.
+        session: The SessionState instance.
 
     Returns:
         bool: True if the undo system was initialized, False otherwise.
     """
-    session_dir = get_session_dir(state_manager)
+    session_dir = get_session_dir(session)
     sidekick_git_dir = session_dir / ".git"
 
     if sidekick_git_dir.exists():
@@ -204,22 +204,22 @@ def init_undo_system(state_manager: StateManager) -> bool:
 
 
 def commit_for_undo(
-    message_prefix: str = "sidekick", state_manager: Optional[StateManager] = None
+    message_prefix: str = "sidekick", session: Optional[SessionState] = None
 ) -> bool:
     """
     Commit the current state to the undo repository.
 
     Args:
         message_prefix (str): Prefix for the commit message.
-        state_manager: The StateManager instance.
+        session: The SessionState instance.
 
     Returns:
         bool: True if the commit was successful, False otherwise.
     """
     # Get the session directory and git dir
-    if state_manager is None:
-        raise ValueError("state_manager is required for commit_for_undo")
-    session_dir = get_session_dir(state_manager)
+    if session is None:
+        raise ValueError("session is required for commit_for_undo")
+    session_dir = get_session_dir(session)
     sidekick_git_dir = session_dir / ".git"
 
     if not sidekick_git_dir.exists():
@@ -250,20 +250,20 @@ def commit_for_undo(
         return False
 
 
-def perform_undo(state_manager: StateManager) -> Tuple[bool, str]:
+def perform_undo(session: SessionState) -> Tuple[bool, str]:
     """
     Undo the most recent change by resetting to the previous commit.
     Also adds a system message to the chat history to inform the AI
     that the last changes were undone.
 
     Args:
-        state_manager: The StateManager instance.
+        session: The SessionState instance.
 
     Returns:
         tuple: (bool, str) - Success status and message
     """
     # Get the session directory and git dir
-    session_dir = get_session_dir(state_manager)
+    session_dir = get_session_dir(session)
     sidekick_git_dir = session_dir / ".git"
 
     if not sidekick_git_dir.exists():
@@ -303,7 +303,7 @@ def perform_undo(state_manager: StateManager) -> Tuple[bool, str]:
             timeout=5,
         )
 
-        state_manager.session.messages.append(
+        session.messages.append(
             ModelResponse(
                 parts=[
                     TextPart(

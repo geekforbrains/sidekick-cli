@@ -12,8 +12,8 @@ import subprocess
 import uuid
 from pathlib import Path
 
-from ..configuration.settings import ApplicationSettings
-from ..constants import DEVICE_ID_FILE, ENV_FILE, SESSIONS_SUBDIR, SIDEKICK_HOME_DIR
+from sidekick.configuration import ApplicationSettings
+from sidekick.constants import DEVICE_ID_FILE, ENV_FILE, SESSIONS_SUBDIR, SIDEKICK_HOME_DIR
 
 # Default ignore patterns if .gitignore is not found
 DEFAULT_IGNORE_PATTERNS = {
@@ -58,17 +58,17 @@ def get_sidekick_home():
     return home
 
 
-def get_session_dir(state_manager):
+def get_session_dir(session):
     """
     Get the path to the current session directory.
 
     Args:
-        state_manager: The StateManager instance containing session info.
+        session: The SessionState instance containing session info.
 
     Returns:
         Path: The path to the current session directory.
     """
-    session_dir = get_sidekick_home() / SESSIONS_SUBDIR / state_manager.session.session_id
+    session_dir = get_sidekick_home() / SESSIONS_SUBDIR / session.session_id
     session_dir.mkdir(exist_ok=True, parents=True)
     return session_dir
 
@@ -78,9 +78,9 @@ def _load_gitignore_patterns(filepath=".gitignore"):
     patterns = set()
     try:
         # Use io.open for potentially better encoding handling, though default utf-8 is usually fine
-        import io
+        from io import open as io_open
 
-        with io.open(filepath, "r", encoding="utf-8") as f:
+        with io_open(filepath, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith("#"):
@@ -210,24 +210,24 @@ def get_device_id():
         return str(uuid.uuid4())
 
 
-def cleanup_session(state_manager):
+def cleanup_session(session):
     """
     Clean up the session directory after the CLI exits.
     Removes the session directory completely.
 
     Args:
-        state_manager: The StateManager instance containing session info.
+        session: The SessionState instance containing session info.
 
     Returns:
         bool: True if cleanup was successful, False otherwise.
     """
     try:
         # If no session ID was generated, nothing to clean up
-        if state_manager.session.session_id is None:
+        if session.session_id is None:
             return True
 
         # Get the session directory using the imported function
-        session_dir = get_session_dir(state_manager)
+        session_dir = get_session_dir(session)
 
         # If the directory exists, remove it
         if session_dir.exists():

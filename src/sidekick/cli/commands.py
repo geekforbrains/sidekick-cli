@@ -4,15 +4,13 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from .. import utils
-from ..configuration.models import ModelRegistry
-from ..exceptions import ValidationError
-from ..services.undo_service import get_undo_status, perform_undo
-from ..types import CommandArgs, CommandContext, CommandResult, ProcessRequestCallback
-from ..ui.output import clear, info, muted, success, warning
-from ..ui.panels import error
-from ..ui.panels import dump_messages, help
-from ..ui.panels import models as models_panel
+from sidekick.configuration import ModelRegistry, set_default_model
+from sidekick.exceptions import ValidationError
+from sidekick.services.undo_service import get_undo_status, perform_undo
+from sidekick.types import CommandArgs, CommandContext, CommandResult, ProcessRequestCallback
+from sidekick.ui.output import clear, info, muted, success, warning
+from sidekick.ui.panels import dump_messages, error, help
+from sidekick.ui.panels import models as models_panel
 
 
 class CommandCategory(Enum):
@@ -87,7 +85,7 @@ class YoloCommand(Command):
         )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
-        state = context.state_manager.session
+        state = context.session
         state.yolo = not state.yolo
         if state.yolo:
             await success("Ooh shit, its YOLO time!\n")
@@ -107,7 +105,7 @@ class DumpCommand(Command):
         )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
-        await dump_messages(context.state_manager.session.messages)
+        await dump_messages(context.session.messages)
 
 
 class ClearCommand(Command):
@@ -123,7 +121,7 @@ class ClearCommand(Command):
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
         await clear()
-        context.state_manager.session.messages = []
+        context.session.messages = []
 
 
 class HelpCommand(Command):
@@ -141,8 +139,8 @@ class HelpCommand(Command):
     async def execute(self, args: List[str], context: CommandContext) -> None:
         await help(self._command_registry)
 
-        if context.state_manager:
-            available, status = get_undo_status(context.state_manager)
+        if context.session:
+            available, status = get_undo_status(context.session)
             await muted(f"Undo: {status}")
 
 
@@ -158,7 +156,7 @@ class UndoCommand(Command):
         )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
-        success, message = perform_undo(context.state_manager)
+        success, message = perform_undo(context.session)
         if success:
             await success(message)
         else:
@@ -192,11 +190,9 @@ class CompactCommand(Command):
             return
 
         # Get the current agent, create a summary of context, and trim message history
-        await process_request(
-            "Summarize the conversation so far", context.state_manager, output=False
-        )
+        await process_request("Summarize the conversation so far", context.session, output=False)
         await success("Context history has been summarized and truncated.")
-        context.state_manager.session.messages = context.state_manager.session.messages[-2:]
+        context.session.messages = context.session.messages[-2:]
 
 
 class ModelCommand(Command):
@@ -213,7 +209,7 @@ class ModelCommand(Command):
     async def execute(self, args: CommandArgs, context: CommandContext) -> Optional[str]:
         if not args:
             # No arguments - list models
-            await models_panel(context.state_manager)
+            await models_panel(context.session)
             return None
 
         # Parse model index
@@ -232,11 +228,11 @@ class ModelCommand(Command):
 
         # Set the model
         model = models[model_index]
-        context.state_manager.session.current_model = model
+        context.session.current_model = model
 
         # Check if setting as default
         if len(args) > 1 and args[1] == "default":
-            utils.user_configuration.set_default_model(model, context.state_manager)
+            set_default_model(model, context.session)
             await muted("Updating default model")
         else:
             # Show success message with the new model
