@@ -43,6 +43,7 @@ dev = [
     "flake8",
     "isort",
     "pytest",
+    "pytest-asyncio",
     "pytest-cov",
 ]
 
