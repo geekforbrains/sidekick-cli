@@ -55,12 +55,6 @@ DESC_EXIT = "Exit the application"
 
 # Command Configuration
 COMMAND_PREFIX = "/"
-COMMAND_CATEGORIES = {
-    "state": ["yolo", "undo"],
-    "debug": ["dump", "compact"],
-    "ui": ["clear", "help"],
-    "config": ["model"],
-}
 
 # System paths
 SIDEKICK_HOME_DIR = ".sidekick"

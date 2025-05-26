@@ -5,9 +5,10 @@ This module contains all type aliases, protocols, and type definitions
 used throughout the Sidekick codebase.
 """
 
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Protocol, Tuple, Union
+from typing import Any, Awaitable, Callable, Optional, Protocol, Tuple, Union
 
 # Try to import pydantic-ai types if available
 try:
@@ -28,13 +29,13 @@ except ImportError:
 # =============================================================================
 
 # Basic type aliases
-UserConfig = Dict[str, Any]
-EnvConfig = Dict[str, str]
+UserConfig = dict[str, Any]
+EnvConfig = dict[str, str]
 ModelName = str
 ToolName = str
 SessionId = str
 DeviceId = str
-InputSessions = Dict[str, Any]
+InputSessions = dict[str, Any]
 
 # =============================================================================
 # Configuration Types
@@ -57,7 +58,7 @@ class ModelConfig:
     pricing: ModelPricing
 
 
-ModelRegistry = Dict[str, ModelConfig]
+ModelRegistry = dict[str, ModelConfig]
 
 # Path configuration
 ConfigPath = Path
@@ -68,7 +69,7 @@ ConfigFile = Path
 # =============================================================================
 
 # Tool execution types
-ToolArgs = Dict[str, Any]
+ToolArgs = dict[str, Any]
 ToolResult = str
 ToolCallback = Callable[[Any, Any], Awaitable[None]]
 ToolCallId = str
@@ -85,7 +86,7 @@ class ToolConfirmationRequest:
     """Request for tool execution confirmation."""
 
     tool_name: str
-    args: Dict[str, Any]
+    args: dict[str, Any]
     filepath: Optional[str] = None
 
 
@@ -123,11 +124,11 @@ UIInputCallback = Callable[[str, str], Awaitable[str]]
 
 # Agent response types
 AgentResponse = Any  # Replace with proper pydantic-ai types when available
-MessageHistory = List[Any]
+MessageHistory = list[Any]
 AgentRun = Any  # pydantic_ai.RunContext or similar
 
 # Agent configuration
-AgentConfig = Dict[str, Any]
+AgentConfig = dict[str, Any]
 AgentName = str
 
 # =============================================================================
@@ -139,20 +140,20 @@ AgentName = str
 class SessionState:
     """Complete session state for the application."""
 
-    user_config: Dict[str, Any]
-    agents: Dict[str, Any]
-    messages: List[Any]
-    total_cost: float
-    current_model: str
-    spinner: Optional[Any]
-    tool_ignore: List[str]
-    yolo: bool
-    undo_initialized: bool
-    session_id: str
-    device_id: Optional[str]
-    telemetry_enabled: bool
-    input_sessions: Dict[str, Any]
-    current_task: Optional[Any]
+    user_config: dict[str, Any] = field(default_factory=dict)
+    agents: dict[str, Any] = field(default_factory=dict)
+    messages: list[Any] = field(default_factory=list)
+    total_cost: float = 0.0
+    current_model: str = "openai:gpt-4o"
+    spinner: Optional[Any] = None
+    tool_ignore: list[str] = field(default_factory=list)
+    yolo: bool = False
+    undo_initialized: bool = False
+    session_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    device_id: Optional[str] = None
+    telemetry_enabled: bool = True
+    input_sessions: dict[str, Any] = field(default_factory=dict)
+    current_task: Optional[Any] = None
 
 
 # Forward reference for StateManager to avoid circular imports
@@ -163,7 +164,7 @@ StateManager = Any  # Will be replaced with actual StateManager type
 # =============================================================================
 
 # Command execution types
-CommandArgs = List[str]
+CommandArgs = list[str]
 CommandResult = Optional[Any]
 ProcessRequestCallback = Callable[[str, StateManager, bool], Awaitable[Any]]
 
@@ -181,12 +182,12 @@ class CommandContext:
 # =============================================================================
 
 # MCP (Model Context Protocol) types
-MCPServerConfig = Dict[str, Any]
-MCPServers = Dict[str, MCPServerConfig]
+MCPServerConfig = dict[str, Any]
+MCPServers = dict[str, MCPServerConfig]
 
 # Telemetry types
-TelemetryEvent = Dict[str, Any]
-TelemetryData = Dict[str, Any]
+TelemetryEvent = dict[str, Any]
+TelemetryData = dict[str, Any]
 
 # =============================================================================
 # File Operation Types
@@ -205,7 +206,7 @@ LineNumber = int
 # =============================================================================
 
 # Error context types
-ErrorContext = Dict[str, Any]
+ErrorContext = dict[str, Any]
 OriginalError = Optional[Exception]
 ErrorMessage = str
 
@@ -223,9 +224,9 @@ AsyncVoidFunc = Callable[..., Awaitable[None]]
 # =============================================================================
 
 # Types for file updates and diffs
-UpdateOperation = Dict[str, Any]
+UpdateOperation = dict[str, Any]
 DiffLine = str
-DiffHunk = List[DiffLine]
+DiffHunk = list[DiffLine]
 
 # =============================================================================
 # Validation Types

@@ -9,36 +9,41 @@ import os
 
 from pydantic_ai.exceptions import ModelRetry
 
-from sidekick.exceptions import ToolExecutionError
-from sidekick.tools.base import FileBasedTool
 from sidekick.types import FileContent, FilePath, ToolResult
-from sidekick.ui import console as default_ui
+from sidekick.ui.output import info
+from sidekick.ui.panels import error
 
 
-class UpdateFileTool(FileBasedTool):
-    """Tool for updating existing files by replacing text blocks."""
+async def update_file(filepath: FilePath, target: FileContent, patch: FileContent) -> ToolResult:
+    """
+    Update an existing file by replacing a target text block with a patch.
+    Requires confirmation with diff before applying.
 
-    @property
-    def tool_name(self) -> str:
-        return "Update"
+    Args:
+        filepath (FilePath): The path to the file to update.
+        target (FileContent): The entire, exact block of text to be replaced.
+        patch (FileContent): The new block of text to insert.
 
-    async def _execute(
-        self, filepath: FilePath, target: FileContent, patch: FileContent
-    ) -> ToolResult:
-        """Update an existing file by replacing a target text block with a patch.
+    Returns:
+        ToolResult: A message indicating the success or failure of the operation.
+    """
+    try:
+        # Format arguments, truncating target and patch for display
+        args = [repr(filepath)]
+        if target is not None:
+            if len(target) > 50:
+                args.append(f"target='{target[:47]}...'")
+            else:
+                args.append(f"target={repr(target)}")
+        if patch is not None:
+            if len(patch) > 50:
+                args.append(f"patch='{patch[:47]}...'")
+            else:
+                args.append(f"patch={repr(patch)}")
+        args_display = ", ".join(args)
 
-        Args:
-            filepath: The path to the file to update.
-            target: The entire, exact block of text to be replaced.
-            patch: The new block of text to insert.
+        await info(f"Update({args_display})")
 
-        Returns:
-            ToolResult: A message indicating success.
-
-        Raises:
-            ModelRetry: If file not found or target not found
-            Exception: Any file operation errors
-        """
         if not os.path.exists(filepath):
             raise ModelRetry(
                 f"File '{filepath}' not found. Cannot update. "
@@ -73,42 +78,10 @@ class UpdateFileTool(FileBasedTool):
 
         return f"File '{filepath}' updated successfully."
 
-    def _format_args(
-        self, filepath: FilePath, target: FileContent = None, patch: FileContent = None
-    ) -> str:
-        """Format arguments, truncating target and patch for display."""
-        args = [repr(filepath)]
-
-        if target is not None:
-            if len(target) > 50:
-                args.append(f"target='{target[:47]}...'")
-            else:
-                args.append(f"target={repr(target)}")
-
-        if patch is not None:
-            if len(patch) > 50:
-                args.append(f"patch='{patch[:47]}...'")
-            else:
-                args.append(f"patch={repr(patch)}")
-
-        return ", ".join(args)
-
-
-async def update_file(filepath: FilePath, target: FileContent, patch: FileContent) -> ToolResult:
-    """
-    Update an existing file by replacing a target text block with a patch.
-    Requires confirmation with diff before applying.
-
-    Args:
-        filepath (FilePath): The path to the file to update.
-        target (FileContent): The entire, exact block of text to be replaced.
-        patch (FileContent): The new block of text to insert.
-
-    Returns:
-        ToolResult: A message indicating the success or failure of the operation.
-    """
-    tool = UpdateFileTool(default_ui)
-    try:
-        return await tool.execute(filepath, target, patch)
-    except ToolExecutionError as e:
-        return str(e)
+    except ModelRetry:
+        # Re-raise ModelRetry for pydantic-ai to handle
+        raise
+    except Exception as update_error:
+        err_msg = f"Error updating file '{filepath}': {update_error}"
+        await error(err_msg)
+        return err_msg

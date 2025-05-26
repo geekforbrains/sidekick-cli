@@ -13,7 +13,9 @@ from sidekick.cli.repl import repl
 from sidekick.configuration.settings import ApplicationSettings
 from sidekick.core.state import StateManager
 from sidekick.setup import setup
-from sidekick.ui import console as ui
+from sidekick.ui.output import banner, update_available
+from sidekick.ui.panels import error
+from sidekick.ui.output import version as version_output
 from sidekick.utils.system import check_for_updates
 
 app_settings = ApplicationSettings()
@@ -31,14 +33,14 @@ def main(
     run_setup: bool = typer.Option(False, "--setup", help="Run setup process."),
 ):
     if version:
-        asyncio.run(ui.version())
+        asyncio.run(version_output())
         return
 
-    asyncio.run(ui.banner())
+    asyncio.run(banner())
 
     has_update, latest_version = check_for_updates()
     if has_update:
-        asyncio.run(ui.show_update_message(latest_version))
+        asyncio.run(update_available(latest_version))
 
     if no_telemetry:
         state_manager.session.telemetry_enabled = False
@@ -47,7 +49,7 @@ def main(
         asyncio.run(setup(run_setup, state_manager))
         asyncio.run(repl(state_manager))
     except Exception as e:
-        asyncio.run(ui.error(str(e)))
+        asyncio.run(error(str(e)))
 
 
 if __name__ == "__main__":

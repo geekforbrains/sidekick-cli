@@ -2,7 +2,8 @@
 Tool confirmation UI components, separated from business logic.
 """
 
-from rich.markdown import Markdown
+from rich.console import Console
+from rich.markdown import Markdown as RichMarkdown
 from rich.padding import Padding
 from rich.panel import Panel
 
@@ -10,7 +11,9 @@ from sidekick.configuration.settings import ApplicationSettings
 from sidekick.constants import APP_NAME, TOOL_UPDATE_FILE, TOOL_WRITE_FILE, UI_COLORS
 from sidekick.core.tool_handler import ToolConfirmationRequest, ToolConfirmationResponse
 from sidekick.types import ToolArgs
-from sidekick.ui import console as ui
+from sidekick.ui.input import input
+from sidekick.ui.output import info, muted, print, usage
+from sidekick.ui.panels import tool_confirm
 from sidekick.utils.diff_utils import render_file_diff
 from sidekick.utils.file_utils import DotDict
 from sidekick.utils.text_utils import ext_to_lang, key_to_title
@@ -21,6 +24,7 @@ class ToolUI:
 
     def __init__(self):
         self.colors = DotDict(UI_COLORS)
+        self.console = Console()
 
     def _get_tool_title(self, tool_name: str) -> str:
         """
@@ -38,7 +42,7 @@ class ToolUI:
         else:
             return f"MCP({tool_name})"
 
-    def _create_code_block(self, filepath: str, content: str) -> Markdown:
+    def _create_code_block(self, filepath: str, content: str) -> RichMarkdown:
         """
         Create a code block for the given file path and content.
 
@@ -47,11 +51,11 @@ class ToolUI:
             content: The content of the file.
 
         Returns:
-            Markdown: A Markdown object representing the code block.
+            RichMarkdown: A Markdown object representing the code block.
         """
         lang = ext_to_lang(filepath)
         code_block = f"```{lang}\n{content}\n```"
-        return ui.markdown(code_block)
+        return RichMarkdown(code_block)
 
     def _render_args(self, tool_name: str, args: ToolArgs) -> str:
         """
@@ -101,16 +105,16 @@ class ToolUI:
         title = self._get_tool_title(request.tool_name)
         content = self._render_args(request.tool_name, request.args)
 
-        await ui.tool_confirm(title, content, filepath=request.filepath)
+        await tool_confirm(title, content, filepath=request.filepath)
 
         if request.filepath:
-            await ui.usage(f"File: {request.filepath}")
+            await usage(f"File: {request.filepath}")
 
-        await ui.print("  1. Yes (default)")
-        await ui.print("  2. Yes, and don't ask again for commands like this")
-        await ui.print(f"  3. No, and tell {APP_NAME} what to do differently")
+        await print("  1. Yes (default)")
+        await print("  2. Yes, and don't ask again for commands like this")
+        await print(f"  3. No, and tell {APP_NAME} what to do differently")
         resp = (
-            await ui.input(
+            await input(
                 session_key="tool_confirm",
                 pretext="  Choose an option [1/2/3]: ",
                 state_manager=state_manager,
@@ -145,14 +149,14 @@ class ToolUI:
         bottom_padding = 0 if request.filepath else 1
         outer_padding = (1, 0, bottom_padding, 1)
 
-        ui.console.print(Padding(panel_obj, outer_padding))
+        self.console.print(Padding(panel_obj, outer_padding))
 
         if request.filepath:
-            ui.console.print(f"File: {request.filepath}", style=self.colors.muted)
+            self.console.print(f"File: {request.filepath}", style=self.colors.muted)
 
-        ui.console.print("  1. Yes (default)")
-        ui.console.print("  2. Yes, and don't ask again for commands like this")
-        ui.console.print(f"  3. No, and tell {APP_NAME} what to do differently")
+        self.console.print("  1. Yes (default)")
+        self.console.print("  2. Yes, and don't ask again for commands like this")
+        self.console.print(f"  3. No, and tell {APP_NAME} what to do differently")
         resp = input("  Choose an option [1/2/3]: ").strip() or "1"
 
         print()
@@ -175,8 +179,8 @@ class ToolUI:
         if not args:
             return
 
-        await ui.info(title)
+        await info(title)
         for key, value in args.items():
             if isinstance(value, list):
                 value = ", ".join(value)
-            await ui.muted(f"{key}: {value}", spaces=4)
+            await muted(f"{key}: {value}", spaces=4)

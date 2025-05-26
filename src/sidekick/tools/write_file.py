@@ -9,33 +9,32 @@ import os
 
 from pydantic_ai.exceptions import ModelRetry
 
-from sidekick.exceptions import ToolExecutionError
-from sidekick.tools.base import FileBasedTool
 from sidekick.types import FileContent, FilePath, ToolResult
-from sidekick.ui import console as default_ui
+from sidekick.ui.output import info
+from sidekick.ui.panels import error
 
 
-class WriteFileTool(FileBasedTool):
-    """Tool for writing content to new files."""
+async def write_file(filepath: FilePath, content: FileContent) -> ToolResult:
+    """
+    Write content to a new file. Fails if the file already exists.
+    Requires confirmation before writing.
 
-    @property
-    def tool_name(self) -> str:
-        return "Write"
+    Args:
+        filepath (FilePath): The path to the file to write to.
+        content (FileContent): The content to write to the file.
 
-    async def _execute(self, filepath: FilePath, content: FileContent) -> ToolResult:
-        """Write content to a new file. Fails if the file already exists.
+    Returns:
+        ToolResult: A message indicating the success or failure of the operation.
+    """
+    try:
+        # Format args for logging, truncating content for display
+        if content is not None and len(content) > 50:
+            args_display = f"{repr(filepath)}, content='{content[:47]}...'"
+        else:
+            args_display = f"{repr(filepath)}, content={repr(content)}"
 
-        Args:
-            filepath: The path to the file to write to.
-            content: The content to write to the file.
+        await info(f"Write({args_display})")
 
-        Returns:
-            ToolResult: A message indicating success.
-
-        Raises:
-            ModelRetry: If the file already exists
-            Exception: Any file writing errors
-        """
         # Prevent overwriting existing files with this tool.
         if os.path.exists(filepath):
             # Use ModelRetry to guide the LLM
@@ -54,27 +53,10 @@ class WriteFileTool(FileBasedTool):
 
         return f"Successfully wrote to new file: {filepath}"
 
-    def _format_args(self, filepath: FilePath, content: FileContent = None) -> str:
-        """Format arguments, truncating content for display."""
-        if content is not None and len(content) > 50:
-            return f"{repr(filepath)}, content='{content[:47]}...'"
-        return super()._format_args(filepath, content)
-
-
-async def write_file(filepath: FilePath, content: FileContent) -> ToolResult:
-    """
-    Write content to a new file. Fails if the file already exists.
-    Requires confirmation before writing.
-
-    Args:
-        filepath (FilePath): The path to the file to write to.
-        content (FileContent): The content to write to the file.
-
-    Returns:
-        ToolResult: A message indicating the success or failure of the operation.
-    """
-    tool = WriteFileTool(default_ui)
-    try:
-        return await tool.execute(filepath, content)
-    except ToolExecutionError as e:
-        return str(e)
+    except ModelRetry:
+        # Re-raise ModelRetry for pydantic-ai to handle
+        raise
+    except Exception as write_error:
+        err_msg = f"Error writing file '{filepath}': {write_error}"
+        await error(err_msg)
+        return err_msg

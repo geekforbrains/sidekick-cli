@@ -17,7 +17,10 @@ from sidekick.core.agents import main as agent
 from sidekick.core.agents.main import patch_tool_messages
 from sidekick.core.tool_handler import ToolHandler
 from sidekick.exceptions import AgentError, UserAbortError, ValidationError
-from sidekick.ui import console as ui
+from sidekick.ui.input import multiline_input
+from sidekick.ui.output import info, line, muted, spinner
+from sidekick.ui.panels import error
+from sidekick.ui.panels import agent as agent_panel
 from sidekick.ui.tool_ui import ToolUI
 
 from ..types import CommandContext, CommandResult, StateManager, ToolArgs
@@ -77,13 +80,13 @@ async def _tool_confirm(tool_call, node, state_manager: StateManager):
     if not tool_handler.process_confirmation(response, tool_call.tool_name):
         raise UserAbortError("User aborted.")
 
-    await ui.line()  # Add line after user input
+    await line()  # Add line after user input
     state_manager.session.spinner.start()
 
 
 async def _tool_handler(part, node, state_manager: StateManager):
     """Handle tool execution with separated business logic and UI."""
-    await ui.info(f"Tool({part.tool_name})")
+    await info(f"Tool({part.tool_name})")
     state_manager.session.spinner.stop()
 
     try:
@@ -122,7 +125,6 @@ async def _tool_handler(part, node, state_manager: StateManager):
 
 # Initialize command registry
 _command_registry = CommandRegistry()
-_command_registry.register_all_default_commands()
 
 
 async def _handle_command(command: str, state_manager: StateManager) -> CommandResult:
@@ -146,12 +148,12 @@ async def _handle_command(command: str, state_manager: StateManager) -> CommandR
         # Execute the command
         return await _command_registry.execute(command, context)
     except ValidationError as e:
-        await ui.error(str(e))
+        await error(str(e))
 
 
 async def process_request(text: str, state_manager: StateManager, output: bool = True):
     """Process input using the agent, handling cancellation safely."""
-    state_manager.session.spinner = await ui.spinner(
+    state_manager.session.spinner = await spinner(
         True, state_manager.session.spinner, state_manager
     )
     try:
@@ -166,21 +168,21 @@ async def process_request(text: str, state_manager: StateManager, output: bool =
             tool_callback=tool_callback_with_state,
         )
         if output:
-            await ui.agent(res.result.output)
+            await agent_panel(res.result.output)
     except CancelledError:
-        await ui.muted("Request cancelled")
+        await muted("Request cancelled")
     except UserAbortError:
-        await ui.muted("Operation aborted.")
+        await muted("Operation aborted.")
     except UnexpectedModelBehavior as e:
         error_message = str(e)
-        await ui.muted(error_message)
+        await muted(error_message)
         patch_tool_messages(error_message, state_manager)
     except Exception as e:
         agent_error = AgentError(f"Agent processing failed: {str(e)}")
         agent_error.__cause__ = e  # Preserve the original exception chain
-        await ui.error(str(e))
+        await error(str(e))
     finally:
-        await ui.spinner(False, state_manager.session.spinner, state_manager)
+        await spinner(False, state_manager.session.spinner, state_manager)
         state_manager.session.current_task = None
 
         # Force refresh of the multiline input prompt to restore placeholder
@@ -193,41 +195,41 @@ async def process_request(text: str, state_manager: StateManager, output: bool =
 async def repl(state_manager: StateManager):
     action = None
 
-    await ui.info(f"Using model {state_manager.session.current_model}")
+    await info(f"Using model {state_manager.session.current_model}")
     instance = agent.get_or_create_agent(state_manager.session.current_model, state_manager)
 
-    await ui.info("Attaching MCP servers")
-    await ui.line()
+    await info("Attaching MCP servers")
+    await line()
 
     async with instance.run_mcp_servers():
         while True:
             try:
-                line = await ui.multiline_input()
+                user_input = await multiline_input()
             except (EOFError, KeyboardInterrupt):
                 break
 
-            if not line:
+            if not user_input:
                 continue
 
-            if line.lower() in ["exit", "quit"]:
+            if user_input.lower() in ["exit", "quit"]:
                 break
 
-            if line.startswith("/"):
-                action = await _handle_command(line, state_manager)
+            if user_input.startswith("/"):
+                action = await _handle_command(user_input, state_manager)
                 if action == "restart":
                     break
                 continue
 
             # Check if another task is already running
             if state_manager.session.current_task and not state_manager.session.current_task.done():
-                await ui.muted("Agent is busy, press esc to interrupt.")
+                await muted("Agent is busy, press esc to interrupt.")
                 continue
 
             state_manager.session.current_task = get_app().create_background_task(
-                process_request(line, state_manager)
+                process_request(user_input, state_manager)
             )
 
     if action == "restart":
         await repl(state_manager)
     else:
-        await ui.info("Thanks for all the fish.")
+        await info("Thanks for all the fish.")

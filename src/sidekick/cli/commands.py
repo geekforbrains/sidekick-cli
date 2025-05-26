@@ -1,16 +1,18 @@
 """Command system for Sidekick CLI."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional
 
 from .. import utils
 from ..configuration.models import ModelRegistry
 from ..exceptions import ValidationError
 from ..services.undo_service import get_undo_status, perform_undo
 from ..types import CommandArgs, CommandContext, CommandResult, ProcessRequestCallback
-from ..ui import console as ui
+from ..ui.output import clear, info, muted, success, warning
+from ..ui.panels import error
+from ..ui.panels import dump_messages, help
+from ..ui.panels import models as models_panel
 
 
 class CommandCategory(Enum):
@@ -26,27 +28,37 @@ class CommandCategory(Enum):
 class Command(ABC):
     """Base class for all commands."""
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """The primary name of the command."""
-        pass
+    def __init__(
+        self,
+        name: str,
+        aliases: List[str],
+        description: str = "",
+        category: CommandCategory = CommandCategory.SYSTEM,
+    ):
+        self._name = name
+        self._aliases = aliases
+        self._description = description
+        self._category = category
 
     @property
-    @abstractmethod
+    def name(self) -> str:
+        """The primary name of the command."""
+        return self._name
+
+    @property
     def aliases(self) -> CommandArgs:
         """Alternative names/aliases for the command."""
-        pass
+        return self._aliases
 
     @property
     def description(self) -> str:
         """Description of what the command does."""
-        return ""
+        return self._description
 
     @property
     def category(self) -> CommandCategory:
         """Category this command belongs to."""
-        return CommandCategory.SYSTEM
+        return self._category
 
     @abstractmethod
     async def execute(self, args: CommandArgs, context: CommandContext) -> CommandResult:
@@ -63,156 +75,111 @@ class Command(ABC):
         pass
 
 
-@dataclass
-class CommandSpec:
-    """Specification for a command's metadata."""
-
-    name: str
-    aliases: List[str]
-    description: str
-    category: CommandCategory = CommandCategory.SYSTEM
-
-
-class SimpleCommand(Command):
-    """Base class for simple commands without complex logic."""
-
-    def __init__(self, spec: CommandSpec):
-        self.spec = spec
-
-    @property
-    def name(self) -> str:
-        return self.spec.name
-
-    @property
-    def aliases(self) -> CommandArgs:
-        return self.spec.aliases
-
-    @property
-    def description(self) -> str:
-        return self.spec.description
-
-    @property
-    def category(self) -> CommandCategory:
-        return self.spec.category
-
-
-class YoloCommand(SimpleCommand):
+class YoloCommand(Command):
     """Toggle YOLO mode (skip confirmations)."""
 
     def __init__(self):
         super().__init__(
-            CommandSpec(
-                name="yolo",
-                aliases=["/yolo"],
-                description="Toggle YOLO mode (skip tool confirmations)",
-                category=CommandCategory.DEVELOPMENT,
-            )
+            name="yolo",
+            aliases=["/yolo"],
+            description="Toggle YOLO mode (skip tool confirmations)",
+            category=CommandCategory.DEVELOPMENT,
         )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
         state = context.state_manager.session
         state.yolo = not state.yolo
         if state.yolo:
-            await ui.success("Ooh shit, its YOLO time!\n")
+            await success("Ooh shit, its YOLO time!\n")
         else:
-            await ui.info("Pfft, boring...\n")
+            await info("Pfft, boring...\n")
 
 
-class DumpCommand(SimpleCommand):
+class DumpCommand(Command):
     """Dump message history."""
 
     def __init__(self):
         super().__init__(
-            CommandSpec(
-                name="dump",
-                aliases=["/dump"],
-                description="Dump the current message history",
-                category=CommandCategory.DEBUG,
-            )
+            name="dump",
+            aliases=["/dump"],
+            description="Dump the current message history",
+            category=CommandCategory.DEBUG,
         )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
-        await ui.dump_messages(context.state_manager.session.messages)
+        await dump_messages(context.state_manager.session.messages)
 
 
-class ClearCommand(SimpleCommand):
+class ClearCommand(Command):
     """Clear screen and message history."""
 
     def __init__(self):
         super().__init__(
-            CommandSpec(
-                name="clear",
-                aliases=["/clear"],
-                description="Clear the screen and message history",
-                category=CommandCategory.NAVIGATION,
-            )
+            name="clear",
+            aliases=["/clear"],
+            description="Clear the screen and message history",
+            category=CommandCategory.NAVIGATION,
         )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
-        await ui.clear()
+        await clear()
         context.state_manager.session.messages = []
 
 
-class HelpCommand(SimpleCommand):
+class HelpCommand(Command):
     """Show help information."""
 
     def __init__(self, command_registry=None):
         super().__init__(
-            CommandSpec(
-                name="help",
-                aliases=["/help"],
-                description="Show help information",
-                category=CommandCategory.SYSTEM,
-            )
+            name="help",
+            aliases=["/help"],
+            description="Show help information",
+            category=CommandCategory.SYSTEM,
         )
         self._command_registry = command_registry
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
-        await ui.help(self._command_registry)
+        await help(self._command_registry)
 
         if context.state_manager:
             available, status = get_undo_status(context.state_manager)
-            await ui.muted(f"Undo: {status}")
+            await muted(f"Undo: {status}")
 
 
-class UndoCommand(SimpleCommand):
+class UndoCommand(Command):
     """Undo the last file operation."""
 
     def __init__(self):
         super().__init__(
-            CommandSpec(
-                name="undo",
-                aliases=["/undo"],
-                description="Undo the last file operation",
-                category=CommandCategory.DEVELOPMENT,
-            )
+            name="undo",
+            aliases=["/undo"],
+            description="Undo the last file operation",
+            category=CommandCategory.DEVELOPMENT,
         )
 
     async def execute(self, args: List[str], context: CommandContext) -> None:
         success, message = perform_undo(context.state_manager)
         if success:
-            await ui.success(message)
+            await success(message)
         else:
             if "not initialized" in message.lower():
-                await ui.warning("Undo system not available")
-                await ui.muted("Ensure you're in a Git project and not in home directory")
+                await warning("Undo system not available")
+                await muted("Ensure you're in a Git project and not in home directory")
             elif "nothing to undo" in message.lower():
-                await ui.info("No changes to undo - no commits found")
+                await info("No changes to undo - no commits found")
             else:
-                await ui.warning(message)
+                await warning(message)
 
 
-class CompactCommand(SimpleCommand):
+class CompactCommand(Command):
     """Compact conversation context."""
 
     def __init__(self, process_request_callback: Optional[ProcessRequestCallback] = None):
         super().__init__(
-            CommandSpec(
-                name="compact",
-                aliases=["/compact"],
-                description="Summarize and compact the conversation history",
-                category=CommandCategory.SYSTEM,
-            )
+            name="compact",
+            aliases=["/compact"],
+            description="Summarize and compact the conversation history",
+            category=CommandCategory.SYSTEM,
         )
         self._process_request = process_request_callback
 
@@ -221,48 +188,46 @@ class CompactCommand(SimpleCommand):
         process_request = self._process_request or context.process_request
 
         if not process_request:
-            await ui.error("Compact command not available - process_request not configured")
+            await error("Compact command not available - process_request not configured")
             return
 
         # Get the current agent, create a summary of context, and trim message history
         await process_request(
             "Summarize the conversation so far", context.state_manager, output=False
         )
-        await ui.success("Context history has been summarized and truncated.")
+        await success("Context history has been summarized and truncated.")
         context.state_manager.session.messages = context.state_manager.session.messages[-2:]
 
 
-class ModelCommand(SimpleCommand):
+class ModelCommand(Command):
     """Manage model selection."""
 
     def __init__(self):
         super().__init__(
-            CommandSpec(
-                name="model",
-                aliases=["/model"],
-                description="List models or select a model (e.g., /model 3 or /model 3 default)",
-                category=CommandCategory.MODEL,
-            )
+            name="model",
+            aliases=["/model"],
+            description="List models or select a model (e.g., /model 3 or /model 3 default)",
+            category=CommandCategory.MODEL,
         )
 
     async def execute(self, args: CommandArgs, context: CommandContext) -> Optional[str]:
         if not args:
             # No arguments - list models
-            await ui.models(context.state_manager)
+            await models_panel(context.state_manager)
             return None
 
         # Parse model index
         try:
             model_index = int(args[0])
         except ValueError:
-            await ui.error(f"Invalid model index: {args[0]}")
+            await error(f"Invalid model index: {args[0]}")
             return None
 
         # Get model list
         model_registry = ModelRegistry()
         models = list(model_registry.list_models().keys())
         if model_index < 0 or model_index >= len(models):
-            await ui.error(f"Model index {model_index} out of range")
+            await error(f"Model index {model_index} out of range")
             return None
 
         # Set the model
@@ -272,62 +237,47 @@ class ModelCommand(SimpleCommand):
         # Check if setting as default
         if len(args) > 1 and args[1] == "default":
             utils.user_configuration.set_default_model(model, context.state_manager)
-            await ui.muted("Updating default model")
+            await muted("Updating default model")
         else:
             # Show success message with the new model
-            await ui.success(f"Switched to model: {model}")
+            await success(f"Switched to model: {model}")
 
         # Always restart to reload MCP servers when switching models
         return "restart"
 
 
-@dataclass
-class CommandDependencies:
-    """Container for command dependencies."""
-
-    process_request_callback: Optional[ProcessRequestCallback] = None
-    command_registry: Optional[Any] = None  # Reference to the registry itself
-
-
-class CommandFactory:
-    """Factory for creating commands with proper dependency injection."""
-
-    def __init__(self, dependencies: Optional[CommandDependencies] = None):
-        self.dependencies = dependencies or CommandDependencies()
-
-    def create_command(self, command_class: Type[Command]) -> Command:
-        """Create a command instance with proper dependencies."""
-        # Special handling for commands that need dependencies
-        if command_class == CompactCommand:
-            return CompactCommand(self.dependencies.process_request_callback)
-        elif command_class == HelpCommand:
-            return HelpCommand(self.dependencies.command_registry)
-
-        # Default creation for commands without dependencies
-        return command_class()
-
-    def update_dependencies(self, **kwargs) -> None:
-        """Update factory dependencies."""
-        for key, value in kwargs.items():
-            if hasattr(self.dependencies, key):
-                setattr(self.dependencies, key, value)
-
-
 class CommandRegistry:
-    """Registry for managing commands with auto-discovery and categories."""
+    """Simple registry for managing commands."""
 
-    def __init__(self, factory: Optional[CommandFactory] = None):
+    def __init__(self):
         self._commands: Dict[str, Command] = {}
         self._categories: Dict[CommandCategory, List[Command]] = {
             category: [] for category in CommandCategory
         }
-        self._factory = factory or CommandFactory()
-        self._discovered = False
+        self._process_request_callback: Optional[ProcessRequestCallback] = None
+        self._register_default_commands()
 
-        # Set registry reference in factory dependencies
-        self._factory.update_dependencies(command_registry=self)
+    def _register_default_commands(self) -> None:
+        """Register all default commands."""
+        commands = [
+            YoloCommand(),
+            DumpCommand(),
+            ClearCommand(),
+            UndoCommand(),
+            ModelCommand(),
+        ]
 
-    def register(self, command: Command) -> None:
+        # Register help and compact commands with dependencies
+        help_command = HelpCommand(self)
+        commands.append(help_command)
+
+        compact_command = CompactCommand(self._process_request_callback)
+        commands.append(compact_command)
+
+        for command in commands:
+            self._register_command(command)
+
+    def _register_command(self, command: Command) -> None:
         """Register a command and its aliases."""
         # Register by primary name
         self._commands[command.name] = command
@@ -340,44 +290,13 @@ class CommandRegistry:
         if command not in self._categories[command.category]:
             self._categories[command.category].append(command)
 
-    def register_command_class(self, command_class: Type[Command]) -> None:
-        """Register a command class using the factory."""
-        command = self._factory.create_command(command_class)
-        self.register(command)
-
-    def discover_commands(self) -> None:
-        """Auto-discover and register all command classes."""
-        if self._discovered:
-            return
-
-        # List of all command classes to register
-        command_classes = [
-            YoloCommand,
-            DumpCommand,
-            ClearCommand,
-            HelpCommand,
-            UndoCommand,
-            CompactCommand,
-            ModelCommand,
-        ]
-
-        # Register all discovered commands
-        for command_class in command_classes:
-            self.register_command_class(command_class)
-
-        self._discovered = True
-
-    def register_all_default_commands(self) -> None:
-        """Register all default commands (backward compatibility)."""
-        self.discover_commands()
-
     def set_process_request_callback(self, callback: ProcessRequestCallback) -> None:
         """Set the process_request callback for commands that need it."""
-        self._factory.update_dependencies(process_request_callback=callback)
+        self._process_request_callback = callback
 
-        # Re-register CompactCommand with new dependency if already registered
-        if "compact" in self._commands:
-            self.register_command_class(CompactCommand)
+        # Re-register CompactCommand with new dependency
+        compact_command = CompactCommand(callback)
+        self._register_command(compact_command)
 
     async def execute(self, command_text: str, context: CommandContext) -> Any:
         """
@@ -393,9 +312,6 @@ class CommandRegistry:
         Raises:
             ValidationError: If command is not found or empty
         """
-        # Ensure commands are discovered
-        self.discover_commands()
-
         parts = command_text.split()
         if not parts:
             raise ValidationError("Empty command")
@@ -409,28 +325,14 @@ class CommandRegistry:
         command = self._commands[command_name]
         return await command.execute(args, context)
 
-    def is_command(self, text: str) -> bool:
-        """Check if text starts with a registered command."""
-        if not text:
-            return False
-
-        parts = text.split()
-        if not parts:
-            return False
-
-        return parts[0].lower() in self._commands
-
     def get_command_names(self) -> CommandArgs:
         """Get all registered command names (including aliases)."""
-        self.discover_commands()
         return sorted(self._commands.keys())
 
     def get_commands_by_category(self, category: CommandCategory) -> List[Command]:
         """Get all commands in a specific category."""
-        self.discover_commands()
         return self._categories.get(category, [])
 
     def get_all_categories(self) -> Dict[CommandCategory, List[Command]]:
         """Get all commands organized by category."""
-        self.discover_commands()
         return self._categories.copy()
