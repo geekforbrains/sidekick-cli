@@ -25,9 +25,9 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dependencies = [
-    "pydantic-ai>=0.2.6",
-    "rich>=14.0.0",
-    "typer>=0.15.3",
+    "pydantic-ai",
+    "rich",
+    "typer",
 ]
 
 [project.scripts]

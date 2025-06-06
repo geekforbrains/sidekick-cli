@@ -1,8 +1,5 @@
-"""
-Minimal configuration loader for Sidekick.
-"""
-
 import json
+import os
 from pathlib import Path
 
 
@@ -19,15 +16,11 @@ def load_config():
     with open(config_path, "r") as f:
         config = json.load(f)
 
-    # Validate required fields
     if "default_model" not in config:
         raise ValueError("Config missing 'default_model' field")
 
     if "env" not in config:
         raise ValueError("Config missing 'env' field with API keys")
-
-    # Set environment variables for API keys
-    import os
 
     for key, value in config.get("env", {}).items():
         if value:

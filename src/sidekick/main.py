@@ -1,47 +1,47 @@
-"""
-Simplified Sidekick CLI entry point.
-"""
-
 import asyncio
-import sys
 
 import typer
 from rich.console import Console
 
-from sidekick.agent import process_request
+from sidekick import ui
+from sidekick.agent import get_or_create_agent, process_request
 from sidekick.config import load_config
 from sidekick.constants import APP_NAME, APP_VERSION
-from sidekick.types import SessionState
-from sidekick.ui import banner, error, info
+from sidekick.session import SessionState
 
 app = typer.Typer(help=f"{APP_NAME} - Your agentic CLI developer")
 console = Console()
 
 
 async def repl(session: SessionState):
-    """Simple REPL loop."""
-    await info(f"Using model {session.current_model}")
+    await ui.info(f"Using model {session.current_model}")
+    agent = get_or_create_agent(session.current_model, session)
 
-    while True:
-        try:
-            # Simple input prompt
-            user_input = input("\n> ")
-        except (EOFError, KeyboardInterrupt):
-            break
+    await ui.info("Starting MCP servers")
+    async with agent.run_mcp_servers():
+        await ui.success("Go kick some ass!")
+        while True:
+            try:
+                user_input = input("\n> ").strip()
+            except (EOFError, KeyboardInterrupt):
+                break
 
-        if not user_input:
-            continue
+            if not user_input:
+                continue
 
-        if user_input.lower() in ["exit", "quit"]:
-            break
+            if user_input.lower() in ["exit", "quit"]:
+                break
 
-        # Process with agent
-        try:
-            await process_request(session.current_model, user_input, session)
-        except Exception as e:
-            await error(f"Error: {str(e)}")
+            if user_input.startswith("/"):
+                if user_input == "/dump":
+                    await ui.dump(session.messages)
+                continue
 
-    await info("Thanks for all the fish.")
+            resp = await process_request(session.current_model, user_input, session)
+            if resp:
+                await ui.agent(resp)
+
+    await ui.info("Thanks for all the fish.")
 
 
 @app.command()
@@ -51,23 +51,10 @@ def main(version: bool = typer.Option(False, "--version", "-v", help="Show versi
         console.print(f"{APP_NAME} version {APP_VERSION}")
         return
 
-    # Show banner
-    asyncio.run(banner())
-
-    # Load config
-    try:
-        config = load_config()
-        session = SessionState(user_config=config, current_model=config["default_model"])
-    except Exception as e:
-        asyncio.run(error(f"Failed to load config: {str(e)}"))
-        sys.exit(1)
-
-    # Start REPL
-    try:
-        asyncio.run(repl(session))
-    except Exception as e:
-        asyncio.run(error(f"Fatal error: {str(e)}"))
-        sys.exit(1)
+    asyncio.run(ui.banner())
+    config = load_config()
+    session = SessionState(user_config=config, current_model=config["default_model"])
+    asyncio.run(repl(session))
 
 
 if __name__ == "__main__":

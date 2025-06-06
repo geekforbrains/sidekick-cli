@@ -1,10 +1,7 @@
-"""
-Basic UI functions using Rich for styled output.
-"""
-
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
+from rich.pretty import Pretty
 from rich.text import Text
 
 from sidekick.constants import APP_NAME, APP_VERSION
@@ -42,7 +39,7 @@ async def muted(message: str):
     console.print(message, style="dim")
 
 
-async def agent_output(content: str):
+async def agent(content: str):
     """Display agent output with markdown formatting."""
     console.print()
     console.print(Markdown(content))
@@ -52,3 +49,9 @@ async def agent_output(content: str):
 async def line():
     """Print a simple line separator."""
     console.print()
+
+
+async def dump(data):
+    pretty = Pretty(data, expand_all=True)
+    panel = Panel(pretty, title="Dumped Data", border_style="blue", padding=(1, 2))
+    console.print(panel)
