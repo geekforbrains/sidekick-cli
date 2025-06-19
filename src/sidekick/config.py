@@ -13,8 +13,11 @@ def load_config():
             "Please create a config file with your API keys and default model."
         )
 
-    with open(config_path, "r") as f:
-        config = json.load(f)
+    try:
+        with open(config_path, "r") as f:
+            config = json.load(f)
+    except json.JSONDecodeError:
+        raise ValueError(f"Invalid JSON in config file at {config_path}")
 
     if "default_model" not in config:
         raise ValueError("Config missing 'default_model' field")

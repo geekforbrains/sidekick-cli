@@ -9,6 +9,7 @@ from sidekick.agent import get_or_create_agent, process_request
 from sidekick.config import load_config
 from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.mcp import get_configured_servers
+from sidekick.setup import run_setup
 
 app = typer.Typer(help=f"{APP_NAME} - Your agentic CLI developer")
 console = Console()
@@ -169,7 +170,28 @@ def main(version: bool = typer.Option(False, "--version", "-v", help="Show versi
 
     # Run banner separately
     asyncio.run(ui.banner())
-    config = load_config()
+
+    # Load config or run setup if needed
+    try:
+        config = load_config()
+    except (FileNotFoundError, ValueError) as e:
+        if (
+            "Config file not found" in str(e)
+            or "Config missing" in str(e)
+            or "Invalid JSON" in str(e)
+        ):
+            console.print()
+            config = run_setup()
+
+            # Set environment variables from the new config
+            for key, value in config.get("env", {}).items():
+                if value:
+                    import os
+
+                    os.environ[key] = value
+        else:
+            raise
+
     session.init(config, config["default_model"])
 
     # Create event loop manually to avoid asyncio.run's signal handling
