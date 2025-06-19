@@ -1,19 +1,40 @@
 import json
+import os
+from contextlib import asynccontextmanager
 
 from pydantic_ai import Agent
 from pydantic_ai.mcp import MCPServerStdio
+from mcp.client.stdio import StdioServerParameters, stdio_client
 
 from sidekick import session, ui
 from sidekick.tools import TOOLS
 
-fetch = MCPServerStdio(
+
+class SilentMCPServerStdio(MCPServerStdio):
+    """MCPServerStdio that suppresses stderr output."""
+    
+    @asynccontextmanager
+    async def client_streams(self):
+        server = StdioServerParameters(
+            command=self.command,
+            args=list(self.args),
+            env=self.env,
+            cwd=self.cwd
+        )
+        # Open /dev/null for writing stderr
+        with open(os.devnull, 'w') as null_stream:
+            async with stdio_client(server=server, errlog=null_stream) as (read_stream, write_stream):
+                yield read_stream, write_stream
+
+
+fetch = SilentMCPServerStdio(
     "uvx",
     args=[
         "mcp-server-fetch",
     ],
 )
 
-brave_search = MCPServerStdio(
+brave_search = SilentMCPServerStdio(
     "npx",
     args=[
         "-y",
