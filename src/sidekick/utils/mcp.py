@@ -21,12 +21,9 @@ class SilentMCPServerStdio(MCPServerStdio):
             env=self.env,
             cwd=self.cwd
         )
-        print(f"[LIFECYCLE] Creating stdio client for {self.display_name}")
         with open(os.devnull, 'w') as null_stream:
             async with stdio_client(server=server, errlog=null_stream) as (read_stream, write_stream):
-                print(f"[LIFECYCLE] {self.display_name} client streams established")
                 yield read_stream, write_stream
-                print(f"[LIFECYCLE] {self.display_name} client streams closing")
 
 
 def fetch_server():

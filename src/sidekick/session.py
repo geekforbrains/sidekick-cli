@@ -1,7 +1,6 @@
 from typing import Any, Dict, Optional
 import asyncio
 
-user_config: Optional[Dict[str, Any]] = None
 current_model: Optional[str] = None
 agents: Dict = {}
 messages: list = []
@@ -12,6 +11,5 @@ sigint_received: bool = False
 
 def init(config: Dict[str, Any], model: str):
     """Initialize the session state."""
-    global user_config, current_model
-    user_config = config
+    global current_model
     current_model = model
