@@ -40,6 +40,11 @@ async def handle_command(user_input: str) -> bool:
 
     if user_input == "/dump":
         await ui.dump(session.messages)
+    elif user_input == "/yolo":
+        # Toggle confirmations on/off
+        session.confirmation_enabled = not session.confirmation_enabled
+        status = "disabled (YOLO mode)" if not session.confirmation_enabled else "enabled"
+        await ui.info(f"Tool confirmations {status}")
 
     return True
 
@@ -78,6 +83,7 @@ async def handle_user_request(user_input: str, mcp_agent):
         ui.stop_spinner()
         if resp:
             await ui.agent(resp)
+        # If resp is None, it means the tool was cancelled by user, which is already handled
     except asyncio.CancelledError:
         ui.stop_spinner()
         await ui.warning("Request cancelled")

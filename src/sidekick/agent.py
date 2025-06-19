@@ -15,15 +15,31 @@ def _get_prompt(name: str) -> str:
 
 
 async def _render_tool_call(part):
-    """Print the output of a tool call."""
+    """Print the output of a tool call and get confirmation."""
     if session.spinner:
         session.spinner.stop()
+
     args = json.loads(part.args)
-    await ui.info(f"Tool({part.tool_name})")
-    for key, value in args.items():
-        if isinstance(value, str):
-            value = value.strip()
-        await ui.info(f"- {key}: {value}")
+
+    # Check if confirmations are enabled and if we should ask
+    if session.confirmation_enabled and part.tool_name not in session.skip_confirmations:
+        # Get user confirmation
+        response = await ui.confirm_tool_call(part.tool_name, args)
+
+        if response == "no":
+            # User cancelled - raise exception to stop execution
+            raise asyncio.CancelledError("Tool execution cancelled by user")
+        elif response == "always":
+            # Add to skip list for future calls
+            session.skip_confirmations.add(part.tool_name)
+    else:
+        # Just display the tool info without confirmation
+        await ui.info(f"Tool({part.tool_name})")
+        for key, value in args.items():
+            if isinstance(value, str):
+                value = value.strip()
+            await ui.info(f"- {key}: {value}")
+
     if session.spinner:
         session.spinner.start()
 
@@ -64,5 +80,9 @@ async def process_request(message: str):
             async for node in agent_run:
                 await _process_node(node)
             return agent_run.result.output
-    except asyncio.CancelledError:
+    except asyncio.CancelledError as e:
+        # Check if this was a user-initiated tool cancellation
+        if str(e) == "Tool execution cancelled by user":
+            await ui.warning("Tool execution cancelled")
+            return None
         raise

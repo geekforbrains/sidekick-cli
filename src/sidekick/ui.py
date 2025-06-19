@@ -76,6 +76,52 @@ async def dump(data):
     console.print(panel)
 
 
+async def confirm_tool_call(tool_name: str, args: dict) -> str:
+    """
+    Prompt user for confirmation before executing a tool.
+
+    Returns:
+        'yes' - Execute this tool
+        'always' - Execute this tool and don't ask again for this tool type
+        'no' - Cancel this tool execution
+    """
+    console.print()
+    console.print(f"[yellow]⚠[/yellow]  Tool execution requested: [bold]{tool_name}[/bold]")
+
+    # Display arguments in a nice format
+    for key, value in args.items():
+        if isinstance(value, str):
+            value = value.strip()
+            if len(value) > 100:
+                value = value[:97] + "..."
+        console.print(f"   [dim]•[/dim] {key}: {value}")
+
+    console.print()
+    console.print("Options:")
+    console.print("  [green]y[/green] - Yes, execute this tool")
+    console.print("  [cyan]a[/cyan] - Always allow this tool (don't ask again)")
+    console.print("  [red]n[/red] - No, cancel this execution")
+    console.print()
+
+    while True:
+        choice = (
+            console.input(
+                "[yellow]Continue?[/yellow] [[green]y[/green]/[cyan]a[/cyan]/[red]n[/red]]: "
+            )
+            .lower()
+            .strip()
+        )
+
+        if choice in ["y", "yes"]:
+            return "yes"
+        elif choice in ["a", "always"]:
+            return "always"
+        elif choice in ["n", "no"]:
+            return "no"
+        else:
+            console.print("[red]Invalid choice. Please enter y, a, or n.[/red]")
+
+
 def start_spinner(message: str, style: str = SpinnerStyle.DEFAULT):
     """Start a spinner and store it in session."""
     formatted_message = style.format(message)
