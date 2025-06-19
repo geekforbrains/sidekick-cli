@@ -74,9 +74,15 @@ async def repl():
             
             try:
                 resp = await request_task
+                if session.spinner:
+                    session.spinner.stop()
+                    session.spinner = None
                 if resp:
                     await ui.agent(resp)
             except asyncio.CancelledError:
+                if session.spinner:
+                    session.spinner.stop()
+                    session.spinner = None
                 await ui.warning("Request cancelled")
                 if session.current_model in session.agents:
                     if resilient_agent._mcp_entered:
@@ -85,6 +91,9 @@ async def repl():
                     resilient_agent = get_or_create_agent()
                     await resilient_agent.__aenter__()
             except KeyboardInterrupt:
+                if session.spinner:
+                    session.spinner.stop()
+                    session.spinner = None
                 if not request_task.done():
                     request_task.cancel()
                     try:
@@ -93,6 +102,9 @@ async def repl():
                         pass
                 await ui.warning("Request interrupted")
             except Exception as e:
+                if session.spinner:
+                    session.spinner.stop()
+                    session.spinner = None
                 await ui.error(f"Error processing request: {e}")
             finally:
                 if session.spinner:
