@@ -3,8 +3,7 @@ import json
 from pydantic_ai import Agent
 from pydantic_ai.mcp import MCPServerStdio
 
-from sidekick import ui
-from sidekick.session import SessionState
+from sidekick import session, ui
 from sidekick.tools import TOOLS
 
 fetch = MCPServerStdio(
@@ -34,15 +33,19 @@ def _get_prompt(name: str) -> str:
 
 async def _render_tool_call(part):
     """Print the output of a tool call."""
+    if session.spinner:
+        session.spinner.stop()
     args = json.loads(part.args)
     await ui.info(f"Tool({part.tool_name})")
     for key, value in args.items():
         if isinstance(value, str):
             value = value.strip()
         await ui.info(f"- {key}: {value}")
+    if session.spinner:
+        session.spinner.start()
 
 
-async def _process_node(node, session: SessionState):
+async def _process_node(node):
     if hasattr(node, "request"):
         session.messages.append(node.request)
 
@@ -53,23 +56,23 @@ async def _process_node(node, session: SessionState):
                 await _render_tool_call(part)
 
 
-def get_or_create_agent(model: str, session: SessionState):
-    """Get or create an agent instance for the given model."""
-    if model not in session.agents:
-        session.agents[model] = Agent(
-            model=model,
+def get_or_create_agent():
+    """Get or create an agent instance for the current model."""
+    if session.current_model not in session.agents:
+        session.agents[session.current_model] = Agent(
+            model=session.current_model,
             system_prompt=_get_prompt("system"),
             tools=TOOLS,
             mcp_servers=[fetch, brave_search],
         )
-    return session.agents[model]
+    return session.agents[session.current_model]
 
 
-async def process_request(model: str, message: str, session: SessionState):
+async def process_request(message: str):
     """Process a user request with the agent."""
-    agent = get_or_create_agent(model, session)
+    agent = get_or_create_agent()
     mh = session.messages.copy()
     async with agent.iter(message, message_history=mh) as agent_run:
         async for node in agent_run:
-            await _process_node(node, session)
+            await _process_node(node)
         return agent_run.result.output

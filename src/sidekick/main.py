@@ -3,19 +3,18 @@ import asyncio
 import typer
 from rich.console import Console
 
-from sidekick import ui
+from sidekick import session, ui
 from sidekick.agent import get_or_create_agent, process_request
 from sidekick.config import load_config
 from sidekick.constants import APP_NAME, APP_VERSION
-from sidekick.session import SessionState
 
 app = typer.Typer(help=f"{APP_NAME} - Your agentic CLI developer")
 console = Console()
 
 
-async def repl(session: SessionState):
+async def repl():
     await ui.info(f"Using model {session.current_model}")
-    agent = get_or_create_agent(session.current_model, session)
+    agent = get_or_create_agent()
 
     await ui.info("Starting MCP servers")
     async with agent.run_mcp_servers():
@@ -37,7 +36,11 @@ async def repl(session: SessionState):
                     await ui.dump(session.messages)
                 continue
 
-            resp = await process_request(session.current_model, user_input, session)
+            session.spinner = console.status("[bold cyan]Thinking...[/bold cyan]", spinner="dots")
+            session.spinner.start()
+            resp = await process_request(user_input)
+            session.spinner.stop()
+            session.spinner = None
             if resp:
                 await ui.agent(resp)
 
@@ -53,8 +56,8 @@ def main(version: bool = typer.Option(False, "--version", "-v", help="Show versi
 
     asyncio.run(ui.banner())
     config = load_config()
-    session = SessionState(user_config=config, current_model=config["default_model"])
-    asyncio.run(repl(session))
+    session.init(config, config["default_model"])
+    asyncio.run(repl())
 
 
 if __name__ == "__main__":

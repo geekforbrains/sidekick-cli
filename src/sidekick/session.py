@@ -1,9 +1,15 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+# Module-level session state - acts as a singleton
+user_config: Optional[Dict[str, Any]] = None
+current_model: Optional[str] = None
+agents: Dict = {}
+messages: list = []
+spinner: Any = None
 
 
-class SessionState:
-    def __init__(self, user_config: Dict[str, Any], current_model: str):
-        self.user_config = user_config
-        self.current_model = current_model
-        self.agents = {}
-        self.messages = []
+def init(config: Dict[str, Any], model: str):
+    """Initialize the session state."""
+    global user_config, current_model
+    user_config = config
+    current_model = model
