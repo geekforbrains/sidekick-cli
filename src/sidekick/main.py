@@ -17,7 +17,6 @@ async def repl():
     await ui.info(f"Using model {session.current_model}")
     agent = get_or_create_agent()
 
-    # Display MCP servers info first
     servers = get_configured_servers()
     await ui.info("Starting MCP servers")
     if servers:
@@ -26,12 +25,10 @@ async def repl():
     else:
         await ui.bullet("No servers configured")
     
-    # Now start servers with spinner visible during actual initialization
     spinner = console.status("[dim]Initializing servers...[/dim]", spinner="dots")
     spinner.start()
     
     async with agent.run_mcp_servers():
-        # Let the spinner run during actual server startup
         await asyncio.sleep(0.5)
         spinner.stop()
         

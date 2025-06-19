@@ -21,7 +21,6 @@ class SilentMCPServerStdio(MCPServerStdio):
             env=self.env,
             cwd=self.cwd
         )
-        # Open /dev/null for writing stderr
         with open(os.devnull, 'w') as null_stream:
             async with stdio_client(server=server, errlog=null_stream) as (read_stream, write_stream):
                 yield read_stream, write_stream

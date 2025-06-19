@@ -1,6 +1,5 @@
 from typing import Any, Dict, Optional
 
-# Module-level session state - acts as a singleton
 user_config: Optional[Dict[str, Any]] = None
 current_model: Optional[str] = None
 agents: Dict = {}
