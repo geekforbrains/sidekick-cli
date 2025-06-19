@@ -16,6 +16,7 @@ console = Console()
 
 async def repl():
     await ui.info(f"Using model {session.current_model}")
+    print("[LIFECYCLE] Creating initial agent")
     resilient_agent = get_or_create_agent()
 
     servers = get_configured_servers()
@@ -53,6 +54,7 @@ async def repl():
     print(f"[DEBUG] Installed custom signal handler")
     
     # Enter the resilient agent context (which manages MCP servers)
+    print("[LIFECYCLE] Entering main REPL context")
     async with resilient_agent:
         await asyncio.sleep(0.5)
         spinner.stop()
@@ -101,14 +103,17 @@ async def repl():
                 await ui.warning("Request cancelled")
                 # Clear the agent from cache to force recreation with fresh MCP connections
                 if session.current_model in session.agents:
-                    print(f"[DEBUG] Clearing agent cache for model: {session.current_model}")
+                    print(f"[LIFECYCLE] Clearing agent cache for model: {session.current_model}")
                     # First exit the resilient agent context if it's active
                     if resilient_agent._mcp_entered:
+                        print("[LIFECYCLE] Exiting current agent context")
                         await resilient_agent.__aexit__(None, None, None)
                     del session.agents[session.current_model]
                     # Get a fresh agent for next request
+                    print("[LIFECYCLE] Creating new agent after cancellation")
                     resilient_agent = get_or_create_agent()
                     # Re-enter the context
+                    print("[LIFECYCLE] Re-entering agent context")
                     await resilient_agent.__aenter__()
             except KeyboardInterrupt:
                 print("[DEBUG] KeyboardInterrupt during task")
@@ -139,6 +144,7 @@ async def repl():
     print(f"[DEBUG] Restoring default signal handler")
     signal.signal(signal.SIGINT, signal.default_int_handler)
     
+    print("[LIFECYCLE] REPL shutdown complete")
     await ui.info("Thanks for all the fish.")
 
 

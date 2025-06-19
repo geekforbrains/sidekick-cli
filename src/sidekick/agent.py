@@ -42,7 +42,7 @@ async def _process_node(node):
 def get_or_create_agent():
     """Get or create a resilient agent instance for the current model."""
     if session.current_model not in session.agents:
-        print(f"[DEBUG] Creating new agent for model: {session.current_model}")
+        print(f"[LIFECYCLE] Creating new agent for model: {session.current_model}")
         base_agent = Agent(
             model=session.current_model,
             system_prompt=_get_prompt("system"),
@@ -50,8 +50,9 @@ def get_or_create_agent():
             mcp_servers=get_configured_servers(),
         )
         session.agents[session.current_model] = ResilientAgent(base_agent)
+        print(f"[LIFECYCLE] Agent created and cached for model: {session.current_model}")
     else:
-        print(f"[DEBUG] Reusing existing agent for model: {session.current_model}")
+        print(f"[LIFECYCLE] Reusing existing agent for model: {session.current_model}")
     return session.agents[session.current_model]
 
 
@@ -70,40 +71,19 @@ async def process_request(message: str):
         import traceback
         traceback.print_stack()
     
-    # Retry loop for MCP server resets
-    max_retries = 2
-    for retry in range(max_retries):
-        try:
-            resilient_agent = get_or_create_agent()
-            agent = resilient_agent.agent
-            break
-        except RuntimeError as e:
-            if "MCP servers need reset" in str(e) and retry < max_retries - 1:
-                print("[DEBUG] MCP servers need reset, retrying...")
-                continue
-            raise
+    resilient_agent = get_or_create_agent()
+    agent = resilient_agent.agent
     
     # Check MCP server status
     print(f"[DEBUG] Agent MCP servers: {len(agent._mcp_servers)} servers")
     for i, server in enumerate(agent._mcp_servers):
-        print(f"[DEBUG] MCP server {i}: {server}, is_running: {getattr(server, 'is_running', 'unknown')}, needs_reset: {getattr(server, 'needs_reset', lambda: False)()}")
+        print(f"[DEBUG] MCP server {i}: {server}, is_running: {getattr(server, 'is_running', 'unknown')}")
     
     mh = session.messages.copy()
     
     try:
-        print("[DEBUG] About to call agent.iter() with retry")
-        try:
-            agent_iter = await resilient_agent.iter_with_retry(message, message_history=mh)
-        except RuntimeError as e:
-            if "MCP servers need reset" in str(e):
-                print("[DEBUG] MCP reset required, getting new agent")
-                # Get a fresh agent
-                resilient_agent = get_or_create_agent()
-                agent_iter = await resilient_agent.iter_with_retry(message, message_history=mh)
-            else:
-                raise
-        
-        async with agent_iter as agent_run:
+        print("[DEBUG] About to call agent.iter()")
+        async with agent.iter(message, message_history=mh) as agent_run:
             print("[DEBUG] agent.iter() context entered successfully")
             async for node in agent_run:
                 print(f"[DEBUG] Processing node: {type(node).__name__}")
@@ -116,8 +96,6 @@ async def process_request(message: str):
             return agent_run.result.output
     except asyncio.CancelledError:
         print(f"[DEBUG] CancelledError in process_request, sigint_received: {session.sigint_received}")
-        # Mark servers for reset on cancellation
-        resilient_agent.mark_servers_for_reset()
         if not session.sigint_received:
             print("[DEBUG] ERROR: Task cancelled but no SIGINT received!")
             import traceback
