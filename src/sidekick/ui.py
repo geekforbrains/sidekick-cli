@@ -4,9 +4,18 @@ from rich.panel import Panel
 from rich.pretty import Pretty
 from rich.text import Text
 
+from sidekick import session
 from sidekick.constants import APP_NAME, APP_VERSION
 
 console = Console()
+
+
+# Style definitions
+class SpinnerStyle:
+    DEFAULT = "[bold cyan]{}[/bold cyan]"
+    MUTED = "[dim]{}[/dim]"
+    WARNING = "[yellow]{}[/yellow]"
+    ERROR = "[red]{}[/red]"
 
 
 async def banner():
@@ -65,3 +74,17 @@ async def dump(data):
     pretty = Pretty(data, expand_all=True)
     panel = Panel(pretty, title="Dumped Data", border_style="blue", padding=(1, 2))
     console.print(panel)
+
+
+def start_spinner(message: str, style: str = SpinnerStyle.DEFAULT):
+    """Start a spinner and store it in session."""
+    formatted_message = style.format(message)
+    session.spinner = console.status(formatted_message, spinner="dots")
+    session.spinner.start()
+
+
+def stop_spinner():
+    """Stop and clear the session spinner."""
+    if session.spinner:
+        session.spinner.stop()
+        session.spinner = None
