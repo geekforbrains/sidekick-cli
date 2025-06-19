@@ -1,28 +1,29 @@
 """MCP server utilities and configurations."""
+
 import os
 from contextlib import asynccontextmanager
 
-from pydantic_ai.mcp import MCPServerStdio
 from mcp.client.stdio import StdioServerParameters, stdio_client
+from pydantic_ai.mcp import MCPServerStdio
 
 
 class SilentMCPServerStdio(MCPServerStdio):
     """MCPServerStdio that suppresses stderr output."""
-    
+
     def __init__(self, *args, display_name: str = None, **kwargs):
         super().__init__(*args, **kwargs)
         self.display_name = display_name or self.command
-    
+
     @asynccontextmanager
     async def client_streams(self):
         server = StdioServerParameters(
-            command=self.command,
-            args=list(self.args),
-            env=self.env,
-            cwd=self.cwd
+            command=self.command, args=list(self.args), env=self.env, cwd=self.cwd
         )
-        with open(os.devnull, 'w') as null_stream:
-            async with stdio_client(server=server, errlog=null_stream) as (read_stream, write_stream):
+        with open(os.devnull, "w") as null_stream:
+            async with stdio_client(server=server, errlog=null_stream) as (
+                read_stream,
+                write_stream,
+            ):
                 yield read_stream, write_stream
 
 

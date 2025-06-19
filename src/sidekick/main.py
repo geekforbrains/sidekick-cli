@@ -8,7 +8,7 @@ from sidekick import session, ui
 from sidekick.agent import get_or_create_agent, process_request
 from sidekick.config import load_config
 from sidekick.constants import APP_NAME, APP_VERSION
-from sidekick.utils.mcp import get_configured_servers
+from sidekick.mcp import get_configured_servers
 
 app = typer.Typer(help=f"{APP_NAME} - Your agentic CLI developer")
 console = Console()
@@ -16,7 +16,7 @@ console = Console()
 
 async def repl():
     await ui.info(f"Using model {session.current_model}")
-    resilient_agent = get_or_create_agent()
+    mcp_agent = get_or_create_agent()
 
     servers = get_configured_servers()
     await ui.info("Starting MCP servers")
@@ -25,26 +25,26 @@ async def repl():
             await ui.bullet(server.display_name)
     else:
         await ui.bullet("No servers configured")
-    
+
     spinner = console.status("[dim]Initializing servers...[/dim]", spinner="dots")
     spinner.start()
-    
+
     loop = asyncio.get_event_loop()
     session.sigint_received = False
-    
+
     def signal_handler(signum, frame):
         session.sigint_received = True
         if session.current_task and not session.current_task.done():
             loop.call_soon_threadsafe(session.current_task.cancel)
         else:
             raise KeyboardInterrupt()
-    
+
     signal.signal(signal.SIGINT, signal_handler)
-    
-    async with resilient_agent:
+
+    async with mcp_agent:
         await asyncio.sleep(0.5)
         spinner.stop()
-        
+
         await ui.success("Go kick some ass!")
         while True:
             try:
@@ -66,12 +66,12 @@ async def repl():
             # Create a cancellable task for request processing
             session.spinner = console.status("[bold cyan]Thinking...[/bold cyan]", spinner="dots")
             session.spinner.start()
-            
+
             session.sigint_received = False
-            
+
             request_task = asyncio.create_task(process_request(user_input))
             session.current_task = request_task
-            
+
             try:
                 resp = await request_task
                 if session.spinner:
@@ -85,11 +85,11 @@ async def repl():
                     session.spinner = None
                 await ui.warning("Request cancelled")
                 if session.current_model in session.agents:
-                    if resilient_agent._mcp_entered:
-                        await resilient_agent.__aexit__(None, None, None)
+                    if mcp_agent._mcp_entered:
+                        await mcp_agent.__aexit__(None, None, None)
                     del session.agents[session.current_model]
-                    resilient_agent = get_or_create_agent()
-                    await resilient_agent.__aenter__()
+                    mcp_agent = get_or_create_agent()
+                    await mcp_agent.__aenter__()
             except KeyboardInterrupt:
                 if session.spinner:
                     session.spinner.stop()
@@ -128,7 +128,7 @@ def main(version: bool = typer.Option(False, "--version", "-v", help="Show versi
     asyncio.run(ui.banner())
     config = load_config()
     session.init(config, config["default_model"])
-    
+
     # Create event loop manually to avoid asyncio.run's signal handling
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

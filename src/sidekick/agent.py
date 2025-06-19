@@ -4,9 +4,8 @@ import json
 from pydantic_ai import Agent
 
 from sidekick import session, ui
+from sidekick.mcp import MCPAgent, get_configured_servers
 from sidekick.tools import TOOLS
-from sidekick.utils.mcp import get_configured_servers
-from sidekick.resilient_agent import ResilientAgent
 
 
 def _get_prompt(name: str) -> str:
@@ -41,7 +40,7 @@ async def _process_node(node):
 
 
 def get_or_create_agent():
-    """Get or create a resilient agent instance for the current model."""
+    """Get or create an MCP agent instance for the current model."""
     if session.current_model not in session.agents:
         base_agent = Agent(
             model=session.current_model,
@@ -49,17 +48,17 @@ def get_or_create_agent():
             tools=TOOLS,
             mcp_servers=get_configured_servers(),
         )
-        session.agents[session.current_model] = ResilientAgent(base_agent)
+        session.agents[session.current_model] = MCPAgent(base_agent)
     return session.agents[session.current_model]
 
 
 async def process_request(message: str):
     """Process a user request with the agent."""
-    resilient_agent = get_or_create_agent()
-    agent = resilient_agent.agent
-    
+    mcp_agent = get_or_create_agent()
+    agent = mcp_agent.agent
+
     mh = session.messages.copy()
-    
+
     try:
         async with agent.iter(message, message_history=mh) as agent_run:
             async for node in agent_run:
