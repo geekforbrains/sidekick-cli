@@ -29,6 +29,11 @@ async def error(message: str):
     console.print(f"[red]✗[/red] {message}", style="red")
 
 
+async def warning(message: str):
+    """Display a warning message."""
+    console.print(f"[yellow]⚠[/yellow] {message}", style="yellow")
+
+
 async def success(message: str):
     """Display a success message."""
     console.print(f"[green]✓[/green] {message}")
