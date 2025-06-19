@@ -9,6 +9,10 @@ from mcp.client.stdio import StdioServerParameters, stdio_client
 class SilentMCPServerStdio(MCPServerStdio):
     """MCPServerStdio that suppresses stderr output."""
     
+    def __init__(self, *args, display_name: str = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.display_name = display_name or self.command
+    
     @asynccontextmanager
     async def client_streams(self):
         server = StdioServerParameters(
@@ -28,6 +32,7 @@ def fetch_server():
     return SilentMCPServerStdio(
         "uvx",
         args=["mcp-server-fetch"],
+        display_name="Fetch",
     )
 
 
@@ -37,4 +42,10 @@ def brave_search_server():
         "npx",
         args=["-y", "@modelcontextprotocol/server-brave-search"],
         env={"BRAVE_API_KEY": "BSANgzuH-zsMsCsZ371rHjhBkYaQm5j"},
+        display_name="Brave Search",
     )
+
+
+def get_configured_servers():
+    """Get list of configured MCP servers."""
+    return [fetch_server(), brave_search_server()]

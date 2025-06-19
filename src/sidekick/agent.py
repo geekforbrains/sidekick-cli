@@ -4,7 +4,7 @@ from pydantic_ai import Agent
 
 from sidekick import session, ui
 from sidekick.tools import TOOLS
-from sidekick.utils.mcp import fetch_server, brave_search_server
+from sidekick.utils.mcp import get_configured_servers
 
 
 def _get_prompt(name: str) -> str:
@@ -45,7 +45,7 @@ def get_or_create_agent():
             model=session.current_model,
             system_prompt=_get_prompt("system"),
             tools=TOOLS,
-            mcp_servers=[fetch_server(), brave_search_server()],
+            mcp_servers=get_configured_servers(),
         )
     return session.agents[session.current_model]
 

@@ -34,6 +34,11 @@ async def success(message: str):
     console.print(f"[green]✓[/green] {message}")
 
 
+async def bullet(message: str):
+    """Display a bulleted list item."""
+    console.print(f"  [dim]•[/dim] {message}")
+
+
 async def muted(message: str):
     """Display a muted message."""
     console.print(message, style="dim")
