@@ -231,6 +231,10 @@ def update_config_file(updates: Dict[str, Any]) -> None:
 
     # Write updated config back to file
     config_path = get_config_path()
+
+    # Ensure the config directory exists
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+
     try:
         with open(config_path, "w") as f:
             json.dump(config, f, indent=2)
