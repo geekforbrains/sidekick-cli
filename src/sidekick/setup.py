@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 
+from .config import deep_merge_dicts, ensure_config_structure
 from .constants import DEFAULT_USER_CONFIG
 
 console = Console()
@@ -102,7 +103,15 @@ def create_config(config_path: Path) -> Dict:
 
     default_model = select_default_model(api_keys)
 
-    config = {"default_model": default_model, "env": api_keys or DEFAULT_USER_CONFIG["env"]}
+    # Start with user's choices
+    user_config = {"default_model": default_model, "env": api_keys if api_keys else {}}
+
+    # Merge with defaults to get all fields
+    config = deep_merge_dicts(DEFAULT_USER_CONFIG, user_config)
+
+    # Remove placeholder API keys if user didn't provide any
+    if not api_keys:
+        config["env"] = {}
 
     config_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -148,7 +157,8 @@ def run_setup() -> Dict:
 
         required_fields = ["default_model", "env"]
         if all(field in config for field in required_fields):
-            return config
+            # Ensure all default fields are present
+            return ensure_config_structure()
         else:
             console.print("[yellow]Configuration file is missing required fields.[/yellow]")
             return handle_invalid_config(config_path)
