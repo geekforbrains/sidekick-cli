@@ -4,6 +4,7 @@ import sys
 import traceback
 
 import typer
+from pydantic_ai.exceptions import ModelHTTPError
 from rich.console import Console
 
 from sidekick import ui
@@ -96,6 +97,17 @@ async def handle_user_request(user_input: str, mcp_agent):
             except asyncio.CancelledError:
                 pass
         ui.warning("Request interrupted")
+    except ModelHTTPError as e:
+        ui.stop_spinner()
+        # Extract error message from response body
+        error_msg = str(e)
+        if isinstance(e.body, dict):
+            # Try to extract message from common error structures
+            if "error" in e.body and isinstance(e.body["error"], dict):
+                error_msg = e.body["error"].get("message", str(e))
+            elif "message" in e.body:
+                error_msg = e.body["message"]
+        ui.error(f"{e.model_name}: {error_msg}")
     except Exception as e:
         ui.stop_spinner()
         tb = traceback.format_exc()
