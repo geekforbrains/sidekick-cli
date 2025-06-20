@@ -12,7 +12,7 @@ from sidekick.commands import handle_command
 from sidekick.config import (ConfigError, ConfigValidationError, config_exists, read_config_file,
                              set_env_vars, validate_config_structure)
 from sidekick.constants import APP_NAME, APP_VERSION
-from sidekick.mcp import get_configured_servers
+from sidekick.mcp import load_mcp_servers
 from sidekick.session import session
 from sidekick.setup import run_setup
 
@@ -46,7 +46,7 @@ def should_exit(user_input: str) -> bool:
 
 async def display_server_info():
     """Display information about configured MCP servers."""
-    servers = get_configured_servers()
+    servers = load_mcp_servers()
     ui.info("Starting MCP servers")
     if servers:
         for server in servers:

@@ -5,7 +5,7 @@ from pydantic_ai import Agent
 
 from sidekick import ui
 from sidekick.config import MODELS
-from sidekick.mcp import MCPAgent, get_configured_servers
+from sidekick.mcp import MCPAgent, load_mcp_servers
 from sidekick.session import session
 from sidekick.tools import TOOL_DISPLAY_NAMES, TOOLS
 
@@ -178,7 +178,7 @@ def get_or_create_agent():
             model=session.current_model,
             system_prompt=_get_prompt("system"),
             tools=TOOLS,
-            mcp_servers=get_configured_servers(),
+            mcp_servers=load_mcp_servers(),
         )
         session.agents[session.current_model] = MCPAgent(base_agent)
     return session.agents[session.current_model]

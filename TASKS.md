@@ -319,7 +319,7 @@ MCP server loading errors are swallowed and logged, returning empty list, making
 - Clear feedback on server status
 - No silent failures
 
-## Task #10: Remove Deprecated get_configured_servers Function
+## Task #10: Remove Deprecated get_configured_servers Function (COMPLETED)
 
 ### Issue
 The get_configured_servers function is marked as deprecated but still actively used throughout the codebase.

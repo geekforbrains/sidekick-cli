@@ -126,12 +126,3 @@ def load_mcp_servers() -> List[SilentMCPServerStdio]:
         ui.info(f"Loaded {len(servers)} of {len(mcp_servers_config)} MCP servers")
 
     return servers
-
-
-# Backward compatibility
-def get_configured_servers():
-    """Get list of configured MCP servers from config file.
-
-    Deprecated: Use load_mcp_servers() instead.
-    """
-    return load_mcp_servers()
