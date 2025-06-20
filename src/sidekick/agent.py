@@ -110,7 +110,6 @@ async def _handle_tool_cancellation(tool_calls):
         )
 
     if cancelled_parts:
-        # Add a request with the cancellation results
         session.messages.append(messages.ModelRequest(parts=cancelled_parts))
 
 
@@ -120,19 +119,18 @@ async def _process_node(node):
 
     if hasattr(node, "model_response"):
         session.messages.append(node.model_response)
-        # Track tool calls that need results
-        tool_calls = []
-        for part in node.model_response.parts:
-            if part.part_kind == "tool-call":
-                tool_calls.append(part)
-                try:
-                    await _render_tool_call(part)
-                except asyncio.CancelledError as e:
-                    # User cancelled the tool execution
-                    # We need to add tool results for cancelled calls
-                    await _handle_tool_cancellation(tool_calls)
-                    # Re-raise the cancellation error
-                    raise e
+        tool_calls = [part for part in node.model_response.parts if part.part_kind == "tool-call"]
+
+        cancelled = False
+        try:
+            for tool_call in tool_calls:
+                await _render_tool_call(tool_call)
+        except asyncio.CancelledError as e:
+            cancelled = True
+            raise e
+        finally:
+            if cancelled and tool_calls:
+                await _handle_tool_cancellation(tool_calls)
 
 
 def _calculate_usage_costs(usage):

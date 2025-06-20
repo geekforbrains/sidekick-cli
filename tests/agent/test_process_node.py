@@ -164,5 +164,5 @@ async def test_process_node_with_multiple_tool_calls_cancellation():
                 # Verify only the first two tools were processed (before cancellation)
                 assert mock_render.call_count == 2
 
-                # Verify cancellation handler was called with all tool calls collected so far
-                mock_handle.assert_called_once_with([tool_calls[0], tool_calls[1]])
+                # Verify cancellation handler was called with ALL tool calls from the response
+                mock_handle.assert_called_once_with([tool_calls[0], tool_calls[1], tool_calls[2]])

@@ -1,6 +1,6 @@
 """Test /model command handler."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -10,7 +10,7 @@ from sidekick.commands import handle_model
 @pytest.mark.asyncio
 async def test_handle_model_list():
     """Test /model with no args lists available models."""
-    mock_ui = AsyncMock()
+    mock_ui = MagicMock()
     mock_session = MagicMock()
     mock_session.current_model = "model2"
 
@@ -30,7 +30,7 @@ async def test_handle_model_list():
 @pytest.mark.asyncio
 async def test_handle_model_switch():
     """Test /model <num> switches to selected model."""
-    mock_ui = AsyncMock()
+    mock_ui = MagicMock()
     mock_session = MagicMock()
     mock_session.agents = MagicMock()
     mock_session.model_switched = False
@@ -51,7 +51,7 @@ async def test_handle_model_switch():
 @pytest.mark.asyncio
 async def test_handle_model_invalid_number():
     """Test /model with invalid number shows error."""
-    mock_ui = AsyncMock()
+    mock_ui = MagicMock()
 
     with (
         patch("sidekick.commands.ui", mock_ui),
@@ -64,7 +64,7 @@ async def test_handle_model_invalid_number():
 @pytest.mark.asyncio
 async def test_handle_model_set_default():
     """Test /model <num> default sets default model in config."""
-    mock_ui = AsyncMock()
+    mock_ui = MagicMock()
     mock_update = MagicMock()
 
     with (

@@ -94,8 +94,8 @@ def test_warns_when_all_servers_fail(caplog):
         # Make all server creations fail
         with patch("sidekick.mcp.servers.create_mcp_server", side_effect=Exception("Failed")):
             with patch("sidekick.mcp.servers.ui.error") as mock_error:
-                with patch("sidekick.mcp.servers.ui.warning") as mock_warning:
-                    with patch("sidekick.mcp.servers.ui.bullet") as mock_bullet:
+                with patch("sidekick.mcp.servers.ui.warning"):
+                    with patch("sidekick.mcp.servers.ui.bullet"):
                         with caplog.at_level(logging.WARNING):
                             servers = load_mcp_servers()
 
