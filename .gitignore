@@ -39,3 +39,5 @@ SIDEKICK.md
 .python-version
 REFACTOR*
 .claude/
+TASKS*.md
+error*.log
