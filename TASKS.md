@@ -285,7 +285,7 @@ Duplicate validation logic exists in two places for MCP server configuration, vi
 - Reduced code duplication
 - DRY principle compliance
 
-## Task #9: Improve MCP Server Load Error Visibility
+## Task #9: Improve MCP Server Load Error Visibility (COMPLETED)
 
 ### Issue
 MCP server loading errors are swallowed and logged, returning empty list, making it hard to distinguish between no servers configured and load failures.

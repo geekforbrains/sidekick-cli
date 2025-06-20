@@ -93,11 +93,15 @@ def test_warns_when_all_servers_fail(caplog):
     with patch("sidekick.mcp.servers.read_config_file", return_value=mock_config):
         # Make all server creations fail
         with patch("sidekick.mcp.servers.create_mcp_server", side_effect=Exception("Failed")):
-            with caplog.at_level(logging.WARNING):
-                servers = load_mcp_servers()
+            with patch("sidekick.mcp.servers.ui.error") as mock_error:
+                with patch("sidekick.mcp.servers.ui.warning") as mock_warning:
+                    with patch("sidekick.mcp.servers.ui.bullet") as mock_bullet:
+                        with caplog.at_level(logging.WARNING):
+                            servers = load_mcp_servers()
 
     assert servers == []
-    assert "No valid MCP servers could be loaded" in caplog.text
+    # Check that ui.error was called with the expected message
+    mock_error.assert_called_with("No MCP servers could be loaded successfully")
 
 
 def test_handles_unexpected_errors(caplog):

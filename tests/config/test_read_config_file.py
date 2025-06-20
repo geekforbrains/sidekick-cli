@@ -1,6 +1,5 @@
 """Tests for read_config_file function."""
 
-import json
 from unittest.mock import mock_open, patch
 
 import pytest
