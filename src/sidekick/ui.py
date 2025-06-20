@@ -1,3 +1,5 @@
+import random
+
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -8,6 +10,29 @@ from sidekick import session
 from sidekick.constants import APP_NAME, APP_VERSION
 
 console = Console()
+
+THINKING_MESSAGES = [
+    "Cracking knuckles...",
+    "Polishing grappling hook...",
+    "Consulting the manual...",
+    "Adjusting utility belt...",
+    "Calibrating gadgets...",
+    "Dusting off cape...",
+    "Sharpening batarangs...",
+    "Pressing buttons...",
+    "Looking busy...",
+    "Doing stretches...",
+    "Putting on thinking mask...",
+    "Running diagnostics...",
+    "Preparing witty comeback...",
+    "Calculating trajenctories...",
+    "Donning thinking cape...",
+]
+
+
+def get_thinking_message() -> str:
+    """Get a random thinking message."""
+    return random.choice(THINKING_MESSAGES)
 
 
 # Style definitions

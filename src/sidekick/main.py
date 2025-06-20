@@ -61,7 +61,7 @@ async def initialize_servers():
 
 async def handle_user_request(user_input: str, mcp_agent):
     """Process a user request with proper exception handling."""
-    ui.start_spinner("Thinking...")
+    ui.start_spinner(ui.get_thinking_message())
     session.sigint_received = False
 
     request_task = asyncio.create_task(process_request(user_input))
