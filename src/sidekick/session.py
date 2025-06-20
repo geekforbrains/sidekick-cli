@@ -9,6 +9,7 @@ current_task: Optional[asyncio.Task] = None
 sigint_received: bool = False
 skip_confirmations: Set[str] = set()  # Tools that user selected "always" for
 confirmation_enabled: bool = True  # Global flag to enable/disable confirmations
+model_switched: bool = False  # Flag to indicate model was switched and agent needs recreation
 
 
 def init(config: Dict[str, Any], model: str):

@@ -130,6 +130,19 @@ async def repl():
                 break
 
             if await handle_command(user_input):
+                # Check if model was switched and recreate agent if needed
+                if session.model_switched:
+                    ui.start_spinner("Switching model...", ui.SpinnerStyle.MUTED)
+                    try:
+                        # Exit current agent context
+                        if mcp_agent._mcp_entered:
+                            await mcp_agent.__aexit__(None, None, None)
+                        # Create and enter new agent context
+                        mcp_agent = get_or_create_agent()
+                        await mcp_agent.__aenter__()
+                        session.model_switched = False
+                    finally:
+                        ui.stop_spinner()
                 continue
 
             mcp_agent = await handle_user_request(user_input, mcp_agent)

@@ -41,8 +41,9 @@ async def handle_model(args: list[str]):
                 else:
                     # Switch to model for current session
                     session.current_model = selected_model
-                    # Clear the agent cache for the old model
+                    # Clear the agent cache and set flag for REPL to recreate agent
                     session.agents.clear()
+                    session.model_switched = True
                     await ui.info(f"Switched to model: {selected_model}")
             else:
                 await ui.error(f"Invalid model number. Choose between 1 and {len(model_list)}")

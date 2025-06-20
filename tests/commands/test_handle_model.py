@@ -33,6 +33,7 @@ async def test_handle_model_switch():
     mock_ui = AsyncMock()
     mock_session = MagicMock()
     mock_session.agents = MagicMock()
+    mock_session.model_switched = False
 
     with (
         patch("sidekick.commands.ui", mock_ui),
@@ -43,6 +44,7 @@ async def test_handle_model_switch():
 
         assert mock_session.current_model == "model2"
         mock_session.agents.clear.assert_called_once()
+        assert mock_session.model_switched is True
         mock_ui.info.assert_called_with("Switched to model: model2")
 
 
