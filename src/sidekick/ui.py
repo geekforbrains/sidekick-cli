@@ -33,9 +33,16 @@ async def info(message: str):
     console.print(f"[cyan]ℹ[/cyan] {message}")
 
 
-async def error(message: str):
-    """Display an error message."""
-    console.print(f"[red]✗[/red] {message}", style="red")
+async def error(message: str, detail: str = None):
+    """Display an error message with optional detail.
+
+    Args:
+        message: The main error message
+        detail: Optional detailed error information
+    """
+    console.print(f"[red]✗[/red] [red]{message}[/red]")
+    if detail:
+        console.print(f"  [dim]{detail}[/dim]")
 
 
 async def warning(message: str):

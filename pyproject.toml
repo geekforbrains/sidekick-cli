@@ -38,6 +38,9 @@ dev = [
     "black",
     "flake8",
     "isort",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
 ]
 
 [project.urls]

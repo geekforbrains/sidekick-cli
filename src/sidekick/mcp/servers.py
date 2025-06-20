@@ -1,10 +1,17 @@
 """MCP server utilities and configurations."""
 
+import logging
 import os
 from contextlib import asynccontextmanager
+from typing import Any, Dict, List
 
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from pydantic_ai.mcp import MCPServerStdio
+
+from sidekick.config import (ConfigError, parse_mcp_servers, read_config_file,
+                             validate_config_structure)
+
+logger = logging.getLogger(__name__)
 
 
 class SilentMCPServerStdio(MCPServerStdio):
@@ -38,25 +45,113 @@ class SilentMCPServerStdio(MCPServerStdio):
                 yield read_stream, write_stream
 
 
-def fetch_server():
-    """Create a silent MCP fetch server."""
+def _format_display_name(key: str) -> str:
+    """Convert a server key to a display name.
+
+    Examples:
+        fetch -> Fetch
+        brave-search -> Brave Search
+        brave_search -> Brave Search
+    """
+    return key.replace("-", " ").replace("_", " ").title()
+
+
+def validate_server_config(key: str, config: Dict[str, Any]) -> None:
+    """Validate a single MCP server configuration.
+
+    Args:
+        key: Server identifier
+        config: Server configuration dictionary
+
+    Raises:
+        ValueError: If the configuration is invalid
+    """
+    if not isinstance(config, dict):
+        raise ValueError(f"Server '{key}' configuration must be a dictionary")
+
+    if "command" not in config:
+        raise ValueError(f"Server '{key}' missing required field 'command'")
+
+    if not config["command"]:
+        raise ValueError(f"Server '{key}' has empty command")
+
+    if "args" not in config:
+        raise ValueError(f"Server '{key}' missing required field 'args'")
+
+    if not isinstance(config["args"], list):
+        raise ValueError(f"Server '{key}' field 'args' must be a list")
+
+    if len(config["args"]) < 1:
+        raise ValueError(f"Server '{key}' field 'args' must contain at least one argument")
+
+
+def create_mcp_server(key: str, config: Dict[str, Any]) -> SilentMCPServerStdio:
+    """Create a single MCP server instance.
+
+    Args:
+        key: Server identifier
+        config: Server configuration dictionary
+
+    Returns:
+        SilentMCPServerStdio: Configured server instance
+
+    Raises:
+        ValueError: If the configuration is invalid
+    """
+    validate_server_config(key, config)
+
+    # Use 'name' field if present, otherwise format the key
+    display_name = config.get("name", _format_display_name(key))
+
     return SilentMCPServerStdio(
-        "uvx",
-        args=["mcp-server-fetch"],
-        display_name="Fetch",
+        command=config["command"],
+        args=config["args"],
+        env=config.get("env", {}),
+        display_name=display_name,
     )
 
 
-def brave_search_server():
-    """Create a silent MCP Brave search server."""
-    return SilentMCPServerStdio(
-        "npx",
-        args=["-y", "@modelcontextprotocol/server-brave-search"],
-        env={"BRAVE_API_KEY": "BSANgzuH-zsMsCsZ371rHjhBkYaQm5j"},
-        display_name="Brave Search",
-    )
+def load_mcp_servers() -> List[SilentMCPServerStdio]:
+    """Load MCP servers from configuration.
+
+    Returns:
+        List of configured MCP server instances
+
+    Note:
+        - Returns empty list if no servers configured
+        - Logs warnings for invalid server configs but continues with valid ones
+    """
+    try:
+        config = read_config_file()
+        validate_config_structure(config)
+        mcp_servers_config = parse_mcp_servers(config)
+    except ConfigError as e:
+        logger.error(f"Failed to load config: {e}")
+        return []
+    except Exception as e:
+        logger.error(f"Unexpected error loading config: {e}")
+        return []
+
+    servers = []
+    for key, server_config in mcp_servers_config.items():
+        try:
+            server = create_mcp_server(key, server_config)
+            servers.append(server)
+        except ValueError as e:
+            logger.warning(f"Skipping invalid server '{key}': {e}")
+        except Exception as e:
+            logger.warning(f"Failed to create server '{key}': {e}")
+
+    if mcp_servers_config and not servers:
+        logger.warning("No valid MCP servers could be loaded")
+
+    return servers
 
 
+# Backward compatibility
 def get_configured_servers():
-    """Get list of configured MCP servers."""
-    return [fetch_server(), brave_search_server()]
+    """Get list of configured MCP servers from config file.
+
+    Deprecated: Use load_mcp_servers() instead.
+    """
+    return load_mcp_servers()

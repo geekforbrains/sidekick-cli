@@ -1,4 +1,4 @@
-.PHONY: install clean lint format build
+.PHONY: install clean lint format build test
 
 install:
 	pip install -e ".[dev]"
@@ -17,6 +17,9 @@ lint:
 	black src/
 	isort src/
 	flake8 src/
+
+test:
+	pytest
 
 build:
 	python -m build

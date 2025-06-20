@@ -1,12 +1,15 @@
 import asyncio
+import json
 import signal
+import sys
 
 import typer
 from rich.console import Console
 
 from sidekick import session, ui
 from sidekick.agent import get_or_create_agent, process_request
-from sidekick.config import load_config
+from sidekick.config import (ConfigValidationError, config_exists, read_config_file, set_env_vars,
+                             validate_config_structure)
 from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.mcp import get_configured_servers
 from sidekick.setup import run_setup
@@ -171,26 +174,30 @@ def main(version: bool = typer.Option(False, "--version", "-v", help="Show versi
     # Run banner separately
     asyncio.run(ui.banner())
 
-    # Load config or run setup if needed
-    try:
-        config = load_config()
-    except (FileNotFoundError, ValueError) as e:
-        if (
-            "Config file not found" in str(e)
-            or "Config missing" in str(e)
-            or "Invalid JSON" in str(e)
-        ):
-            console.print()
-            config = run_setup()
-
-            # Set environment variables from the new config
-            for key, value in config.get("env", {}).items():
-                if value:
-                    import os
-
-                    os.environ[key] = value
-        else:
-            raise
+    # Check if config exists, run setup if needed
+    if not config_exists():
+        console.print()
+        config = run_setup()
+        # Apply env vars from newly created config
+        set_env_vars(config.get("env", {}))
+    else:
+        # Config exists, try to load and validate it
+        try:
+            config = read_config_file()
+            validate_config_structure(config)
+            set_env_vars(config.get("env", {}))
+        except PermissionError as e:
+            asyncio.run(ui.error("Cannot access config file", str(e)))
+            sys.exit(1)
+        except json.JSONDecodeError as e:
+            asyncio.run(ui.error("Invalid JSON in config file", str(e)))
+            sys.exit(1)
+        except ConfigValidationError as e:
+            asyncio.run(ui.error("Invalid configuration", str(e)))
+            sys.exit(1)
+        except Exception as e:
+            asyncio.run(ui.error("Failed to load configuration", str(e)))
+            sys.exit(1)
 
     session.init(config, config["default_model"])
 
