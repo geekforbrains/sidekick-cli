@@ -43,15 +43,44 @@ async def _render_tool_call(part):
         session.spinner.start()
 
 
+async def _handle_tool_cancellation(tool_calls):
+    """Create tool return parts for cancelled tool calls."""
+    from pydantic_ai import messages
+
+    cancelled_parts = []
+    for tool_call in tool_calls:
+        cancelled_parts.append(
+            messages.ToolReturnPart(
+                tool_name=tool_call.tool_name,
+                content="Tool execution cancelled by user",
+                tool_call_id=tool_call.tool_call_id,
+            )
+        )
+
+    if cancelled_parts:
+        # Add a request with the cancellation results
+        session.messages.append(messages.ModelRequest(parts=cancelled_parts))
+
+
 async def _process_node(node):
     if hasattr(node, "request"):
         session.messages.append(node.request)
 
     if hasattr(node, "model_response"):
         session.messages.append(node.model_response)
+        # Track tool calls that need results
+        tool_calls = []
         for part in node.model_response.parts:
             if part.part_kind == "tool-call":
-                await _render_tool_call(part)
+                tool_calls.append(part)
+                try:
+                    await _render_tool_call(part)
+                except asyncio.CancelledError as e:
+                    # User cancelled the tool execution
+                    # We need to add tool results for cancelled calls
+                    await _handle_tool_cancellation(tool_calls)
+                    # Re-raise the cancellation error
+                    raise e
 
 
 def get_or_create_agent():
