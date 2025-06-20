@@ -56,35 +56,6 @@ def _format_display_name(key: str) -> str:
     return key.replace("-", " ").replace("_", " ").title()
 
 
-def validate_server_config(key: str, config: Dict[str, Any]) -> None:
-    """Validate a single MCP server configuration.
-
-    Args:
-        key: Server identifier
-        config: Server configuration dictionary
-
-    Raises:
-        ValueError: If the configuration is invalid
-    """
-    if not isinstance(config, dict):
-        raise ValueError(f"Server '{key}' configuration must be a dictionary")
-
-    if "command" not in config:
-        raise ValueError(f"Server '{key}' missing required field 'command'")
-
-    if not config["command"]:
-        raise ValueError(f"Server '{key}' has empty command")
-
-    if "args" not in config:
-        raise ValueError(f"Server '{key}' missing required field 'args'")
-
-    if not isinstance(config["args"], list):
-        raise ValueError(f"Server '{key}' field 'args' must be a list")
-
-    if len(config["args"]) < 1:
-        raise ValueError(f"Server '{key}' field 'args' must contain at least one argument")
-
-
 def create_mcp_server(key: str, config: Dict[str, Any]) -> SilentMCPServerStdio:
     """Create a single MCP server instance.
 
@@ -94,12 +65,7 @@ def create_mcp_server(key: str, config: Dict[str, Any]) -> SilentMCPServerStdio:
 
     Returns:
         SilentMCPServerStdio: Configured server instance
-
-    Raises:
-        ValueError: If the configuration is invalid
     """
-    validate_server_config(key, config)
-
     # Use 'name' field if present, otherwise format the key
     display_name = config.get("name", _format_display_name(key))
 
@@ -137,8 +103,6 @@ def load_mcp_servers() -> List[SilentMCPServerStdio]:
         try:
             server = create_mcp_server(key, server_config)
             servers.append(server)
-        except ValueError as e:
-            logger.warning(f"Skipping invalid server '{key}': {e}")
         except Exception as e:
             logger.warning(f"Failed to create server '{key}': {e}")
 

@@ -249,7 +249,7 @@ The config file is saved to ~/.config/sidekick.json but the ~/.config directory 
 - Prevents write failures
 - Better user experience
 
-## Task #8: Consolidate MCP Server Validation Logic
+## Task #8: Consolidate MCP Server Validation Logic (COMPLETED)
 
 ### Issue
 Duplicate validation logic exists in two places for MCP server configuration, violating DRY principle and making maintenance harder.

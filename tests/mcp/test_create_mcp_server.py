@@ -1,7 +1,5 @@
 """Tests for create_mcp_server function."""
 
-import pytest
-
 from sidekick.mcp.servers import SilentMCPServerStdio, create_mcp_server
 
 
@@ -54,12 +52,3 @@ def test_formats_display_name_from_key():
 
     server3 = create_mcp_server("underscore_name", config)
     assert server3.display_name == "Underscore Name"
-
-
-def test_raises_for_invalid_config():
-    """Test that invalid configs raise ValueError."""
-    with pytest.raises(ValueError):
-        create_mcp_server("test", {"command": "test"})  # Missing args
-
-    with pytest.raises(ValueError):
-        create_mcp_server("test", {"args": ["test"]})  # Missing command
