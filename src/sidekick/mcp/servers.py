@@ -8,17 +8,28 @@ from pydantic_ai.mcp import MCPServerStdio
 
 
 class SilentMCPServerStdio(MCPServerStdio):
-    """MCPServerStdio that suppresses stderr output."""
+    """MCPServerStdio that suppresses stderr output.
+
+    Extends pydantic_ai's MCPServerStdio to redirect stderr to /dev/null,
+    preventing MCP server error messages from cluttering the CLI output.
+    """
 
     def __init__(self, *args, display_name: str = None, **kwargs):
         super().__init__(*args, **kwargs)
+        # Add display_name for better server identification in logs/UI
         self.display_name = display_name or self.command
 
     @asynccontextmanager
     async def client_streams(self):
+        """Override parent's client_streams to suppress stderr.
+
+        The parent implementation logs errors to stderr by default.
+        This override redirects stderr to /dev/null to keep the CLI clean.
+        """
         server = StdioServerParameters(
             command=self.command, args=list(self.args), env=self.env, cwd=self.cwd
         )
+        # Key change: errlog=null_stream instead of default stderr
         with open(os.devnull, "w") as null_stream:
             async with stdio_client(server=server, errlog=null_stream) as (
                 read_stream,
