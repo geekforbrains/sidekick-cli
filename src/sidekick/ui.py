@@ -129,7 +129,7 @@ async def agent(content: str):
         title_align="left",
         border_style=colors.primary,
     )
-    console.print(Padding(panel, (1, 0, 1, 1)))
+    console.print(Padding(panel, (1, 0, 0, 1)))
 
 
 async def line():
@@ -254,6 +254,7 @@ async def help():
         ("/model", "List available models"),
         ("/model <n>", "Switch to a specific model"),
         ("/model <n> default", "Set a model as the default"),
+        ("/usage", "Show session usage statistics"),
         ("exit", "Exit the application"),
     ]
 
@@ -275,3 +276,22 @@ async def update_available(latest_version: str):
     """Display update available message."""
     await warning(f"Update available: v{latest_version}")
     await muted("Exit, and run: [bold]pip install --upgrade sidekick-cli[/bold]", spaces=2)
+
+
+async def usage(usage_data: dict):
+    """Display usage information in the compact format."""
+    if not usage_data:
+        return
+
+    msg = (
+        f"Reqs: {usage_data['requests']}, "
+        f"Tokens(In/Cache/Out): "
+        f"{usage_data['input_tokens']}/"
+        f"{usage_data['cached_tokens']}/"
+        f"{usage_data['output_tokens']}, "
+        f"Cost(Req/Total): ${usage_data['request_cost']:.5f}/${usage_data['total_cost']:.5f}"
+    )
+
+    # Display aligned with panel content, with padding below
+    console.print(f"  {msg}", style=colors.muted)
+    console.print()

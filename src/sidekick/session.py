@@ -12,6 +12,12 @@ allowed_commands: Set[str] = set()  # Individual commands that are pre-approved 
 confirmation_enabled: bool = True  # Global flag to enable/disable confirmations
 model_switched: bool = False  # Flag to indicate model was switched and agent needs recreation
 
+# Usage tracking
+tool_usage: Dict[str, int] = {}  # Track count of each tool used
+last_usage: Optional[Dict[str, Any]] = None  # Last agent run usage data
+total_tokens: int = 0  # Total tokens used in session
+total_cost: float = 0.0  # Total estimated cost in session
+
 
 def init(config: Dict[str, Any], model: str):
     """Initialize the session state."""

@@ -3,6 +3,7 @@ import asyncio
 from pydantic_ai import Agent
 
 from sidekick import session, ui
+from sidekick.config import MODELS
 from sidekick.mcp import MCPAgent, get_configured_servers
 from sidekick.tools import TOOL_DISPLAY_NAMES, TOOLS
 
@@ -77,6 +78,11 @@ async def _render_tool_call(part):
         if response == "no":
             raise asyncio.CancelledError("Tool execution cancelled by user")
 
+    # Track tool usage
+    if part.tool_name not in session.tool_usage:
+        session.tool_usage[part.tool_name] = 0
+    session.tool_usage[part.tool_name] += 1
+
     await _format_tool_display(part.tool_name, args)
 
     if session.spinner:
@@ -123,6 +129,43 @@ async def _process_node(node):
                     raise e
 
 
+def _calculate_usage_costs(usage):
+    """Calculate usage costs from agent run usage data."""
+    # Get cached tokens from details if available
+    cached_tokens = 0
+    if hasattr(usage, "details") and usage.details:
+        for detail in usage.details:
+            if hasattr(detail, "cached_tokens"):
+                cached_tokens += detail.cached_tokens
+
+    # Calculate token counts
+    input_tokens = usage.request_tokens
+    non_cached_input = input_tokens - cached_tokens
+    output_tokens = usage.response_tokens
+
+    # Get pricing for current model (fallback to first model if not found)
+    model_ids = list(MODELS.keys())
+    pricing = MODELS.get(session.current_model, MODELS[model_ids[0]])["pricing"]
+
+    # Calculate costs (prices are per 1M tokens)
+    input_cost = non_cached_input / 1_000_000 * pricing["input"]
+    cached_cost = cached_tokens / 1_000_000 * pricing["cached_input"]
+    output_cost = output_tokens / 1_000_000 * pricing["output"]
+    request_cost = input_cost + cached_cost + output_cost
+
+    return {
+        "requests": usage.requests,
+        "input_tokens": input_tokens,
+        "cached_tokens": cached_tokens,
+        "output_tokens": output_tokens,
+        "input_cost": input_cost,
+        "cached_cost": cached_cost,
+        "output_cost": output_cost,
+        "request_cost": request_cost,
+        "total_cost": session.total_cost + request_cost,
+    }
+
+
 def get_or_create_agent():
     """Get or create an MCP agent instance for the current model."""
     if session.current_model not in session.agents:
@@ -147,6 +190,14 @@ async def process_request(message: str):
         async with agent.iter(message, message_history=mh) as agent_run:
             async for node in agent_run:
                 await _process_node(node)
+
+            # Capture usage data and calculate costs
+            usage = agent_run.usage()
+            if usage:
+                session.last_usage = _calculate_usage_costs(usage)
+                session.total_tokens += usage.total_tokens
+                session.total_cost = session.last_usage["total_cost"]
+
             return agent_run.result.output
     except asyncio.CancelledError as e:
         # Check if this was a user-initiated tool cancellation

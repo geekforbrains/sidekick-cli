@@ -73,6 +73,9 @@ async def handle_user_request(user_input: str, mcp_agent):
         ui.stop_spinner()
         if resp:
             await ui.agent(resp)
+            # Display usage information if available
+            if session.last_usage:
+                await ui.usage(session.last_usage)
         # If resp is None, it means the tool was cancelled by user, which is already handled
     except asyncio.CancelledError:
         ui.stop_spinner()

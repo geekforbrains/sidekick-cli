@@ -51,6 +51,36 @@ async def handle_model(args: list[str]):
             await ui.error("Invalid model number")
 
 
+async def handle_usage():
+    """Handle /usage command - show session usage statistics."""
+    await ui.info("Session Usage Statistics")
+
+    # Show total tokens and cost
+    if session.total_tokens > 0:
+        await ui.bullet(f"Total tokens: {session.total_tokens:,}")
+        await ui.bullet(f"Total cost: ${session.total_cost:.5f}")
+
+    # Show last request details if available
+    if session.last_usage:
+        await ui.line()
+        await ui.info("Last request:")
+        await ui.bullet(f"Input tokens: {session.last_usage['input_tokens']:,}")
+        await ui.bullet(f"Cached tokens: {session.last_usage['cached_tokens']:,}")
+        await ui.bullet(f"Output tokens: {session.last_usage['output_tokens']:,}")
+        await ui.bullet(f"Request cost: ${session.last_usage['request_cost']:.5f}")
+
+    # Show tool usage breakdown
+    if session.tool_usage:
+        await ui.line()
+        await ui.info("Tools used this session:")
+        for tool_name, count in sorted(session.tool_usage.items()):
+            display_name = ui.format_tool_name(tool_name)
+            await ui.bullet(f"{display_name}: {count}x")
+
+    if not session.total_tokens and not session.tool_usage:
+        await ui.muted("No usage data yet in this session")
+
+
 async def handle_command(user_input: str) -> bool:
     """Handle slash commands. Returns True if command was handled."""
     if not user_input.startswith("/"):
@@ -64,6 +94,7 @@ async def handle_command(user_input: str) -> bool:
         "/dump": handle_dump,
         "/yolo": handle_yolo,
         "/model": lambda: handle_model(args),
+        "/usage": handle_usage,
     }
 
     handler = handlers.get(command)
