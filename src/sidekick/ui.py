@@ -9,7 +9,7 @@ from rich.table import Table
 
 from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.session import session
-from sidekick.tools import TOOL_DISPLAY_NAMES
+from sidekick.utils.display import format_tool_name
 
 console = Console()
 
@@ -163,14 +163,6 @@ def dump(data):
     pretty = Pretty(data, expand_all=True)
     panel = create_panel(pretty, "Message History", colors.muted)
     display_panel(panel)
-
-
-def format_tool_name(tool_name: str) -> str:
-    """Format tool name for display."""
-    if tool_name in TOOL_DISPLAY_NAMES:
-        return TOOL_DISPLAY_NAMES[tool_name]
-    else:
-        return f"MCP({tool_name})"
 
 
 async def confirm_tool_call(tool_name: str, args: dict) -> str:

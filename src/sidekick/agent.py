@@ -7,7 +7,8 @@ from sidekick import ui
 from sidekick.config import MODELS
 from sidekick.mcp import MCPAgent, load_mcp_servers
 from sidekick.session import session
-from sidekick.tools import TOOL_DISPLAY_NAMES, TOOLS
+from sidekick.tools import TOOLS
+from sidekick.utils.display import TOOL_DISPLAY_NAMES, format_tool_name
 
 
 def _get_prompt(name: str) -> str:
@@ -21,9 +22,9 @@ def _get_prompt(name: str) -> str:
 
 async def _format_tool_display(tool_name: str, args: dict):
     """Format and display tool call information."""
-    if tool_name in TOOL_DISPLAY_NAMES:
-        display_name = TOOL_DISPLAY_NAMES[tool_name]
+    display_name = format_tool_name(tool_name)
 
+    if tool_name in TOOL_DISPLAY_NAMES:
         primary_arg = None
         if tool_name in ["read_file", "write_file", "update_file"] and "filepath" in args:
             primary_arg = args["filepath"]
@@ -35,7 +36,7 @@ async def _format_tool_display(tool_name: str, args: dict):
         else:
             ui.info(f"{display_name}(...)")
     else:
-        ui.info(f"MCP({tool_name})")
+        ui.info(display_name)
         for key, value in args.items():
             if isinstance(value, str):
                 value = value.strip()

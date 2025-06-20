@@ -11,6 +11,7 @@ from pydantic_ai.mcp import MCPServerStdio
 from sidekick import ui
 from sidekick.config import (ConfigError, parse_mcp_servers, read_config_file,
                              validate_config_structure)
+from sidekick.utils.display import format_server_name
 
 logger = logging.getLogger(__name__)
 
@@ -46,17 +47,6 @@ class SilentMCPServerStdio(MCPServerStdio):
                 yield read_stream, write_stream
 
 
-def _format_display_name(key: str) -> str:
-    """Convert a server key to a display name.
-
-    Examples:
-        fetch -> Fetch
-        brave-search -> Brave Search
-        brave_search -> Brave Search
-    """
-    return key.replace("-", " ").replace("_", " ").title()
-
-
 def create_mcp_server(key: str, config: Dict[str, Any]) -> SilentMCPServerStdio:
     """Create a single MCP server instance.
 
@@ -68,7 +58,7 @@ def create_mcp_server(key: str, config: Dict[str, Any]) -> SilentMCPServerStdio:
         SilentMCPServerStdio: Configured server instance
     """
     # Use 'name' field if present, otherwise format the key
-    display_name = config.get("name", _format_display_name(key))
+    display_name = config.get("name", format_server_name(key))
 
     return SilentMCPServerStdio(
         command=config["command"],
@@ -110,7 +100,7 @@ def load_mcp_servers() -> List[SilentMCPServerStdio]:
             servers.append(server)
         except Exception as e:
             logger.warning(f"Failed to create server '{key}': {e}", exc_info=True)
-            display_name = server_config.get("name", _format_display_name(key))
+            display_name = server_config.get("name", format_server_name(key))
             failed_servers.append((display_name, str(e)))
 
     # Show errors for failed servers
