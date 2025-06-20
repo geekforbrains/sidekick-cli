@@ -2,6 +2,7 @@ import asyncio
 import json
 import signal
 import sys
+import traceback
 
 import typer
 from rich.console import Console
@@ -94,7 +95,8 @@ async def handle_user_request(user_input: str, mcp_agent):
         await ui.warning("Request interrupted")
     except Exception as e:
         ui.stop_spinner()
-        await ui.error(f"Error processing request: {e}")
+        tb = traceback.format_exc()
+        await ui.error(f"Error processing request: {e}", detail=tb)
     finally:
         ui.stop_spinner()
         session.current_task = None

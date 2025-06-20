@@ -1,5 +1,4 @@
 import asyncio
-import json
 
 from pydantic_ai import Agent
 
@@ -19,7 +18,7 @@ async def _render_tool_call(part):
     if session.spinner:
         session.spinner.stop()
 
-    args = json.loads(part.args)
+    args = part.args_as_dict()
 
     # Check if confirmations are enabled and if we should ask
     if session.confirmation_enabled and part.tool_name not in session.skip_confirmations:
