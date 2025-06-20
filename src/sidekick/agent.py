@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 
 from pydantic_ai import Agent
 
@@ -11,8 +12,11 @@ from sidekick.tools import TOOL_DISPLAY_NAMES, TOOLS
 
 def _get_prompt(name: str) -> str:
     """Return contents of .src/sidekick/prompts/system.txt."""
-    with open(f"./src/sidekick/prompts/{name}.txt", "r", encoding="utf-8") as file:
-        return file.read().strip()
+    try:
+        prompt_path = Path(__file__).parent / "prompts" / f"{name}.txt"
+        return prompt_path.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        return f"Error: Prompt file '{name}.txt' not found"
 
 
 async def _format_tool_display(tool_name: str, args: dict):
