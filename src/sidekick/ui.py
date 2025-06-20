@@ -173,12 +173,28 @@ async def confirm_tool_call(tool_name: str, args: dict) -> str:
                 value = value[:97] + "..."
         content_lines.append(f"• {key}: {value}")
 
+    # Determine the "always" option text based on tool type
+    if tool_name == "run_command" and "command" in args:
+        from sidekick.utils.command_parser import extract_commands
+
+        commands = extract_commands(args["command"])
+        if len(commands) > 1:
+            always_text = f"  a - Always allow: {', '.join(commands)}"
+        else:
+            always_text = (
+                f"  a - Always allow '{commands[0]}' commands"
+                if commands
+                else "  a - Always allow this command"
+            )
+    else:
+        always_text = "  a - Always allow this tool"
+
     content_lines.extend(
         [
             "",
             "Options:",
             "  y - Yes, execute this tool",
-            "  a - Always allow this tool",
+            always_text,
             "  n - No, cancel this execution",
         ]
     )

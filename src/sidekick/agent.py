@@ -36,6 +36,25 @@ async def _format_tool_display(tool_name: str, args: dict):
             await ui.info(f"  {key}: {value}")
 
 
+async def _handle_run_command_approval(command_string: str, args: dict) -> str:
+    """Handle approval for run_command tool specifically."""
+    from sidekick.utils.command_parser import extract_commands, is_command_allowed
+
+    # Check if the command is already allowed
+    if is_command_allowed(command_string, session.allowed_commands):
+        return "allowed"
+
+    # Ask for approval
+    response = await ui.confirm_tool_call("run_command", args)
+
+    if response == "always":
+        # Add individual commands to allowed list
+        commands = extract_commands(command_string)
+        session.allowed_commands.update(commands)
+
+    return response
+
+
 async def _render_tool_call(part):
     """Print the output of a tool call and get confirmation."""
     if session.spinner:
@@ -43,13 +62,20 @@ async def _render_tool_call(part):
 
     args = part.args_as_dict()
 
-    if session.confirmation_enabled and part.tool_name not in session.skip_confirmations:
-        response = await ui.confirm_tool_call(part.tool_name, args)
+    if session.confirmation_enabled:
+        response = None
+
+        # Special handling for run_command tool
+        if part.tool_name == "run_command" and "command" in args:
+            response = await _handle_run_command_approval(args["command"], args)
+        # Regular tool handling
+        elif part.tool_name not in session.skip_confirmations:
+            response = await ui.confirm_tool_call(part.tool_name, args)
+            if response == "always":
+                session.skip_confirmations.add(part.tool_name)
 
         if response == "no":
             raise asyncio.CancelledError("Tool execution cancelled by user")
-        elif response == "always":
-            session.skip_confirmations.add(part.tool_name)
 
     await _format_tool_display(part.tool_name, args)
 
