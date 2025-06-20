@@ -7,20 +7,14 @@ from sidekick.mcp.servers import validate_server_config
 
 def test_valid_config_passes():
     """Test that valid server config passes validation."""
-    config = {
-        "command": "uvx",
-        "args": ["mcp-server-fetch"]
-    }
+    config = {"command": "uvx", "args": ["mcp-server-fetch"]}
     # Should not raise
     validate_server_config("test-server", config)
 
 
 def test_valid_config_with_multiple_args():
     """Test valid config with multiple args."""
-    config = {
-        "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-brave-search"]
-    }
+    config = {"command": "npx", "args": ["-y", "@modelcontextprotocol/server-brave-search"]}
     # Should not raise
     validate_server_config("test-server", config)
 
@@ -64,7 +58,9 @@ def test_raises_for_empty_args():
     """Test ValueError when args is empty list."""
     with pytest.raises(ValueError) as exc_info:
         validate_server_config("test-server", {"command": "uvx", "args": []})
-    assert "Server 'test-server' field 'args' must contain at least one argument" in str(exc_info.value)
+    assert "Server 'test-server' field 'args' must contain at least one argument" in str(
+        exc_info.value
+    )
 
 
 def test_accepts_optional_fields():
@@ -73,7 +69,7 @@ def test_accepts_optional_fields():
         "command": "uvx",
         "args": ["mcp-server-fetch"],
         "env": {"API_KEY": "test"},
-        "name": "Custom Name"
+        "name": "Custom Name",
     }
     # Should not raise
     validate_server_config("test-server", config)

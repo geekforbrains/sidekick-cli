@@ -5,6 +5,77 @@ import os
 from pathlib import Path
 from typing import Any, Dict
 
+# Model definitions with pricing per 1M tokens
+MODELS = {
+    "anthropic:claude-3-7-sonnet-latest": {
+        "pricing": {
+            "input": 3.00,
+            "cached_input": 1.50,
+            "output": 15.00,
+        }
+    },
+    "google-gla:gemini-2.0-flash": {
+        "pricing": {
+            "input": 0.10,
+            "cached_input": 0.025,
+            "output": 0.40,
+        }
+    },
+    "google-gla:gemini-2.5-pro-preview-03-25": {
+        # Pricing per 1M tokens (API pricing, UI is free)
+        # Tier: <= 200K tokens. Input: $1.25, Output: $10.00
+        # Tier: > 200K tokens. Input: $2.50, Output: $15.00
+        # Current config uses lower tier pricing as structure doesn't support tiers.
+        "pricing": {
+            "input": 1.25,  # Using <=200k tier
+            "cached_input": 0.025,  # No price defined for cached input, using input price
+            "output": 10.00,  # Using <=200k tier
+        }
+    },
+    "openai:gpt-4.1": {
+        "pricing": {
+            "input": 2.00,
+            "cached_input": 0.50,
+            "output": 8.00,
+        }
+    },
+    "openai:gpt-4.1-mini": {
+        "pricing": {
+            "input": 0.40,
+            "cached_input": 0.10,
+            "output": 1.60,
+        }
+    },
+    "openai:gpt-4.1-nano": {
+        "pricing": {
+            "input": 0.10,
+            "cached_input": 0.025,
+            "output": 0.40,
+        }
+    },
+    "openai:gpt-4o": {
+        "pricing": {
+            "input": 2.50,
+            "cached_input": 1.25,
+            "output": 10.00,
+        }
+    },
+    "openai:o3": {
+        "pricing": {
+            "input": 10.00,
+            "cached_input": 2.50,
+            "output": 40.00,
+        }
+    },
+    "openai:o3-mini": {
+        "pricing": {
+            "input": 1.10,
+            "cached_input": 0.55,
+            "output": 4.40,
+        }
+    },
+}
+
 
 class ConfigError(Exception):
     """Base exception for configuration errors."""
@@ -135,3 +206,34 @@ def set_env_vars(env_dict: Dict[str, str]) -> None:
     for key, value in env_dict.items():
         if value and isinstance(value, str):
             os.environ[key] = value
+
+
+def update_config_file(updates: Dict[str, Any]) -> None:
+    """Update the config file with new values.
+
+    Args:
+        updates: Dictionary of updates to apply to the config
+
+    Raises:
+        ConfigError: If config file cannot be read or written
+    """
+    try:
+        config = read_config_file()
+    except FileNotFoundError:
+        raise ConfigError("Config file not found. Please run initial setup first.")
+
+    # Merge updates into existing config
+    for key, value in updates.items():
+        if isinstance(value, dict) and key in config and isinstance(config[key], dict):
+            # For nested dicts, merge instead of replace
+            config[key].update(value)
+        else:
+            config[key] = value
+
+    # Write updated config back to file
+    config_path = get_config_path()
+    try:
+        with open(config_path, "w") as f:
+            json.dump(config, f, indent=2)
+    except (PermissionError, IOError) as e:
+        raise ConfigError(f"Failed to write config file: {e}")

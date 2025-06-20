@@ -2,25 +2,19 @@
 
 import pytest
 
-from sidekick.config import validate_config_structure, ConfigValidationError
+from sidekick.config import ConfigValidationError, validate_config_structure
 
 
 def test_valid_config_passes():
     """Test that valid config passes validation."""
-    config = {
-        "default_model": "test-model",
-        "env": {"API_KEY": "test"}
-    }
+    config = {"default_model": "test-model", "env": {"API_KEY": "test"}}
     # Should not raise
     validate_config_structure(config)
 
 
 def test_valid_config_with_empty_env():
     """Test valid config with empty env dict."""
-    config = {
-        "default_model": "test-model",
-        "env": {}
-    }
+    config = {"default_model": "test-model", "env": {}}
     # Should not raise
     validate_config_structure(config)
 
@@ -56,8 +50,5 @@ def test_raises_for_missing_env():
 def test_raises_for_non_dict_env():
     """Test ConfigValidationError when env is not a dict."""
     with pytest.raises(ConfigValidationError) as exc_info:
-        validate_config_structure({
-            "default_model": "test",
-            "env": "not a dict"
-        })
+        validate_config_structure({"default_model": "test", "env": "not a dict"})
     assert "'env' field must be an object" in str(exc_info.value)

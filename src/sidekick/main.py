@@ -8,6 +8,7 @@ from rich.console import Console
 
 from sidekick import session, ui
 from sidekick.agent import get_or_create_agent, process_request
+from sidekick.commands import handle_command
 from sidekick.config import (ConfigValidationError, config_exists, read_config_file, set_env_vars,
                              validate_config_structure)
 from sidekick.constants import APP_NAME, APP_VERSION
@@ -35,22 +36,6 @@ def setup_signal_handler(loop):
 def restore_default_signal_handler():
     """Restore the default SIGINT handler."""
     signal.signal(signal.SIGINT, signal.default_int_handler)
-
-
-async def handle_command(user_input: str) -> bool:
-    """Handle slash commands. Returns True if command was handled."""
-    if not user_input.startswith("/"):
-        return False
-
-    if user_input == "/dump":
-        await ui.dump(session.messages)
-    elif user_input == "/yolo":
-        # Toggle confirmations on/off
-        session.confirmation_enabled = not session.confirmation_enabled
-        status = "disabled (YOLO mode)" if not session.confirmation_enabled else "enabled"
-        await ui.info(f"Tool confirmations {status}")
-
-    return True
 
 
 def should_exit(user_input: str) -> bool:
