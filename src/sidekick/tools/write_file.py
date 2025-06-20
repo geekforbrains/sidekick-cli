@@ -14,5 +14,5 @@ async def write_file(filepath: str, content: str) -> str:
         return f"Successfully wrote to {filepath}"
     except Exception as e:
         err_msg = f"Error writing file: {str(e)}"
-        await ui.error(err_msg)
+        ui.error(err_msg)
         return err_msg

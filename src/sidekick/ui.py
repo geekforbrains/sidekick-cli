@@ -66,7 +66,7 @@ class SpinnerStyle:
     ERROR = f"[{colors.error}]{{}}[/{colors.error}]"
 
 
-async def banner():
+def banner():
     """Display the application banner."""
     console.clear()
     banner_padding = Padding(BANNER, (1, 0, 0, 2))
@@ -75,12 +75,12 @@ async def banner():
     console.print(version_padding, style=colors.muted)
 
 
-async def info(message: str):
+def info(message: str):
     """Display an info message."""
     console.print(f"• {message}", style=colors.primary)
 
 
-async def error(message: str, detail: str = None):
+def error(message: str, detail: str = None):
     """Display an error message with optional detail.
 
     Args:
@@ -101,27 +101,27 @@ async def error(message: str, detail: str = None):
     console.print(Padding(panel, (1, 0, 1, 1)))
 
 
-async def warning(message: str):
+def warning(message: str):
     """Display a warning message."""
     console.print(f"• {message}", style=colors.warning)
 
 
-async def success(message: str):
+def success(message: str):
     """Display a success message."""
     console.print(f"• {message}", style=colors.success)
 
 
-async def bullet(message: str):
+def bullet(message: str):
     """Display a bulleted list item."""
     console.print(f"  • {message}", style=colors.muted)
 
 
-async def muted(message: str, spaces: int = 0):
+def muted(message: str, spaces: int = 0):
     """Display a muted message."""
     console.print(f"{' ' * spaces}• {message}", style=colors.muted)
 
 
-async def agent(content: str):
+def agent(content: str):
     """Display agent output with markdown formatting."""
     panel = Panel(
         Padding(Markdown(content), 1),
@@ -132,12 +132,12 @@ async def agent(content: str):
     console.print(Padding(panel, (1, 0, 0, 1)))
 
 
-async def line():
+def line():
     """Print a simple line separator."""
     console.print()
 
 
-async def dump(data):
+def dump(data):
     """Display data in a formatted panel."""
     pretty = Pretty(data, expand_all=True)
     panel = Panel(
@@ -238,7 +238,7 @@ def stop_spinner():
         session.spinner = None
 
 
-async def help():
+def help():
     """Display the available commands."""
     table = Table(show_header=False, box=None, padding=(0, 2, 0, 0))
     table.add_column("Command", style="white", justify="right")
@@ -267,18 +267,18 @@ async def help():
     console.print(Padding(panel, (1, 0, 1, 1)))
 
 
-async def version():
+def version():
     """Display version information."""
     console.print(f"• {APP_NAME} v{APP_VERSION}", style=colors.primary)
 
 
-async def update_available(latest_version: str):
+def update_available(latest_version: str):
     """Display update available message."""
-    await warning(f"Update available: v{latest_version}")
-    await muted("Exit, and run: [bold]pip install --upgrade sidekick-cli[/bold]", spaces=2)
+    warning(f"Update available: v{latest_version}")
+    muted("Exit, and run: [bold]pip install --upgrade sidekick-cli[/bold]", spaces=2)
 
 
-async def usage(usage_data: dict):
+def usage(usage_data: dict):
     """Display usage information in the compact format."""
     if not usage_data:
         return

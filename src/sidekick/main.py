@@ -48,12 +48,12 @@ def should_exit(user_input: str) -> bool:
 async def display_server_info():
     """Display information about configured MCP servers."""
     servers = get_configured_servers()
-    await ui.info("Starting MCP servers")
+    ui.info("Starting MCP servers")
     if servers:
         for server in servers:
-            await ui.bullet(server.display_name)
+            ui.bullet(server.display_name)
     else:
-        await ui.bullet("No servers configured")
+        ui.bullet("No servers configured")
 
 
 async def initialize_servers():
@@ -73,14 +73,14 @@ async def handle_user_request(user_input: str, mcp_agent):
         resp = await request_task
         ui.stop_spinner()
         if resp:
-            await ui.agent(resp)
+            ui.agent(resp)
             # Display usage information if available
             if session.last_usage:
-                await ui.usage(session.last_usage)
+                ui.usage(session.last_usage)
         # If resp is None, it means the tool was cancelled by user, which is already handled
     except asyncio.CancelledError:
         ui.stop_spinner()
-        await ui.warning("Request cancelled")
+        ui.warning("Request cancelled")
         # Recreate agent after cancellation
         if session.current_model in session.agents:
             if mcp_agent._mcp_entered:
@@ -96,11 +96,11 @@ async def handle_user_request(user_input: str, mcp_agent):
                 await request_task
             except asyncio.CancelledError:
                 pass
-        await ui.warning("Request interrupted")
+        ui.warning("Request interrupted")
     except Exception as e:
         ui.stop_spinner()
         tb = traceback.format_exc()
-        await ui.error(f"Error processing request: {e}", detail=tb)
+        ui.error(f"Error processing request: {e}", detail=tb)
     finally:
         ui.stop_spinner()
         session.current_task = None
@@ -109,7 +109,7 @@ async def handle_user_request(user_input: str, mcp_agent):
 
 
 async def repl():
-    await ui.info(f"Using model {session.current_model}")
+    ui.info(f"Using model {session.current_model}")
     mcp_agent = get_or_create_agent()
 
     await display_server_info()
@@ -122,7 +122,7 @@ async def repl():
     async with mcp_agent:
         await initialize_servers()
 
-        await ui.success("Go kick some ass!")
+        ui.success("Go kick some ass!")
         while True:
             try:
                 user_input = input("\n> ").strip()
@@ -155,7 +155,7 @@ async def repl():
             signal.signal(signal.SIGINT, signal_handler)
 
     restore_default_signal_handler()
-    await ui.info("Thanks for all the fish.")
+    ui.info("Thanks for all the fish.")
 
 
 def setup_and_run_event_loop(coro):
@@ -176,7 +176,7 @@ def main(version: bool = typer.Option(False, "--version", "-v", help="Show versi
         return
 
     # Run banner separately
-    asyncio.run(ui.banner())
+    ui.banner()
 
     # Check if config exists, run setup if needed
     if not config_exists():
@@ -191,16 +191,16 @@ def main(version: bool = typer.Option(False, "--version", "-v", help="Show versi
             validate_config_structure(config)
             set_env_vars(config.get("env", {}))
         except PermissionError as e:
-            asyncio.run(ui.error("Cannot access config file", str(e)))
+            ui.error("Cannot access config file", str(e))
             sys.exit(1)
         except json.JSONDecodeError as e:
-            asyncio.run(ui.error("Invalid JSON in config file", str(e)))
+            ui.error("Invalid JSON in config file", str(e))
             sys.exit(1)
         except ConfigValidationError as e:
-            asyncio.run(ui.error("Invalid configuration", str(e)))
+            ui.error("Invalid configuration", str(e))
             sys.exit(1)
         except Exception as e:
-            asyncio.run(ui.error("Failed to load configuration", str(e)))
+            ui.error("Failed to load configuration", str(e))
             sys.exit(1)
 
     session.init(config, config["default_model"])

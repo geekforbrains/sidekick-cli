@@ -9,7 +9,7 @@ async def update_file(filepath: str, old_content: str, new_content: str) -> str:
 
         if old_content not in content:
             err_msg = "Content to replace not found in file, re-read file and try again"
-            await ui.error(err_msg)
+            ui.error(err_msg)
             return err_msg
 
         updated_content = content.replace(old_content, new_content, 1)
@@ -20,9 +20,9 @@ async def update_file(filepath: str, old_content: str, new_content: str) -> str:
         return f"Successfully updated {filepath}"
     except FileNotFoundError:
         err_msg = f"File not found: {filepath}"
-        await ui.error(err_msg)
+        ui.error(err_msg)
         return err_msg
     except Exception as e:
         err_msg = f"Error updating file: {str(e)}"
-        await ui.error(err_msg)
+        ui.error(err_msg)
         return err_msg

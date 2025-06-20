@@ -31,15 +31,15 @@ async def _format_tool_display(tool_name: str, args: dict):
             primary_arg = args["command"]
 
         if primary_arg:
-            await ui.info(f"{display_name}({primary_arg})")
+            ui.info(f"{display_name}({primary_arg})")
         else:
-            await ui.info(f"{display_name}(...)")
+            ui.info(f"{display_name}(...)")
     else:
-        await ui.info(f"MCP({tool_name})")
+        ui.info(f"MCP({tool_name})")
         for key, value in args.items():
             if isinstance(value, str):
                 value = value.strip()
-            await ui.info(f"  {key}: {value}")
+            ui.info(f"  {key}: {value}")
 
 
 async def _handle_run_command_approval(command_string: str, args: dict) -> str:

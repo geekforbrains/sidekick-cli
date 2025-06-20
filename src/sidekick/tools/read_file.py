@@ -9,9 +9,9 @@ async def read_file(filepath: str) -> str:
             return content
     except FileNotFoundError:
         err_msg = f"File not found: {filepath}"
-        await ui.error(err_msg)
+        ui.error(err_msg)
         return err_msg
     except Exception as e:
         err_msg = f"Error reading file: {str(e)}"
-        await ui.error(err_msg)
+        ui.error(err_msg)
         return err_msg

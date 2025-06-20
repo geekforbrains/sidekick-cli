@@ -1,0 +1,168 @@
+env/bin/sidekick
+
+
+  ███████╗██╗██████╗ ███████╗██╗  ██╗██╗ ██████╗██╗  ██╗
+  ██╔════╝██║██╔══██╗██╔════╝██║ ██╔╝██║██╔════╝██║ ██╔╝
+  ███████╗██║██║  ██║█████╗  █████╔╝ ██║██║     █████╔╝
+  ╚════██║██║██║  ██║██╔══╝  ██╔═██╗ ██║██║     ██╔═██╗
+  ███████║██║██████╔╝███████╗██║  ██╗██║╚██████╗██║  ██╗
+  ╚══════╝╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝ ╚═════╝╚═╝  ╚═╝
+  v0.5.1
+
+• Using model gpt-4o
+• Starting MCP servers
+  • No servers configured
+• Go kick some ass!
+
+> hello?
+
+ ╭─ Sidekick ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                          │
+ │  Hello! How can I assist you today?                                                                                      │
+ │                                                                                                                          │
+ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  Reqs: 1, Tokens(In/Cache/Out): 561/0/10, Cost(Req/Total): $0.00183/$0.00183
+
+
+> list the current dir
+
+ ╭─ Confirm Action ─────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                          │
+ │  Tool: Run                                                                                                               │
+ │                                                                                                                          │
+ │  • command: ls -l                                                                                                        │
+ │                                                                                                                          │
+ │  Options:                                                                                                                │
+ │    y - Yes, execute this tool                                                                                            │
+ │    a - Always allow 'ls' commands                                                                                        │
+ │    n - No, cancel this execution                                                                                         │
+ │                                                                                                                          │
+ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+  Continue?  (default: y):
+• Run(ls -l)
+
+ ╭─ Sidekick ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                          │
+ │  Here is the list of files and directories in the current directory:                                                     │
+ │                                                                                                                          │
+ │   • env/                                                                                                                 │
+ │   • LICENSE                                                                                                              │
+ │   • Makefile                                                                                                             │
+ │   • pyproject.toml                                                                                                       │
+ │   • pytest.ini                                                                                                           │
+ │   • README.md                                                                                                            │
+ │   • screenshot.gif                                                                                                       │
+ │   • src/                                                                                                                 │
+ │   • TASKS.md                                                                                                             │
+ │   • tests/                                                                                                               │
+ │                                                                                                                          │
+ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  Reqs: 2, Tokens(In/Cache/Out): 1468/0/83, Cost(Req/Total): $0.00565/$0.00748
+
+
+> what can you tell me about this codebase?
+
+ ╭─ Confirm Action ─────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                          │
+ │  Tool: Read                                                                                                              │
+ │                                                                                                                          │
+ │  • filepath: README.md                                                                                                   │
+ │                                                                                                                          │
+ │  Options:                                                                                                                │
+ │    y - Yes, execute this tool                                                                                            │
+ │    a - Always allow this tool                                                                                            │
+ │    n - No, cancel this execution                                                                                         │
+ │                                                                                                                          │
+ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+  Continue?  (default: y): ^Cn
+• Tool execution cancelled
+
+> on second though, get geekforbrains.com and tell me about it
+
+ ╭─ Error ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                          │
+ │  Error processing request: status_code: 400, model_name: gpt-4o, body: {'message': "An assistant message with            │
+ │  'tool_calls' must be followed by tool messages responding to each 'tool_call_id'. The following tool_call_ids did not   │
+ │  have response messages: call_g3koz9HQR6MNTBp7yGzeTqo2", 'type': 'invalid_request_error', 'param':                       │
+ │  'messages.[10].role', 'code': None}                                                                                     │
+ │                                                                                                                          │
+ │  Traceback (most recent call last):                                                                                      │
+ │    File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/models/openai.py", line 298,    │
+ │  in _completions_create                                                                                                  │
+ │      return await self.client.chat.completions.create(                                                                   │
+ │             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                                                                   │
+ │      ...<23 lines>...                                                                                                    │
+ │      )                                                                                                                   │
+ │      ^                                                                                                                   │
+ │    File                                                                                                                  │
+ │  "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/openai/resources/chat/completions/completions.py"  │
+ │  , line 2028, in create                                                                                                  │
+ │      return await self._post(                                                                                            │
+ │             ^^^^^^^^^^^^^^^^^                                                                                            │
+ │      ...<45 lines>...                                                                                                    │
+ │      )                                                                                                                   │
+ │      ^                                                                                                                   │
+ │    File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/openai/_base_client.py", line 1784, in      │
+ │  post                                                                                                                    │
+ │      return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)                                      │
+ │             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                                      │
+ │    File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/openai/_base_client.py", line 1584, in      │
+ │  request                                                                                                                 │
+ │      raise self._make_status_error_from_response(err.response) from None                                                 │
+ │  openai.BadRequestError: Error code: 400 - {'error': {'message': "An assistant message with 'tool_calls' must be         │
+ │  followed by tool messages responding to each 'tool_call_id'. The following tool_call_ids did not have response          │
+ │  messages: call_g3koz9HQR6MNTBp7yGzeTqo2", 'type': 'invalid_request_error', 'param': 'messages.[10].role', 'code':       │
+ │  None}}                                                                                                                  │
+ │                                                                                                                          │
+ │  The above exception was the direct cause of the following exception:                                                    │
+ │                                                                                                                          │
+ │  Traceback (most recent call last):                                                                                      │
+ │    File "/Users/gavin/Projects/sidekick-cli/src/sidekick/main.py", line 73, in handle_user_request                       │
+ │      resp = await request_task                                                                                           │
+ │             ^^^^^^^^^^^^^^^^^^                                                                                           │
+ │    File "/Users/gavin/Projects/sidekick-cli/src/sidekick/agent.py", line 192, in process_request                         │
+ │      async for node in agent_run:                                                                                        │
+ │          await _process_node(node)                                                                                       │
+ │    File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/agent.py", line 1932, in        │
+ │  __anext__                                                                                                               │
+ │      next_node = await self._graph_run.__anext__()                                                                       │
+ │                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                                                                       │
+ │    File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_graph/graph.py", line 809, in      │
+ │  __anext__                                                                                                               │
+ │      return await self.next(self._next_node)                                                                             │
+ │             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                                                                             │
+ │    File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_graph/graph.py", line 782, in      │
+ │  next                                                                                                                    │
+ │      self._next_node = await node.run(ctx)                                                                               │
+ │                        ^^^^^^^^^^^^^^^^^^^                                                                               │
+ │    File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/_agent_graph.py", line 314, in  │
+ │  run                                                                                                                     │
+ │      return await self._make_request(ctx)                                                                                │
+ │             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                                                                                │
+ │    File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/_agent_graph.py", line 373, in  │
+ │  _make_request                                                                                                           │
+ │      model_response = await ctx.deps.model.request(message_history, model_settings, model_request_parameters)            │
+ │                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^            │
+ │    File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/models/openai.py", line 221,    │
+ │  in request                                                                                                              │
+ │      response = await self._completions_create(                                                                          │
+ │                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                                                                          │
+ │          messages, False, cast(OpenAIModelSettings, model_settings or {}), model_request_parameters                      │
+ │          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                      │
+ │      )                                                                                                                   │
+ │      ^                                                                                                                   │
+ │    File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/models/openai.py", line 325,    │
+ │  in _completions_create                                                                                                  │
+ │      raise ModelHTTPError(status_code=status_code, model_name=self.model_name, body=e.body) from e                       │
+ │  pydantic_ai.exceptions.ModelHTTPError: status_code: 400, model_name: gpt-4o, body: {'message': "An assistant message    │
+ │  with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'. The following tool_call_ids did  │
+ │  not have response messages: call_g3koz9HQR6MNTBp7yGzeTqo2", 'type': 'invalid_request_error', 'param':                   │
+ │  'messages.[10].role', 'code': None}                                                                                     │
+ │                                                                                                                          │
+ │                                                                                                                          │
+ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+>

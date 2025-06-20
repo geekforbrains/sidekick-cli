@@ -17,9 +17,9 @@ async def run_command(command: str) -> str:
         return output if output else "(no output)"
     except subprocess.TimeoutExpired:
         err_msg = "Command timed out after 30 seconds"
-        await ui.error(err_msg)
+        ui.error(err_msg)
         return err_msg
     except Exception as e:
         err_msg = f"Error running command: {str(e)}"
-        await ui.error(err_msg)
+        ui.error(err_msg)
         return err_msg
