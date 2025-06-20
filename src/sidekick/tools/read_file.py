@@ -1,17 +1,9 @@
-from sidekick import ui
+from sidekick.utils.errors import handle_tool_errors
 
 
+@handle_tool_errors
 async def read_file(filepath: str) -> str:
     """Read the contents of a file."""
-    try:
-        with open(filepath, "r", encoding="utf-8") as file:
-            content = file.read()
-            return content
-    except FileNotFoundError:
-        err_msg = f"File not found: {filepath}"
-        ui.error(err_msg)
-        return err_msg
-    except Exception as e:
-        err_msg = f"Error reading file: {str(e)}"
-        ui.error(err_msg)
-        return err_msg
+    with open(filepath, "r", encoding="utf-8") as file:
+        content = file.read()
+        return content
