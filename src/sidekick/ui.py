@@ -48,7 +48,7 @@ THINKING_MESSAGES = [
     "Putting on thinking mask...",
     "Running diagnostics...",
     "Preparing witty comeback...",
-    "Calculating trajenctories...",
+    "Calculating trajectories...",
     "Donning thinking cape...",
 ]
 
