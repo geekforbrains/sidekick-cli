@@ -1,4 +1,4 @@
-from src.sidekick.session import Session
+from sidekick.session import Session
 
 
 def test_supports_allowed_tools():

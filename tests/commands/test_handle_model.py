@@ -8,16 +8,14 @@ from sidekick.commands import handle_model
 
 
 @pytest.mark.asyncio
-async def test_handle_model_list():
+async def test_handle_model_list(mock_ui, mock_session, mock_models):
     """Test /model with no args lists available models."""
-    mock_ui = MagicMock()
-    mock_session = MagicMock()
     mock_session.current_model = "model2"
 
     with (
         patch("sidekick.commands.ui", mock_ui),
         patch("sidekick.commands.session", mock_session),
-        patch("sidekick.commands.MODELS", {"model1": {}, "model2": {}, "model3": {}}),
+        patch("sidekick.commands.MODELS", mock_models),
     ):
         await handle_model([])
 
@@ -28,17 +26,15 @@ async def test_handle_model_list():
 
 
 @pytest.mark.asyncio
-async def test_handle_model_switch():
+async def test_handle_model_switch(mock_ui, mock_session, mock_models):
     """Test /model <num> switches to selected model."""
-    mock_ui = MagicMock()
-    mock_session = MagicMock()
     mock_session.agents = MagicMock()
     mock_session.model_switched = False
 
     with (
         patch("sidekick.commands.ui", mock_ui),
         patch("sidekick.commands.session", mock_session),
-        patch("sidekick.commands.MODELS", {"model1": {}, "model2": {}, "model3": {}}),
+        patch("sidekick.commands.MODELS", mock_models),
     ):
         await handle_model(["2"])
 
@@ -49,10 +45,8 @@ async def test_handle_model_switch():
 
 
 @pytest.mark.asyncio
-async def test_handle_model_invalid_number():
+async def test_handle_model_invalid_number(mock_ui):
     """Test /model with invalid number shows error."""
-    mock_ui = MagicMock()
-
     with (
         patch("sidekick.commands.ui", mock_ui),
         patch("sidekick.commands.MODELS", {"model1": {}, "model2": {}}),
@@ -62,9 +56,8 @@ async def test_handle_model_invalid_number():
 
 
 @pytest.mark.asyncio
-async def test_handle_model_set_default():
+async def test_handle_model_set_default(mock_ui):
     """Test /model <num> default sets default model in config."""
-    mock_ui = MagicMock()
     mock_update = MagicMock()
 
     with (

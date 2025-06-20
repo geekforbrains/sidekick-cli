@@ -1,4 +1,4 @@
-from src.sidekick.config import deep_merge_dicts
+from sidekick.config import deep_merge_dicts
 
 
 def test_simple_merge():

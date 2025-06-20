@@ -1,6 +1,6 @@
 """Test /yolo command handler."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -8,10 +8,8 @@ from sidekick.commands import handle_yolo
 
 
 @pytest.mark.asyncio
-async def test_handle_yolo_disables_confirmation():
+async def test_handle_yolo_disables_confirmation(mock_ui, mock_session):
     """Test /yolo toggles confirmation from enabled to disabled."""
-    mock_ui = MagicMock()
-    mock_session = MagicMock()
     mock_session.confirmation_enabled = True
 
     with patch("sidekick.commands.ui", mock_ui), patch("sidekick.commands.session", mock_session):
@@ -21,10 +19,8 @@ async def test_handle_yolo_disables_confirmation():
 
 
 @pytest.mark.asyncio
-async def test_handle_yolo_enables_confirmation():
+async def test_handle_yolo_enables_confirmation(mock_ui, mock_session):
     """Test /yolo toggles confirmation from disabled to enabled."""
-    mock_ui = MagicMock()
-    mock_session = MagicMock()
     mock_session.confirmation_enabled = False
 
     with patch("sidekick.commands.ui", mock_ui), patch("sidekick.commands.session", mock_session):

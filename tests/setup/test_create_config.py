@@ -3,15 +3,15 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from src.sidekick.constants import DEFAULT_USER_CONFIG
-from src.sidekick.setup import create_config
+from sidekick.constants import DEFAULT_USER_CONFIG
+from sidekick.setup import create_config
 
 
 def test_create_config_includes_all_defaults():
     """Test that create_config includes all default fields."""
     # Mock user inputs
-    with patch("src.sidekick.setup.collect_api_keys") as mock_collect:
-        with patch("src.sidekick.setup.select_default_model") as mock_select:
+    with patch("sidekick.setup.collect_api_keys") as mock_collect:
+        with patch("sidekick.setup.select_default_model") as mock_select:
             mock_collect.return_value = {"OPENAI_API_KEY": "sk-test123"}
             mock_select.return_value = "gpt-4o"
 
@@ -20,7 +20,7 @@ def test_create_config_includes_all_defaults():
                 config_path = Path(temp_dir) / ".config" / "sidekick.json"
 
                 # Mock console to suppress output
-                with patch("src.sidekick.setup.console"):
+                with patch("sidekick.setup.console"):
                     result = create_config(config_path)
 
                 # Verify the returned config has all fields
@@ -51,9 +51,9 @@ def test_create_config_includes_all_defaults():
 
 def test_create_config_with_no_api_keys():
     """Test create_config when user provides no API keys but continues anyway."""
-    with patch("src.sidekick.setup.collect_api_keys") as mock_collect:
-        with patch("src.sidekick.setup.select_default_model") as mock_select:
-            with patch("src.sidekick.setup.Confirm.ask") as mock_confirm:
+    with patch("sidekick.setup.collect_api_keys") as mock_collect:
+        with patch("sidekick.setup.select_default_model") as mock_select:
+            with patch("sidekick.setup.Confirm.ask") as mock_confirm:
                 mock_collect.return_value = {}
                 mock_select.return_value = DEFAULT_USER_CONFIG["default_model"]
                 mock_confirm.return_value = True  # Continue anyway
@@ -61,7 +61,7 @@ def test_create_config_with_no_api_keys():
                 with tempfile.TemporaryDirectory() as temp_dir:
                     config_path = Path(temp_dir) / ".config" / "sidekick.json"
 
-                    with patch("src.sidekick.setup.console"):
+                    with patch("sidekick.setup.console"):
                         result = create_config(config_path)
 
                     # Should have empty env dict, not the placeholder values
@@ -75,8 +75,8 @@ def test_create_config_with_no_api_keys():
 def test_create_config_filters_empty_api_keys():
     """Test that empty string API keys are not included in the config."""
     # Mock user inputs - simulate user pressing enter without entering values
-    with patch("src.sidekick.setup.Prompt.ask") as mock_prompt:
-        with patch("src.sidekick.setup.select_default_model") as mock_select:
+    with patch("sidekick.setup.Prompt.ask") as mock_prompt:
+        with patch("sidekick.setup.select_default_model") as mock_select:
             # Simulate user pressing enter (empty string) for all API keys
             mock_prompt.side_effect = ["", "", ""]  # Empty strings for all 3 API keys
             mock_select.return_value = DEFAULT_USER_CONFIG["default_model"]
@@ -84,8 +84,8 @@ def test_create_config_filters_empty_api_keys():
             with tempfile.TemporaryDirectory() as temp_dir:
                 config_path = Path(temp_dir) / ".config" / "sidekick.json"
 
-                with patch("src.sidekick.setup.console"):
-                    with patch("src.sidekick.setup.Confirm.ask", return_value=True):
+                with patch("sidekick.setup.console"):
+                    with patch("sidekick.setup.Confirm.ask", return_value=True):
                         result = create_config(config_path)
 
                 # Should have empty env dict when all API keys are empty strings

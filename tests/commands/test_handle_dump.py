@@ -1,6 +1,6 @@
 """Test /dump command handler."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -8,10 +8,8 @@ from sidekick.commands import handle_dump
 
 
 @pytest.mark.asyncio
-async def test_handle_dump():
+async def test_handle_dump(mock_ui, mock_session):
     """Test /dump command shows message history."""
-    mock_ui = MagicMock()
-    mock_session = MagicMock()
     mock_session.messages = ["msg1", "msg2"]
 
     with patch("sidekick.commands.ui", mock_ui), patch("sidekick.commands.session", mock_session):
