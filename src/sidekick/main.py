@@ -110,8 +110,54 @@ async def handle_user_request(user_input: str, mcp_agent):
         ui.error(f"{e.model_name}: {error_msg}")
     except Exception as e:
         ui.stop_spinner()
-        tb = traceback.format_exc()
-        ui.error(f"Error processing request: {e}", detail=tb)
+        # Check if this is a provider-specific API error that escaped pydantic_ai's wrapping
+        error_msg = None
+
+        # Extract error message from common provider error patterns
+        exception_name = type(e).__name__
+        module_name = type(e).__module__ if hasattr(type(e), "__module__") else ""
+
+        # Check for provider-specific client errors
+        if exception_name in [
+            "ClientError",
+            "APIStatusError",
+            "BadRequestError",
+            "AuthenticationError",
+        ]:
+            # Try to extract a clean error message
+            if hasattr(e, "message"):
+                error_msg = e.message
+            elif hasattr(e, "body") and isinstance(e.body, dict):
+                # OpenAI/Anthropic pattern
+                if "error" in e.body and isinstance(e.body["error"], dict):
+                    error_msg = e.body["error"].get("message", str(e))
+                elif "message" in e.body:
+                    error_msg = e.body["message"]
+            elif hasattr(e, "details") and isinstance(e.details, dict):
+                # Google pattern
+                if "error" in e.details and isinstance(e.details["error"], dict):
+                    error_msg = e.details["error"].get("message", str(e))
+                elif "message" in e.details:
+                    error_msg = e.details["message"]
+
+            # Show clean error message for known provider errors
+            if error_msg:
+                provider = "Provider"
+                if "openai" in module_name:
+                    provider = "OpenAI"
+                elif "anthropic" in module_name:
+                    provider = "Anthropic"
+                elif "google" in module_name or "genai" in module_name:
+                    provider = "Google"
+                ui.error(f"{provider}: {error_msg}")
+            else:
+                # Fallback to showing the full error
+                tb = traceback.format_exc()
+                ui.error(f"Error processing request: {e}", detail=tb)
+        else:
+            # For truly unexpected errors, show full traceback
+            tb = traceback.format_exc()
+            ui.error(f"Error processing request: {e}", detail=tb)
     finally:
         ui.stop_spinner()
         session.current_task = None

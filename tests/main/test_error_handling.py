@@ -136,3 +136,113 @@ async def test_successful_request_no_error():
                 # Should display agent response
                 mock_ui.agent.assert_called_once_with("Success response")
                 mock_ui.stop_spinner.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_handle_google_client_error():
+    """Test handling Google ClientError that escapes pydantic_ai wrapping."""
+    with patch("sidekick.main.ui") as mock_ui:
+        with patch("sidekick.main.process_request") as mock_process:
+            # Create a mock Google ClientError
+            class MockGoogleClientError(Exception):
+                def __init__(self):
+                    self.details = {
+                        "error": {
+                            "code": 400,
+                            "message": "API key not valid. Please pass a valid API key.",
+                            "status": "INVALID_ARGUMENT",
+                        }
+                    }
+                    super().__init__("400 INVALID_ARGUMENT. " + str(self.details))
+
+            mock_error = MockGoogleClientError()
+            mock_error.__class__.__module__ = "google.genai.errors"
+            mock_error.__class__.__name__ = "ClientError"
+
+            mock_process.side_effect = mock_error
+
+            mock_session = MagicMock()
+            mock_session.sigint_received = False
+            mock_session.current_task = None
+
+            with patch("sidekick.main.session", mock_session):
+                mcp_agent = MagicMock()
+                await handle_user_request("test input", mcp_agent)
+
+                # Should extract and display clean error message
+                mock_ui.error.assert_called_once_with(
+                    "Google: API key not valid. Please pass a valid API key."
+                )
+                mock_ui.stop_spinner.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_handle_openai_api_status_error():
+    """Test handling OpenAI APIStatusError that escapes pydantic_ai wrapping."""
+    with patch("sidekick.main.ui") as mock_ui:
+        with patch("sidekick.main.process_request") as mock_process:
+            # Create a mock OpenAI APIStatusError
+            class MockOpenAIAPIStatusError(Exception):
+                def __init__(self):
+                    self.body = {
+                        "error": {
+                            "message": (
+                                "You exceeded your current quota, "
+                                "please check your plan and billing details."
+                            ),
+                            "type": "insufficient_quota",
+                            "code": "insufficient_quota",
+                        }
+                    }
+                    super().__init__("OpenAI API error")
+
+            mock_error = MockOpenAIAPIStatusError()
+            mock_error.__class__.__module__ = "openai"
+            mock_error.__class__.__name__ = "APIStatusError"
+
+            mock_process.side_effect = mock_error
+
+            mock_session = MagicMock()
+            mock_session.sigint_received = False
+            mock_session.current_task = None
+
+            with patch("sidekick.main.session", mock_session):
+                mcp_agent = MagicMock()
+                await handle_user_request("test input", mcp_agent)
+
+                # Should extract and display clean error message
+                mock_ui.error.assert_called_once_with(
+                    "OpenAI: You exceeded your current quota, "
+                    "please check your plan and billing details."
+                )
+                mock_ui.stop_spinner.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_handle_anthropic_authentication_error():
+    """Test handling Anthropic AuthenticationError that escapes pydantic_ai wrapping."""
+    with patch("sidekick.main.ui") as mock_ui:
+        with patch("sidekick.main.process_request") as mock_process:
+            # Create a mock Anthropic AuthenticationError
+            class MockAnthropicAuthError(Exception):
+                def __init__(self):
+                    self.message = "Invalid API key provided"
+                    super().__init__(self.message)
+
+            mock_error = MockAnthropicAuthError()
+            mock_error.__class__.__module__ = "anthropic"
+            mock_error.__class__.__name__ = "AuthenticationError"
+
+            mock_process.side_effect = mock_error
+
+            mock_session = MagicMock()
+            mock_session.sigint_received = False
+            mock_session.current_task = None
+
+            with patch("sidekick.main.session", mock_session):
+                mcp_agent = MagicMock()
+                await handle_user_request("test input", mcp_agent)
+
+                # Should extract and display clean error message
+                mock_ui.error.assert_called_once_with("Anthropic: Invalid API key provided")
+                mock_ui.stop_spinner.assert_called()
