@@ -206,6 +206,6 @@ async def process_request(message: str):
     except asyncio.CancelledError as e:
         # Check if this was a user-initiated tool cancellation
         if str(e) == "Tool execution cancelled by user":
-            await ui.warning("Tool execution cancelled")
+            ui.warning("Tool execution cancelled")
             return None
         raise
