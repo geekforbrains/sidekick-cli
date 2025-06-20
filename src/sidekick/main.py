@@ -7,13 +7,14 @@ import traceback
 import typer
 from rich.console import Console
 
-from sidekick import session, ui
+from sidekick import ui
 from sidekick.agent import get_or_create_agent, process_request
 from sidekick.commands import handle_command
 from sidekick.config import (ConfigValidationError, config_exists, read_config_file, set_env_vars,
                              validate_config_structure)
 from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.mcp import get_configured_servers
+from sidekick.session import session
 from sidekick.setup import run_setup
 
 app = typer.Typer(help=f"{APP_NAME} - Your agentic CLI developer")

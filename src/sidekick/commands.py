@@ -1,7 +1,8 @@
 """Command handlers for Sidekick CLI slash commands."""
 
-from sidekick import session, ui
+from sidekick import ui
 from sidekick.config import MODELS, update_config_file
+from sidekick.session import session
 
 
 async def handle_dump():

@@ -2,9 +2,10 @@ import asyncio
 
 from pydantic_ai import Agent
 
-from sidekick import session, ui
+from sidekick import ui
 from sidekick.config import MODELS
 from sidekick.mcp import MCPAgent, get_configured_servers
+from sidekick.session import session
 from sidekick.tools import TOOL_DISPLAY_NAMES, TOOLS
 
 

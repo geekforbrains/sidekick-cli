@@ -7,8 +7,8 @@ from rich.panel import Panel
 from rich.pretty import Pretty
 from rich.table import Table
 
-from sidekick import session
 from sidekick.constants import APP_NAME, APP_VERSION
+from sidekick.session import session
 from sidekick.tools import TOOL_DISPLAY_NAMES
 
 console = Console()

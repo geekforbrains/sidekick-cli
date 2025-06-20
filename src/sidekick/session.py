@@ -1,33 +1,37 @@
 import asyncio
+from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Set
 
-current_model: Optional[str] = None
-agents: Dict = {}
-messages: list = []
-spinner: Any = None
-current_task: Optional[asyncio.Task] = None
-sigint_received: bool = False
-skip_confirmations: Set[str] = set()  # Tools that user selected "always" for
-allowed_commands: Set[str] = set()  # Individual commands that are pre-approved for run_command
-confirmation_enabled: bool = True  # Global flag to enable/disable confirmations
-model_switched: bool = False  # Flag to indicate model was switched and agent needs recreation
 
-# Usage tracking
-tool_usage: Dict[str, int] = {}  # Track count of each tool used
-last_usage: Optional[Dict[str, Any]] = None  # Last agent run usage data
-total_tokens: int = 0  # Total tokens used in session
-total_cost: float = 0.0  # Total estimated cost in session
+@dataclass
+class Session:
+    current_model: Optional[str] = None
+    agents: Dict = field(default_factory=dict)
+    messages: list = field(default_factory=list)
+    spinner: Any = None
+    current_task: Optional[asyncio.Task] = None
+    sigint_received: bool = False
+    skip_confirmations: Set[str] = field(default_factory=set)
+    allowed_commands: Set[str] = field(default_factory=set)
+    confirmation_enabled: bool = True
+    model_switched: bool = False
+
+    # Usage tracking
+    tool_usage: Dict[str, int] = field(default_factory=dict)
+    last_usage: Optional[Dict[str, Any]] = None
+    total_tokens: int = 0
+    total_cost: float = 0.0
+
+    def init(self, config: Dict[str, Any], model: str):
+        """Initialize the session state."""
+        self.current_model = model
+
+        if "settings" in config and "tool_ignore" in config["settings"]:
+            self.skip_confirmations.update(config["settings"]["tool_ignore"])
+
+        if "settings" in config and "allowed_commands" in config["settings"]:
+            self.allowed_commands.update(config["settings"]["allowed_commands"])
 
 
-def init(config: Dict[str, Any], model: str):
-    """Initialize the session state."""
-    global current_model
-    current_model = model
-
-    # Load default allowed tools from config
-    if "settings" in config and "tool_ignore" in config["settings"]:
-        skip_confirmations.update(config["settings"]["tool_ignore"])
-
-    # Load allowed commands from config
-    if "settings" in config and "allowed_commands" in config["settings"]:
-        allowed_commands.update(config["settings"]["allowed_commands"])
+# Create global session instance
+session = Session()
