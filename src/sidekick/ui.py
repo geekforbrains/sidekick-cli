@@ -13,6 +13,11 @@ from sidekick.tools import TOOL_DISPLAY_NAMES
 
 console = Console()
 
+# Padding constants for consistent spacing
+PANEL_CONTENT_PADDING = 1
+PANEL_WRAPPER_PADDING = (1, 0, 1, 1)
+PANEL_WRAPPER_PADDING_NO_BOTTOM = (1, 0, 0, 1)
+
 
 # Color scheme from main branch
 class Colors:
@@ -58,6 +63,36 @@ def get_thinking_message() -> str:
     return random.choice(THINKING_MESSAGES)
 
 
+def create_panel(content, title: str, border_style: str):
+    """Create a panel with consistent padding and alignment.
+
+    Args:
+        content: The content to display in the panel
+        title: Panel title
+        border_style: Border color style
+
+    Returns:
+        Panel object with consistent configuration
+    """
+    return Panel(
+        Padding(content, PANEL_CONTENT_PADDING),
+        title=title,
+        title_align="left",
+        border_style=border_style,
+    )
+
+
+def display_panel(panel, bottom_padding: bool = True):
+    """Display a panel with consistent wrapper padding.
+
+    Args:
+        panel: The panel to display
+        bottom_padding: Whether to include bottom padding (default: True)
+    """
+    padding = PANEL_WRAPPER_PADDING if bottom_padding else PANEL_WRAPPER_PADDING_NO_BOTTOM
+    console.print(Padding(panel, padding))
+
+
 # Style definitions
 class SpinnerStyle:
     DEFAULT = f"[bold {colors.primary}]{{}}[/bold {colors.primary}]"
@@ -87,18 +122,9 @@ def error(message: str, detail: str = None):
         message: The main error message
         detail: Optional detailed error information
     """
-    if detail:
-        panel = Panel(
-            Padding(f"{message}\n\n{detail}", 1),
-            title="Error",
-            title_align="left",
-            border_style=colors.error,
-        )
-    else:
-        panel = Panel(
-            Padding(message, 1), title="Error", title_align="left", border_style=colors.error
-        )
-    console.print(Padding(panel, (1, 0, 1, 1)))
+    content = f"{message}\n\n{detail}" if detail else message
+    panel = create_panel(content, "Error", colors.error)
+    display_panel(panel)
 
 
 def warning(message: str):
@@ -123,13 +149,8 @@ def muted(message: str, spaces: int = 0):
 
 def agent(content: str):
     """Display agent output with markdown formatting."""
-    panel = Panel(
-        Padding(Markdown(content), 1),
-        title="Sidekick",
-        title_align="left",
-        border_style=colors.primary,
-    )
-    console.print(Padding(panel, (1, 0, 0, 1)))
+    panel = create_panel(Markdown(content), "Sidekick", colors.primary)
+    display_panel(panel, bottom_padding=False)
 
 
 def line():
@@ -140,10 +161,8 @@ def line():
 def dump(data):
     """Display data in a formatted panel."""
     pretty = Pretty(data, expand_all=True)
-    panel = Panel(
-        Padding(pretty, 1), title="Message History", title_align="left", border_style=colors.muted
-    )
-    console.print(Padding(panel, (1, 0, 1, 1)))
+    panel = create_panel(pretty, "Message History", colors.muted)
+    display_panel(panel)
 
 
 def format_tool_name(tool_name: str) -> str:
@@ -200,10 +219,8 @@ async def confirm_tool_call(tool_name: str, args: dict) -> str:
     )
 
     content = "\n".join(content_lines)
-    panel = Panel(
-        Padding(content, 1), title="Confirm Action", title_align="left", border_style=colors.warning
-    )
-    console.print(Padding(panel, (1, 0, 1, 1)))
+    panel = create_panel(content, "Confirm Action", colors.warning)
+    display_panel(panel)
 
     while True:
         choice = (
@@ -261,10 +278,8 @@ def help():
     for cmd, desc in commands:
         table.add_row(cmd, desc)
 
-    panel = Panel(
-        Padding(table, 1), title="Available Commands", title_align="left", border_style=colors.muted
-    )
-    console.print(Padding(panel, (1, 0, 1, 1)))
+    panel = create_panel(table, "Available Commands", colors.muted)
+    display_panel(panel)
 
 
 def version():
