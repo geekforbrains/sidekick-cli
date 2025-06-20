@@ -9,3 +9,10 @@ TOOLS = [
     update_file,
     run_command,
 ]
+
+TOOL_DISPLAY_NAMES = {
+    "read_file": "Read",
+    "write_file": "Write",
+    "update_file": "Update",
+    "run_command": "Run",
+}

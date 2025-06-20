@@ -4,13 +4,36 @@ from pydantic_ai import Agent
 
 from sidekick import session, ui
 from sidekick.mcp import MCPAgent, get_configured_servers
-from sidekick.tools import TOOLS
+from sidekick.tools import TOOL_DISPLAY_NAMES, TOOLS
 
 
 def _get_prompt(name: str) -> str:
     """Return contents of .src/sidekick/prompts/system.txt."""
     with open(f"./src/sidekick/prompts/{name}.txt", "r", encoding="utf-8") as file:
         return file.read().strip()
+
+
+async def _format_tool_display(tool_name: str, args: dict):
+    """Format and display tool call information."""
+    if tool_name in TOOL_DISPLAY_NAMES:
+        display_name = TOOL_DISPLAY_NAMES[tool_name]
+
+        primary_arg = None
+        if tool_name in ["read_file", "write_file", "update_file"] and "filepath" in args:
+            primary_arg = args["filepath"]
+        elif tool_name == "run_command" and "command" in args:
+            primary_arg = args["command"]
+
+        if primary_arg:
+            await ui.info(f"{display_name}({primary_arg})")
+        else:
+            await ui.info(f"{display_name}(...)")
+    else:
+        await ui.info(f"MCP({tool_name})")
+        for key, value in args.items():
+            if isinstance(value, str):
+                value = value.strip()
+            await ui.info(f"  {key}: {value}")
 
 
 async def _render_tool_call(part):
@@ -20,24 +43,15 @@ async def _render_tool_call(part):
 
     args = part.args_as_dict()
 
-    # Check if confirmations are enabled and if we should ask
     if session.confirmation_enabled and part.tool_name not in session.skip_confirmations:
-        # Get user confirmation
         response = await ui.confirm_tool_call(part.tool_name, args)
 
         if response == "no":
-            # User cancelled - raise exception to stop execution
             raise asyncio.CancelledError("Tool execution cancelled by user")
         elif response == "always":
-            # Add to skip list for future calls
             session.skip_confirmations.add(part.tool_name)
-    else:
-        # Just display the tool info without confirmation
-        await ui.info(f"Tool({part.tool_name})")
-        for key, value in args.items():
-            if isinstance(value, str):
-                value = value.strip()
-            await ui.info(f"- {key}: {value}")
+
+    await _format_tool_display(part.tool_name, args)
 
     if session.spinner:
         session.spinner.start()

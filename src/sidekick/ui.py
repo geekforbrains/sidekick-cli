@@ -9,6 +9,7 @@ from rich.table import Table
 
 from sidekick import session
 from sidekick.constants import APP_NAME, APP_VERSION
+from sidekick.tools import TOOL_DISPLAY_NAMES
 
 console = Console()
 
@@ -145,6 +146,14 @@ async def dump(data):
     console.print(Padding(panel, (1, 0, 1, 1)))
 
 
+def format_tool_name(tool_name: str) -> str:
+    """Format tool name for display."""
+    if tool_name in TOOL_DISPLAY_NAMES:
+        return TOOL_DISPLAY_NAMES[tool_name]
+    else:
+        return f"MCP({tool_name})"
+
+
 async def confirm_tool_call(tool_name: str, args: dict) -> str:
     """
     Prompt user for confirmation before executing a tool.
@@ -154,10 +163,9 @@ async def confirm_tool_call(tool_name: str, args: dict) -> str:
         'always' - Execute this tool and don't ask again for this tool type
         'no' - Cancel this tool execution
     """
-    # Build content for the panel
-    content_lines = [f"Tool: [bold]{tool_name}[/bold]", ""]
+    formatted_name = format_tool_name(tool_name)
+    content_lines = [f"Tool: [bold]{formatted_name}[/bold]", ""]
 
-    # Display arguments
     for key, value in args.items():
         if isinstance(value, str):
             value = value.strip()
