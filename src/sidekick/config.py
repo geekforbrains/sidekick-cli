@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 from typing import Any, Dict
 
+from .constants import DEFAULT_USER_CONFIG
+
 # Model definitions with pricing per 1M tokens
 MODELS = {
     "anthropic:claude-3-7-sonnet-latest": {
@@ -240,3 +242,56 @@ def update_config_file(updates: Dict[str, Any]) -> None:
             json.dump(config, f, indent=2)
     except (PermissionError, IOError) as e:
         raise ConfigError(f"Failed to write config file: {e}")
+
+
+def deep_merge_dicts(base: Dict[str, Any], update: Dict[str, Any]) -> Dict[str, Any]:
+    """Deep merge two dictionaries, preserving existing values in update.
+
+    Args:
+        base: Base dictionary with default values
+        update: Dictionary with user values to preserve
+
+    Returns:
+        Merged dictionary with all keys from base and values from update where they exist
+    """
+    result = base.copy()
+
+    for key, value in update.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = deep_merge_dicts(result[key], value)
+        else:
+            result[key] = value
+
+    return result
+
+
+def ensure_config_structure() -> Dict[str, Any]:
+    """Ensure the config file has all expected keys with defaults for missing ones.
+
+    This function reads the existing config, merges it with the default structure,
+    and writes back the updated config if any keys were missing.
+
+    Returns:
+        The updated configuration dictionary
+
+    Raises:
+        ConfigError: If config file cannot be read or written
+    """
+    try:
+        config = read_config_file()
+    except ConfigError:
+        raise
+
+    original_config = json.dumps(config, sort_keys=True)
+    merged_config = deep_merge_dicts(DEFAULT_USER_CONFIG, config)
+    updated_config = json.dumps(merged_config, sort_keys=True)
+
+    if original_config != updated_config:
+        try:
+            config_path = get_config_path()
+            with open(config_path, "w") as f:
+                json.dump(merged_config, f, indent=2)
+        except (PermissionError, IOError) as e:
+            raise ConfigError(f"Failed to update config file with missing keys: {e}")
+
+    return merged_config

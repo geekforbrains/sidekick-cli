@@ -26,11 +26,17 @@ class Session:
         """Initialize the session state."""
         self.current_model = model
 
-        if "settings" in config and "tool_ignore" in config["settings"]:
-            self.skip_confirmations.update(config["settings"]["tool_ignore"])
+        if "settings" in config:
+            # Support new allowed_tools field
+            if "allowed_tools" in config["settings"]:
+                self.skip_confirmations.update(config["settings"]["allowed_tools"])
 
-        if "settings" in config and "allowed_commands" in config["settings"]:
-            self.allowed_commands.update(config["settings"]["allowed_commands"])
+            # Backward compatibility with tool_ignore
+            if "tool_ignore" in config["settings"]:
+                self.skip_confirmations.update(config["settings"]["tool_ignore"])
+
+            if "allowed_commands" in config["settings"]:
+                self.allowed_commands.update(config["settings"]["allowed_commands"])
 
 
 # Create global session instance
