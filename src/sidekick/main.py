@@ -1,5 +1,4 @@
 import asyncio
-import json
 import signal
 import sys
 import traceback
@@ -10,8 +9,8 @@ from rich.console import Console
 from sidekick import ui
 from sidekick.agent import get_or_create_agent, process_request
 from sidekick.commands import handle_command
-from sidekick.config import (ConfigValidationError, config_exists, read_config_file, set_env_vars,
-                             validate_config_structure)
+from sidekick.config import (ConfigError, ConfigValidationError, config_exists, read_config_file,
+                             set_env_vars, validate_config_structure)
 from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.mcp import get_configured_servers
 from sidekick.session import session
@@ -190,11 +189,8 @@ def main(version: bool = typer.Option(False, "--version", "-v", help="Show versi
             config = read_config_file()
             validate_config_structure(config)
             set_env_vars(config.get("env", {}))
-        except PermissionError as e:
-            ui.error("Cannot access config file", str(e))
-            sys.exit(1)
-        except json.JSONDecodeError as e:
-            ui.error("Invalid JSON in config file", str(e))
+        except ConfigError as e:
+            ui.error("Configuration error", str(e))
             sys.exit(1)
         except ConfigValidationError as e:
             ui.error("Invalid configuration", str(e))

@@ -106,22 +106,21 @@ def read_config_file() -> Dict[str, Any]:
         dict: Parsed configuration
 
     Raises:
-        FileNotFoundError: If config file doesn't exist
-        PermissionError: If config file can't be accessed
-        json.JSONDecodeError: If config file contains invalid JSON
+        ConfigError: If config file doesn't exist or can't be accessed
+        ConfigValidationError: If config file contains invalid JSON
     """
     config_path = get_config_path()
 
     if not config_path.exists():
-        raise FileNotFoundError(f"Config file not found at {config_path}")
+        raise ConfigError(f"Config file not found at {config_path}")
 
     try:
         with open(config_path, "r") as f:
             return json.load(f)
-    except PermissionError:
-        raise PermissionError(f"Cannot access config file at {config_path}")
+    except PermissionError as e:
+        raise ConfigError(f"Cannot access config file at {config_path}") from e
     except json.JSONDecodeError as e:
-        raise json.JSONDecodeError(f"Invalid JSON in config file at {config_path}", e.doc, e.pos)
+        raise ConfigValidationError(f"Invalid JSON in config file at {config_path}") from e
 
 
 def validate_config_structure(config: Dict[str, Any]) -> None:
