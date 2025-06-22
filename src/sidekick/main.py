@@ -16,6 +16,7 @@ from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.mcp import load_mcp_servers
 from sidekick.session import session
 from sidekick.setup import run_setup
+from sidekick.utils.input import create_multiline_prompt_session, get_multiline_input
 
 app = typer.Typer(help=f"{APP_NAME} - Your agentic CLI developer")
 console = Console()
@@ -180,9 +181,12 @@ async def repl():
         await initialize_servers()
 
         ui.success("Go kick some ass!")
+
+        prompt_session = create_multiline_prompt_session()
+
         while True:
             try:
-                user_input = input("\n> ").strip()
+                user_input = await get_multiline_input(prompt_session)
             except (EOFError, KeyboardInterrupt):
                 break
 
