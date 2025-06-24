@@ -46,4 +46,4 @@ def test_constants():
     """Test that constants have expected values."""
     assert PROMPT_SYMBOL == "> "
     assert PROMPT_CONTINUATION_INDENT == "  "
-    assert PLACEHOLDER_TEXT == "Type something, esc+enter to submit"
+    assert PLACEHOLDER_TEXT == "Esc+Enter to submit, /help for commands"

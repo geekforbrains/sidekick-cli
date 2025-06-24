@@ -1,7 +1,8 @@
 """Command handlers for Sidekick CLI slash commands."""
 
 from sidekick import ui
-from sidekick.config import MODELS, update_config_file
+from sidekick.config import update_config_file
+from sidekick.constants import MODELS
 from sidekick.session import session
 
 

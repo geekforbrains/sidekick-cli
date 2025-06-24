@@ -4,7 +4,7 @@ from pathlib import Path
 from pydantic_ai import Agent
 
 from sidekick import ui
-from sidekick.config import MODELS
+from sidekick.constants import MODELS
 from sidekick.mcp import MCPAgent, load_mcp_servers
 from sidekick.session import session
 from sidekick.tools import TOOLS
