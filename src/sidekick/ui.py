@@ -199,27 +199,11 @@ def _display_update_file_confirmation(args: dict):
         with open(filepath, "r", encoding="utf-8") as f:
             current_content = f.read()
 
-        # Verify the old_content exists in the file
-        if args["old_content"] not in current_content:
-            # Show what was searched for
-            preview = (
-                args["old_content"][:100] + "..."
-                if len(args["old_content"]) > 100
-                else args["old_content"]
-            )
-            warning_text = (
-                f"⚠️  Warning: Content to replace not found in file!\n\nSearched for:\n{preview}"
-            )
-            panel = create_panel(warning_text, f"Update File: {filepath}", colors.error)
-            display_panel(panel, bottom_padding=False)
-        else:
-            # Create the updated content for diff
-            updated_content = current_content.replace(args["old_content"], args["new_content"], 1)
+        updated_content = current_content.replace(args["old_content"], args["new_content"], 1)
 
-            # Create and display the diff
-            diff_text = create_unified_diff(current_content, updated_content, filepath)
-            panel = create_panel(diff_text, f"Update File: {filepath}", colors.warning)
-            display_panel(panel, bottom_padding=False)
+        diff_text = create_unified_diff(current_content, updated_content, filepath)
+        panel = create_panel(diff_text, f"Update File: {filepath}", colors.warning)
+        display_panel(panel, bottom_padding=False)
     except Exception as e:
         error_text = f"Error reading file: {str(e)}"
         panel = create_panel(error_text, f"Update File: {filepath}", colors.error)

@@ -133,6 +133,14 @@ async def _process_node(node):
     if hasattr(node, "request"):
         session.messages.append(node.request)
 
+        for part in node.request.parts:
+            if part.part_kind == "retry-prompt":
+                if session.spinner:
+                    session.spinner.stop()
+                ui.muted("Update failed, trying a different approach")
+                if session.spinner:
+                    session.spinner.start()
+
     if hasattr(node, "model_response"):
         session.messages.append(node.model_response)
         tool_calls = [part for part in node.model_response.parts if part.part_kind == "tool-call"]

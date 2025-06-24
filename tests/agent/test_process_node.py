@@ -13,6 +13,7 @@ async def test_process_node_with_request():
     # Create a mock node with request
     node = Mock()
     node.request = Mock(spec=messages.ModelRequest)
+    node.request.parts = []
 
     # Remove model_response attribute
     delattr(node, "model_response")
