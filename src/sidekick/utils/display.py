@@ -5,6 +5,8 @@ TOOL_DISPLAY_NAMES: Dict[str, str] = {
     "write_file": "Write",
     "update_file": "Update",
     "run_command": "Run",
+    "git_add": "Git Add",
+    "git_commit": "Git Commit",
 }
 
 

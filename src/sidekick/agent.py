@@ -30,6 +30,15 @@ async def _format_tool_display(tool_name: str, args: dict):
             primary_arg = args["filepath"]
         elif tool_name == "run_command" and "command" in args:
             primary_arg = args["command"]
+        elif tool_name == "git_add" and "files" in args:
+            primary_arg = args["files"]
+        elif tool_name == "git_commit" and "message" in args:
+            # Show first line of commit message
+            message = args["message"]
+            first_line = message.split("\n")[0]
+            if len(first_line) > 50:
+                first_line = first_line[:47] + "..."
+            primary_arg = f'"{first_line}"'
 
         if primary_arg:
             ui.info(f"{display_name}({primary_arg})")

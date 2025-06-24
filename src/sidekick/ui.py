@@ -213,6 +213,104 @@ def _display_update_file_confirmation(args: dict):
     console.print()
 
 
+def _display_git_add_confirmation(args: dict):
+    """Display confirmation for git_add tool."""
+    import subprocess
+
+    try:
+        # Get current git status
+        result = subprocess.run(
+            ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+        )
+
+        if not result.stdout.strip():
+            content = "No changes to stage"
+        else:
+            # Parse status and group by type
+            files_to_stage = []
+            for line in result.stdout.splitlines():
+                if line:
+                    status = line[:2]
+                    filepath = line[3:]
+
+                    # Determine what will be staged based on the files argument
+                    if args["files"] == "." or args["files"] in filepath:
+                        if status[1] == "M":
+                            files_to_stage.append(f"[orange1]modified:[/orange1]   {filepath}")
+                        elif status[1] == "?":
+                            files_to_stage.append(f"[green]new file:[/green]   {filepath}")
+                        elif status[1] == "D":
+                            files_to_stage.append(f"[red]deleted:[/red]    {filepath}")
+                        elif status[0] == " " and status[1] != " ":
+                            files_to_stage.append(f"[orange1]modified:[/orange1]   {filepath}")
+
+            if files_to_stage:
+                content = "Files to be staged:\n\n" + "\n".join(files_to_stage)
+            else:
+                content = "No matching files to stage"
+
+    except Exception as e:
+        content = f"Error getting git status: {str(e)}"
+
+    panel = create_panel(content, f"Git Add: {args['files']}", colors.warning)
+    display_panel(panel, bottom_padding=False)
+    console.print()
+
+
+def _display_git_commit_confirmation(args: dict):
+    """Display confirmation for git_commit tool."""
+    import subprocess
+
+    try:
+        # Get staged files
+        result = subprocess.run(
+            ["git", "diff", "--cached", "--name-status"], capture_output=True, text=True, check=True
+        )
+
+        if not result.stdout.strip():
+            staged_info = "No staged changes"
+        else:
+            # Parse staged files
+            staged_files = []
+            for line in result.stdout.splitlines():
+                if line:
+                    parts = line.split("\t", 1)
+                    if len(parts) == 2:
+                        status, filepath = parts
+                        if status == "M":
+                            staged_files.append(f"[orange1]modified:[/orange1]   {filepath}")
+                        elif status == "A":
+                            staged_files.append(f"[green]new file:[/green]   {filepath}")
+                        elif status == "D":
+                            staged_files.append(f"[red]deleted:[/red]    {filepath}")
+
+            # Get diff stats
+            stats_result = subprocess.run(
+                ["git", "diff", "--cached", "--stat"], capture_output=True, text=True, check=True
+            )
+
+            stats_line = ""
+            if stats_result.stdout:
+                lines = stats_result.stdout.strip().split("\n")
+                if lines:
+                    stats_line = lines[-1]  # Last line contains the summary
+
+            staged_info = "Staged changes:\n\n" + "\n".join(staged_files)
+            if stats_line:
+                staged_info += f"\n\n[dim]{stats_line}[/dim]"
+
+        # Format commit message
+        message = args["message"]
+        content = f"{staged_info}\n\n[bold]Commit message:[/bold]\n{message}"
+
+    except Exception as e:
+        content = f"Error getting staged changes: {str(e)}"
+
+    panel = create_panel(content, "Git Commit", colors.warning)
+    display_panel(panel, bottom_padding=False)
+    console.print()
+
+
 def _display_generic_tool_confirmation(tool_name: str, args: dict, formatted_name: str):
     """Display generic tool confirmation."""
     content_lines = [f"Tool: [bold]{formatted_name}[/bold]", ""]
@@ -283,6 +381,10 @@ async def confirm_tool_call(tool_name: str, args: dict) -> str:
         k in args for k in ["filepath", "old_content", "new_content"]
     ):
         _display_update_file_confirmation(args)
+    elif tool_name == "git_add" and "files" in args:
+        _display_git_add_confirmation(args)
+    elif tool_name == "git_commit" and "message" in args:
+        _display_git_commit_confirmation(args)
     else:
         _display_generic_tool_confirmation(tool_name, args, formatted_name)
 
