@@ -12,7 +12,7 @@ from prompt_toolkit.styles import Style
 
 PROMPT_SYMBOL = "> "
 PROMPT_CONTINUATION_INDENT = "  "  # Same width as prompt symbol
-PLACEHOLDER_TEXT = "Type something, esc+enter to submit"
+PLACEHOLDER_TEXT = "Esc+Enter to submit, /help for commands"
 PLACEHOLDER_STYLE = "italic fg:#666666"
 
 

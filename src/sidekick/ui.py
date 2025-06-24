@@ -329,10 +329,7 @@ def help():
     commands = [
         ("/help", "Show this help message"),
         ("/clear", "Clear the conversation history"),
-        ("/dump", "Show the current conversation history"),
         ("/yolo", "Toggle confirmation prompts on/off"),
-        ("/undo", "Undo the last file change"),
-        ("/compact", "Summarize the conversation context"),
         ("/model", "List available models"),
         ("/model <n>", "Switch to a specific model"),
         ("/model <n> default", "Set a model as the default"),

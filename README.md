@@ -19,7 +19,6 @@ using different LLM providers (Anthropic, OpenAI, Google Gemini) while keeping t
 
 - No vendor lock-in. Use whichever LLM provider you prefer.
 - MCP support
-- Use /undo when AI breaks things.
 - Easily switch between models in the same session.
 - JIT-style system prompt injection ensures Sidekick doesn't lose the plot.
 - Per-project guide. Adjust Sidekick's behavior to suit your needs.
@@ -80,11 +79,9 @@ MCP servers extend the capabilities of your AI assistant, allowing it to interac
 - `/help` - Show available commands
 - `/yolo` - Toggle "yolo" mode (skip tool confirmations)
 - `/clear` - Clear message history
-- `/compact` - Summarize message history and clear old messages
 - `/model` - List available models
 - `/model <num>` - Switch to a specific model (by index)
-- `/undo` - Undo most recent changes
-- `/dump` - Show current message history (for debugging)
+- `/usage` - Show session usage statistics
 - `exit` - Exit the application
 
 ## Customization

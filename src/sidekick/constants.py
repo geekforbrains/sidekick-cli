@@ -1,9 +1,21 @@
 APP_NAME = "Sidekick"
 APP_VERSION = "0.5.1"
 
-# Pricing table for supported models (per 1M tokens).
-# This is release-time data; override in a future release if pricing changes.
 MODELS = {
+    "anthropic:claude-opus-4-20250514": {
+        "pricing": {
+            "input": 3.00,
+            "cached_input": 1.50,
+            "output": 15.00,
+        }
+    },
+    "anthropic:claude-sonnet-4-20250514": {
+        "pricing": {
+            "input": 3.00,
+            "cached_input": 1.50,
+            "output": 15.00,
+        }
+    },
     "anthropic:claude-3-7-sonnet-latest": {
         "pricing": {
             "input": 3.00,
@@ -11,22 +23,44 @@ MODELS = {
             "output": 15.00,
         }
     },
-    "google-gla:gemini-2.0-flash": {
+    "google-gla:gemini-2.5-pro": {
+        # Gemini pro has pricing tiers <= 200k / >200k
+        # For now, using the lower pricing as unlikely to exceed 200k tokens
+        # During a session
+        #
+        # TODO: Should make usage tracking dynamic to handle this
         "pricing": {
-            "input": 0.10,
-            "cached_input": 0.025,
-            "output": 0.40,
+            "input": 1.25,
+            "cached_input": 1.25,
+            "output": 10.00,
         }
     },
-    "google-gla:gemini-2.5-pro-preview-03-25": {
-        # Pricing per 1M tokens (API pricing, UI is free)
-        # Tier: <= 200K tokens. Input: $1.25, Output: $10.00
-        # Tier: > 200K tokens. Input: $2.50, Output: $15.00
-        # Current config uses lower tier pricing as structure doesn't support tiers.
+    "google-gla:gemini-2.5-flash": {
         "pricing": {
-            "input": 1.25,  # Using <=200k tier
-            "cached_input": 0.025,  # No price defined for cached input, using input price
-            "output": 10.00,  # Using <=200k tier
+            "input": 0.30,
+            "cached_input": 0.035,
+            "output": 2.50,
+        }
+    },
+    "openai:o3-pro": {
+        "pricing": {
+            "input": 20.00,
+            "cached_input": 20.00,
+            "output": 80.00,
+        }
+    },
+    "openai:o3": {
+        "pricing": {
+            "input": 10.00,
+            "cached_input": 2.50,
+            "output": 40.00,
+        }
+    },
+    "openai:o3-mini": {
+        "pricing": {
+            "input": 1.10,
+            "cached_input": 0.55,
+            "output": 4.40,
         }
     },
     "openai:gpt-4.1": {
@@ -55,20 +89,6 @@ MODELS = {
             "input": 2.50,
             "cached_input": 1.25,
             "output": 10.00,
-        }
-    },
-    "openai:o3": {
-        "pricing": {
-            "input": 10.00,
-            "cached_input": 2.50,
-            "output": 40.00,
-        }
-    },
-    "openai:o3-mini": {
-        "pricing": {
-            "input": 1.10,
-            "cached_input": 0.55,
-            "output": 4.40,
         }
     },
 }

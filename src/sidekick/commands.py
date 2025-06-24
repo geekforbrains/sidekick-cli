@@ -55,32 +55,67 @@ async def handle_model(args: list[str]):
 
 async def handle_usage():
     """Handle /usage command - show session usage statistics."""
-    ui.info("Session Usage Statistics")
+    from rich.text import Text
+
+    content = Text()
 
     # Show total tokens and cost
     if session.total_tokens > 0:
-        ui.bullet(f"Total tokens: {session.total_tokens:,}")
-        ui.bullet(f"Total cost: ${session.total_cost:.5f}")
+        content.append("Total Statistics\n", style=f"bold {ui.colors.primary}")
+        content.append(f"  • Total tokens: {session.total_tokens:,}\n", style="white")
+        content.append(f"  • Total cost: ${session.total_cost:.5f}\n", style="white")
 
     # Show last request details if available
     if session.last_usage:
-        ui.line()
-        ui.info("Last request:")
-        ui.bullet(f"Input tokens: {session.last_usage['input_tokens']:,}")
-        ui.bullet(f"Cached tokens: {session.last_usage['cached_tokens']:,}")
-        ui.bullet(f"Output tokens: {session.last_usage['output_tokens']:,}")
-        ui.bullet(f"Request cost: ${session.last_usage['request_cost']:.5f}")
+        if session.total_tokens > 0:
+            content.append("\n")
+        content.append("Last Request\n", style=f"bold {ui.colors.primary}")
+        content.append(f"  • Input tokens: {session.last_usage['input_tokens']:,}\n", style="white")
+        content.append(
+            f"  • Cached tokens: {session.last_usage['cached_tokens']:,}\n", style="white"
+        )
+        content.append(
+            f"  • Output tokens: {session.last_usage['output_tokens']:,}\n", style="white"
+        )
+        content.append(
+            f"  • Request cost: ${session.last_usage['request_cost']:.5f}\n", style="white"
+        )
 
     # Show tool usage breakdown
     if session.tool_usage:
-        ui.line()
-        ui.info("Tools used this session:")
+        if session.total_tokens > 0 or session.last_usage:
+            content.append("\n")
+        content.append("Tools Used This Session\n", style=f"bold {ui.colors.primary}")
         for tool_name, count in sorted(session.tool_usage.items()):
             display_name = ui.format_tool_name(tool_name)
-            ui.bullet(f"{display_name}: {count}x")
+            content.append(f"  • {display_name}: {count}x\n", style="white")
 
     if not session.total_tokens and not session.tool_usage:
-        ui.muted("No usage data yet in this session")
+        content.append("No usage data yet in this session", style=ui.colors.muted)
+
+    # Remove trailing newline if present
+    if content.plain.endswith("\n"):
+        content = Text(content.plain.rstrip("\n"))
+
+    panel = ui.create_panel(content, "Session Usage Statistics", ui.colors.muted)
+    ui.display_panel(panel)
+
+
+async def handle_clear():
+    """Handle /clear command - clear conversation history and screen."""
+    # Clear the conversation history
+    session.messages.clear()
+
+    # Clear the screen and redisplay the banner
+    ui.banner()
+
+    # Show success message
+    ui.success("Conversation history cleared")
+
+
+async def handle_help():
+    """Handle /help command - show available commands."""
+    ui.help()
 
 
 async def handle_command(user_input: str) -> bool:
@@ -97,6 +132,8 @@ async def handle_command(user_input: str) -> bool:
         "/yolo": handle_yolo,
         "/model": lambda: handle_model(args),
         "/usage": handle_usage,
+        "/clear": handle_clear,
+        "/help": handle_help,
     }
 
     handler = handlers.get(command)
