@@ -102,7 +102,12 @@ DEFAULT_USER_CONFIG = {
     },
     "mcpServers": {},
     "settings": {
-        "allowed_tools": ["read_file"],
+        "allowed_tools": [
+            "read_file",
+            "search_files",
+            "search_dirs",
+            "search_content",
+        ],
         "allowed_commands": [
             "ls",
             "cat",

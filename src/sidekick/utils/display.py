@@ -1,12 +1,15 @@
 from typing import Dict
 
 TOOL_DISPLAY_NAMES: Dict[str, str] = {
-    "read_file": "Read",
-    "write_file": "Write",
-    "update_file": "Update",
+    "read_file": "ReadFile",
+    "write_file": "WriteFile",
+    "update_file": "UpdateFile",
     "run_command": "Run",
-    "git_add": "Git Add",
-    "git_commit": "Git Commit",
+    "git_add": "GitAdd",
+    "git_commit": "GitCommit",
+    "search_files": "SearchFiles",
+    "search_dirs": "SearchDirs",
+    "search_content": "SearchContent",
 }
 
 

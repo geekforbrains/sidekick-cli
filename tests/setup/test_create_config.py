@@ -38,7 +38,12 @@ def test_create_config_includes_all_defaults():
 
                 assert "settings" in result
                 assert "allowed_tools" in result["settings"]
-                assert result["settings"]["allowed_tools"] == ["read_file"]
+                from sidekick.constants import DEFAULT_USER_CONFIG
+
+                assert (
+                    result["settings"]["allowed_tools"]
+                    == DEFAULT_USER_CONFIG["settings"]["allowed_tools"]
+                )
                 assert "allowed_commands" in result["settings"]
                 assert len(result["settings"]["allowed_commands"]) > 0
 

@@ -68,7 +68,10 @@ def test_adds_missing_defaults():
             assert "mcpServers" in result
             assert result["mcpServers"] == {}
             assert "settings" in result
-            assert result["settings"]["allowed_tools"] == ["read_file"]
+            assert (
+                result["settings"]["allowed_tools"]
+                == DEFAULT_USER_CONFIG["settings"]["allowed_tools"]
+            )
             assert len(result["settings"]["allowed_commands"]) > 0
             assert "ls" in result["settings"]["allowed_commands"]
 
