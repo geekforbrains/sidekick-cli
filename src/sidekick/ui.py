@@ -10,6 +10,7 @@ from rich.table import Table
 from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.session import session
 from sidekick.utils.display import format_tool_name
+from sidekick.utils.syntax import create_syntax_highlighted
 
 console = Console()
 
@@ -175,44 +176,55 @@ async def confirm_tool_call(tool_name: str, args: dict) -> str:
         'no' - Cancel this tool execution
     """
     formatted_name = format_tool_name(tool_name)
-    content_lines = [f"Tool: [bold]{formatted_name}[/bold]", ""]
 
-    for key, value in args.items():
-        if isinstance(value, str):
-            value = value.strip()
-            if len(value) > 100:
-                value = value[:97] + "..."
-        content_lines.append(f"• {key}: {value}")
-
-    # Determine the "always" option text based on tool type
-    if tool_name == "run_command" and "command" in args:
-        from sidekick.utils.command_parser import extract_commands
-
-        commands = extract_commands(args["command"])
-        if len(commands) > 1:
-            always_text = f"  a - Always allow: {', '.join(commands)}"
-        else:
-            always_text = (
-                f"  a - Always allow '{commands[0]}' commands"
-                if commands
-                else "  a - Always allow this command"
-            )
+    if tool_name == "write_file" and "content" in args and "filepath" in args:
+        syntax = create_syntax_highlighted(args["content"], args["filepath"])
+        panel = create_panel(syntax, f"Write File: {args['filepath']}", colors.warning)
+        display_panel(panel, bottom_padding=False)
+        console.print(f"  File: {args['filepath']}", style=colors.muted)
+        console.print()
     else:
-        always_text = "  a - Always allow this tool"
+        content_lines = [f"Tool: [bold]{formatted_name}[/bold]", ""]
 
-    content_lines.extend(
-        [
-            "",
-            "Options:",
-            "  y - Yes, execute this tool",
-            always_text,
-            "  n - No, cancel this execution",
-        ]
-    )
+        for key, value in args.items():
+            if isinstance(value, str):
+                value = value.strip()
+                if len(value) > 100:
+                    value = value[:97] + "..."
+            content_lines.append(f"• {key}: {value}")
 
-    content = "\n".join(content_lines)
-    panel = create_panel(content, "Confirm Action", colors.warning)
-    display_panel(panel)
+        if tool_name == "run_command" and "command" in args:
+            from sidekick.utils.command_parser import extract_commands
+
+            commands = extract_commands(args["command"])
+            if len(commands) > 1:
+                always_text = f"  a - Always allow: {', '.join(commands)}"
+            else:
+                always_text = (
+                    f"  a - Always allow '{commands[0]}' commands"
+                    if commands
+                    else "  a - Always allow this command"
+                )
+        else:
+            always_text = "  a - Always allow this tool"
+
+        content_lines.extend(
+            [
+                "",
+                "Options:",
+                "  y - Yes, execute this tool",
+                always_text,
+                "  n - No, cancel this execution",
+            ]
+        )
+
+        content = "\n".join(content_lines)
+        panel = create_panel(content, "Confirm Action", colors.warning)
+        display_panel(panel)
+
+        if tool_name == "update_file" and "filepath" in args:
+            console.print(f"  File: {args['filepath']}", style=colors.muted)
+            console.print()
 
     while True:
         choice = (
