@@ -10,7 +10,7 @@ from rich.table import Table
 from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.session import session
 from sidekick.utils.display import format_tool_name
-from sidekick.utils.syntax import create_syntax_highlighted
+from sidekick.utils.syntax import create_syntax_highlighted, create_unified_diff
 
 console = Console()
 
@@ -166,6 +166,105 @@ def dump(data):
     display_panel(panel)
 
 
+def _display_write_file_confirmation(args: dict):
+    """Display confirmation for write_file tool."""
+    syntax = create_syntax_highlighted(args["content"], args["filepath"])
+    panel = create_panel(syntax, f"Write File: {args['filepath']}", colors.warning)
+    display_panel(panel, bottom_padding=False)
+    console.print(f"  File: {args['filepath']}", style=colors.muted)
+    console.print()
+
+
+def _display_update_file_confirmation(args: dict):
+    """Display confirmation for update_file tool with diff."""
+    filepath = args["filepath"]
+
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            current_content = f.read()
+
+        # Verify the old_content exists in the file
+        if args["old_content"] not in current_content:
+            # Show what was searched for
+            preview = (
+                args["old_content"][:100] + "..."
+                if len(args["old_content"]) > 100
+                else args["old_content"]
+            )
+            warning_text = (
+                f"⚠️  Warning: Content to replace not found in file!\n\nSearched for:\n{preview}"
+            )
+            panel = create_panel(warning_text, f"Update File: {filepath}", colors.error)
+            display_panel(panel, bottom_padding=False)
+        else:
+            # Create the updated content for diff
+            updated_content = current_content.replace(args["old_content"], args["new_content"], 1)
+
+            # Create and display the diff
+            diff_text = create_unified_diff(current_content, updated_content, filepath)
+            panel = create_panel(diff_text, f"Update File: {filepath}", colors.warning)
+            display_panel(panel, bottom_padding=False)
+    except Exception as e:
+        error_text = f"Error reading file: {str(e)}"
+        panel = create_panel(error_text, f"Update File: {filepath}", colors.error)
+        display_panel(panel, bottom_padding=False)
+
+    console.print(f"  File: {filepath}", style=colors.muted)
+    console.print()
+
+
+def _display_generic_tool_confirmation(tool_name: str, args: dict, formatted_name: str):
+    """Display generic tool confirmation."""
+    content_lines = [f"Tool: [bold]{formatted_name}[/bold]", ""]
+
+    for key, value in args.items():
+        if isinstance(value, str):
+            value = value.strip()
+            if len(value) > 100:
+                value = value[:97] + "..."
+        content_lines.append(f"• {key}: {value}")
+
+    # Generate always text based on tool type
+    always_text = _get_always_text(tool_name, args)
+
+    content_lines.extend(
+        [
+            "",
+            "Options:",
+            "  y - Yes, execute this tool",
+            always_text,
+            "  n - No, cancel this execution",
+        ]
+    )
+
+    content = "\n".join(content_lines)
+    panel = create_panel(content, "Confirm Action", colors.warning)
+    display_panel(panel)
+
+    # Show file path for file-related tools
+    if tool_name == "update_file" and "filepath" in args:
+        console.print(f"  File: {args['filepath']}", style=colors.muted)
+        console.print()
+
+
+def _get_always_text(tool_name: str, args: dict) -> str:
+    """Generate the 'always allow' text based on tool type."""
+    if tool_name == "run_command" and "command" in args:
+        from sidekick.utils.command_parser import extract_commands
+
+        commands = extract_commands(args["command"])
+        if len(commands) > 1:
+            return f"  a - Always allow: {', '.join(commands)}"
+        else:
+            return (
+                f"  a - Always allow '{commands[0]}' commands"
+                if commands
+                else "  a - Always allow this command"
+            )
+    else:
+        return "  a - Always allow this tool"
+
+
 async def confirm_tool_call(tool_name: str, args: dict) -> str:
     """
     Prompt user for confirmation before executing a tool.
@@ -177,55 +276,17 @@ async def confirm_tool_call(tool_name: str, args: dict) -> str:
     """
     formatted_name = format_tool_name(tool_name)
 
+    # Display tool-specific confirmation
     if tool_name == "write_file" and "content" in args and "filepath" in args:
-        syntax = create_syntax_highlighted(args["content"], args["filepath"])
-        panel = create_panel(syntax, f"Write File: {args['filepath']}", colors.warning)
-        display_panel(panel, bottom_padding=False)
-        console.print(f"  File: {args['filepath']}", style=colors.muted)
-        console.print()
+        _display_write_file_confirmation(args)
+    elif tool_name == "update_file" and all(
+        k in args for k in ["filepath", "old_content", "new_content"]
+    ):
+        _display_update_file_confirmation(args)
     else:
-        content_lines = [f"Tool: [bold]{formatted_name}[/bold]", ""]
+        _display_generic_tool_confirmation(tool_name, args, formatted_name)
 
-        for key, value in args.items():
-            if isinstance(value, str):
-                value = value.strip()
-                if len(value) > 100:
-                    value = value[:97] + "..."
-            content_lines.append(f"• {key}: {value}")
-
-        if tool_name == "run_command" and "command" in args:
-            from sidekick.utils.command_parser import extract_commands
-
-            commands = extract_commands(args["command"])
-            if len(commands) > 1:
-                always_text = f"  a - Always allow: {', '.join(commands)}"
-            else:
-                always_text = (
-                    f"  a - Always allow '{commands[0]}' commands"
-                    if commands
-                    else "  a - Always allow this command"
-                )
-        else:
-            always_text = "  a - Always allow this tool"
-
-        content_lines.extend(
-            [
-                "",
-                "Options:",
-                "  y - Yes, execute this tool",
-                always_text,
-                "  n - No, cancel this execution",
-            ]
-        )
-
-        content = "\n".join(content_lines)
-        panel = create_panel(content, "Confirm Action", colors.warning)
-        display_panel(panel)
-
-        if tool_name == "update_file" and "filepath" in args:
-            console.print(f"  File: {args['filepath']}", style=colors.muted)
-            console.print()
-
+    # Get user choice
     while True:
         choice = (
             console.input(

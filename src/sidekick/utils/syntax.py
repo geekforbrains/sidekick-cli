@@ -1,8 +1,10 @@
 """Syntax highlighting utilities for displaying code with proper formatting."""
 
+import difflib
 from pathlib import Path
 
 from rich.syntax import Syntax
+from rich.text import Text
 
 
 def get_file_language(filepath: str) -> str:
@@ -118,3 +120,65 @@ def create_syntax_highlighted(content: str, filepath: str, theme: str = "monokai
         line_numbers=True,
         word_wrap=False,
     )
+
+
+def create_unified_diff(
+    old_content: str, new_content: str, filepath: str, context_lines: int = 3
+) -> Text:
+    """Create a unified diff with syntax highlighting.
+
+    Args:
+        old_content: The original content
+        new_content: The new content
+        filepath: Path to the file (used for header)
+        context_lines: Number of context lines to show (default: 3)
+
+    Returns:
+        Rich Text object with colored diff
+    """
+    old_lines = old_content.splitlines(keepends=True)
+    new_lines = new_content.splitlines(keepends=True)
+
+    diff_lines = list(
+        difflib.unified_diff(
+            old_lines, new_lines, fromfile=filepath, tofile=filepath, n=context_lines
+        )
+    )
+
+    if not diff_lines:
+        return Text("No changes detected", style="dim")
+
+    diff_text = Text()
+
+    for line in diff_lines:
+        if line.startswith("+++") or line.startswith("---"):
+            diff_text.append(line, style="bold blue")
+        elif line.startswith("@@"):
+            diff_text.append(line, style="cyan")
+        elif line.startswith("+"):
+            diff_text.append(line, style="green")
+        elif line.startswith("-"):
+            diff_text.append(line, style="red")
+        else:
+            diff_text.append(line)
+
+    return diff_text
+
+
+def create_inline_diff(old_content: str, new_content: str) -> tuple[Text, Text]:
+    """Create inline diff showing old and new content side by side.
+
+    Args:
+        old_content: The original content
+        new_content: The new content
+
+    Returns:
+        Tuple of (old_text, new_text) with highlighting
+    """
+    old_text = Text(old_content)
+    new_text = Text(new_content)
+
+    old_text.stylize("red")
+    new_text.stylize("green")
+
+    return old_text, new_text
