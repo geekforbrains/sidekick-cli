@@ -1,9 +1,6 @@
 import subprocess
 
-from sidekick.utils.errors import handle_tool_errors
 
-
-@handle_tool_errors
 async def run_command(command: str) -> str:
     """Run a shell command and return its output."""
     result = subprocess.run(
