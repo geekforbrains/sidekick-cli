@@ -107,6 +107,7 @@ DEFAULT_USER_CONFIG = {
             "search_files",
             "search_dirs",
             "search_content",
+            "list_directory",
         ],
         "allowed_commands": [
             "ls",

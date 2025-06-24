@@ -1,4 +1,5 @@
 from .git import git_add, git_commit
+from .list import list_directory
 from .read_file import read_file
 from .run_command import run_command
 from .search import search_content, search_dirs, search_files
@@ -15,4 +16,5 @@ TOOLS = [
     search_files,
     search_dirs,
     search_content,
+    list_directory,
 ]

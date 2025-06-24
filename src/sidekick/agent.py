@@ -39,6 +39,14 @@ async def _format_tool_display(tool_name: str, args: dict):
             if len(first_line) > 50:
                 first_line = first_line[:47] + "..."
             primary_arg = f'"{first_line}"'
+        elif tool_name in ["search_files", "search_dirs"] and "pattern" in args:
+            primary_arg = f'"{args["pattern"]}"'
+        elif tool_name == "search_content" and "text_pattern" in args:
+            primary_arg = f'"{args["text_pattern"]}"'
+        elif tool_name == "list_directory":
+            # Default to "." if path not specified
+            path = args.get("path", ".")
+            primary_arg = f'"{path}"'
 
         if primary_arg:
             ui.info(f"{display_name}({primary_arg})")

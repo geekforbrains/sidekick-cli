@@ -10,6 +10,7 @@ TOOL_DISPLAY_NAMES: Dict[str, str] = {
     "search_files": "SearchFiles",
     "search_dirs": "SearchDirs",
     "search_content": "SearchContent",
+    "list_directory": "List",
 }
 
 
