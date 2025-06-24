@@ -1,3 +1,4 @@
+import asyncio
 import random
 
 from rich.console import Console
@@ -62,6 +63,21 @@ THINKING_MESSAGES = [
 def get_thinking_message() -> str:
     """Get a random thinking message."""
     return random.choice(THINKING_MESSAGES)
+
+
+async def _rotate_thinking_messages(style: str, interval: float = 5.0):
+    """Rotate thinking messages at specified interval."""
+    while True:
+        try:
+            await asyncio.sleep(interval)
+            if session.spinner:
+                message = get_thinking_message()
+                formatted_message = style.format(message)
+                session.spinner.update(formatted_message)
+        except asyncio.CancelledError:
+            break
+        except Exception:
+            break
 
 
 def create_panel(content, title: str, border_style: str):
@@ -414,9 +430,22 @@ def start_spinner(message: str, style: str = SpinnerStyle.DEFAULT):
     session.spinner = console.status(formatted_message, spinner="star2")
     session.spinner.start()
 
+    if session.spinner_rotation_task:
+        session.spinner_rotation_task.cancel()
+
+    try:
+        loop = asyncio.get_running_loop()
+        session.spinner_rotation_task = loop.create_task(_rotate_thinking_messages(style))
+    except RuntimeError:
+        pass
+
 
 def stop_spinner():
     """Stop and clear the session spinner."""
+    if session.spinner_rotation_task:
+        session.spinner_rotation_task.cancel()
+        session.spinner_rotation_task = None
+
     if session.spinner:
         session.spinner.stop()
         session.spinner = None

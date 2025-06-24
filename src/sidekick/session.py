@@ -9,6 +9,7 @@ class Session:
     agents: Dict = field(default_factory=dict)
     messages: list = field(default_factory=list)
     spinner: Any = None
+    spinner_rotation_task: Optional[asyncio.Task] = None
     current_task: Optional[asyncio.Task] = None
     sigint_received: bool = False
     skip_confirmations: Set[str] = field(default_factory=set)
