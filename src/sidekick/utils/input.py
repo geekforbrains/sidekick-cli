@@ -10,7 +10,7 @@ from prompt_toolkit.styles import Style
 # Note: We don't import colors from ui module because prompt_toolkit
 # uses a different color system than Rich
 
-PROMPT_SYMBOL = "> "
+PROMPT_SYMBOL = "λ "
 PROMPT_CONTINUATION_INDENT = "  "  # Same width as prompt symbol
 PLACEHOLDER_TEXT = "Esc+Enter to submit, /help for commands"
 PLACEHOLDER_STYLE = "italic fg:#666666"

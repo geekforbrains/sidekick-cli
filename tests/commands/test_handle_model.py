@@ -19,10 +19,8 @@ async def test_handle_model_list(mock_ui, mock_session, mock_models):
     ):
         await handle_model([])
 
-        mock_ui.info.assert_called_with("Available models:")
-        calls = mock_ui.bullet.call_args_list
-        assert len(calls) == 3
-        assert "2. model2 (current)" in str(calls[1])
+        mock_ui.display_panel.assert_called_once()
+        mock_ui.create_panel.assert_called_once()
 
 
 @pytest.mark.asyncio

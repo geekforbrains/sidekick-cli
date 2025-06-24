@@ -44,6 +44,6 @@ def test_create_multiline_prompt_session():
 
 def test_constants():
     """Test that constants have expected values."""
-    assert PROMPT_SYMBOL == "> "
+    assert PROMPT_SYMBOL == "λ "
     assert PROMPT_CONTINUATION_INDENT == "  "
     assert PLACEHOLDER_TEXT == "Esc+Enter to submit, /help for commands"

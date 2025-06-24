@@ -1,5 +1,7 @@
 """Command handlers for Sidekick CLI slash commands."""
 
+from rich.table import Table
+
 from sidekick import ui
 from sidekick.config import update_config_file
 from sidekick.constants import MODELS
@@ -21,11 +23,20 @@ async def handle_yolo():
 async def handle_model(args: list[str]):
     """Handle /model command - list, switch, or set default model."""
     if len(args) == 0:
-        # List available models
-        ui.info("Available models:")
+        # List available models in a styled panel
+        table = Table(show_header=False, box=None, padding=(0, 2, 0, 0))
+        table.add_column("#", justify="right", style=ui.colors.primary)
+        table.add_column("Model", style="white")
+
         for i, model_name in enumerate(MODELS.keys(), 1):
-            current = " (current)" if model_name == session.current_model else ""
-            ui.bullet(f"{i}. {model_name}{current}")
+            label = model_name
+            if model_name == session.current_model:
+                label += " [dim](current)[/dim]"
+            table.add_row(str(i), label)
+
+        panel = ui.create_panel(table, "Available Models", ui.colors.muted)
+        ui.display_panel(panel)
+
     elif len(args) >= 1:
         try:
             model_num = int(args[0])

@@ -454,7 +454,7 @@ def stop_spinner():
 def help():
     """Display the available commands."""
     table = Table(show_header=False, box=None, padding=(0, 2, 0, 0))
-    table.add_column("Command", style="white", justify="right")
+    table.add_column("Command", style=colors.primary, justify="right")
     table.add_column("Description", style="white")
 
     commands = [
