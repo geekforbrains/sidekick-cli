@@ -361,6 +361,33 @@ def _display_generic_tool_confirmation(tool_name: str, args: dict, formatted_nam
         console.print()
 
 
+def _display_search_files_confirmation(args: dict):
+    """Display confirmation for search_files tool."""
+    pattern = args["pattern"]
+    content = f"Searching for files matching pattern: [bold]{pattern}[/bold]"
+    panel = create_panel(content, f"Search Files: {pattern}", colors.warning)
+    display_panel(panel, bottom_padding=False)
+    console.print()
+
+
+def _display_search_content_confirmation(args: dict):
+    """Display confirmation for search_content tool."""
+    text_pattern = args["text_pattern"]
+    content = f"Searching for content matching pattern: [bold]{text_pattern}[/bold]"
+    panel = create_panel(content, f"Search Content: {text_pattern}", colors.warning)
+    display_panel(panel, bottom_padding=False)
+    console.print()
+
+
+def _display_search_dirs_confirmation(args: dict):
+    """Display confirmation for search_dirs tool."""
+    pattern = args["pattern"]
+    content = f"Searching for directories matching pattern: [bold]{pattern}[/bold]"
+    panel = create_panel(content, f"Search Directories: {pattern}", colors.warning)
+    display_panel(panel, bottom_padding=False)
+    console.print()
+
+
 def _get_always_text(tool_name: str, args: dict) -> str:
     """Generate the 'always allow' text based on tool type."""
     if tool_name == "run_command" and "command" in args:
@@ -401,6 +428,12 @@ async def confirm_tool_call(tool_name: str, args: dict) -> str:
         _display_git_add_confirmation(args)
     elif tool_name == "git_commit" and "message" in args:
         _display_git_commit_confirmation(args)
+    elif tool_name == "search_files" and "pattern" in args:
+        _display_search_files_confirmation(args)
+    elif tool_name == "search_content" and "text_pattern" in args:
+        _display_search_content_confirmation(args)
+    elif tool_name == "search_dirs" and "pattern" in args:
+        _display_search_dirs_confirmation(args)
     else:
         _display_generic_tool_confirmation(tool_name, args, formatted_name)
 

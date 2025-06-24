@@ -93,6 +93,15 @@ MODELS = {
     },
 }
 
+# Non-destructive tools that should always be allowed without confirmation
+ALLOWED_TOOLS = [
+    "read_file",
+    "search_files",
+    "search_dirs",
+    "search_content",
+    "list_directory",
+]
+
 DEFAULT_USER_CONFIG = {
     "default_model": "",
     "env": {
@@ -102,13 +111,7 @@ DEFAULT_USER_CONFIG = {
     },
     "mcpServers": {},
     "settings": {
-        "allowed_tools": [
-            "read_file",
-            "search_files",
-            "search_dirs",
-            "search_content",
-            "list_directory",
-        ],
+        "allowed_tools": [],
         "allowed_commands": [
             "ls",
             "cat",

@@ -2,6 +2,8 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Set
 
+from .constants import ALLOWED_TOOLS
+
 
 @dataclass
 class Session:
@@ -27,8 +29,11 @@ class Session:
         """Initialize the session state."""
         self.current_model = model
 
+        # Always include the default allowed tools
+        self.skip_confirmations.update(ALLOWED_TOOLS)
+
         if "settings" in config:
-            # Support new allowed_tools field
+            # Add user-defined allowed_tools on top of defaults
             if "allowed_tools" in config["settings"]:
                 self.skip_confirmations.update(config["settings"]["allowed_tools"])
 

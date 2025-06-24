@@ -1,3 +1,4 @@
+from sidekick.constants import ALLOWED_TOOLS
 from sidekick.session import Session
 
 
@@ -7,7 +8,7 @@ def test_supports_allowed_tools():
         "default_model": "claude-3-5-sonnet",
         "env": {},
         "settings": {
-            "allowed_tools": ["read_file", "list_files"],
+            "allowed_tools": ["write_file", "update_file"],
             "allowed_commands": ["grep", "pwd"],
         },
     }
@@ -15,8 +16,10 @@ def test_supports_allowed_tools():
     session = Session()
     session.init(config, "claude-3-5-sonnet")
 
-    assert "read_file" in session.skip_confirmations
-    assert "list_files" in session.skip_confirmations
+    for tool in ALLOWED_TOOLS:
+        assert tool in session.skip_confirmations
+    assert "write_file" in session.skip_confirmations
+    assert "update_file" in session.skip_confirmations
     assert "grep" in session.allowed_commands
     assert "pwd" in session.allowed_commands
 
@@ -32,6 +35,8 @@ def test_supports_legacy_tool_ignore():
     session = Session()
     session.init(config, "claude-3-5-sonnet")
 
+    for tool in ALLOWED_TOOLS:
+        assert tool in session.skip_confirmations
     assert "bash" in session.skip_confirmations
     assert "write_file" in session.skip_confirmations
     assert "ls" in session.allowed_commands
@@ -44,7 +49,7 @@ def test_supports_both_fields():
         "default_model": "claude-3-5-sonnet",
         "env": {},
         "settings": {
-            "allowed_tools": ["read_file"],
+            "allowed_tools": ["write_file"],
             "tool_ignore": ["bash"],
             "allowed_commands": ["ls"],
         },
@@ -53,7 +58,9 @@ def test_supports_both_fields():
     session = Session()
     session.init(config, "claude-3-5-sonnet")
 
-    assert "read_file" in session.skip_confirmations
+    for tool in ALLOWED_TOOLS:
+        assert tool in session.skip_confirmations
+    assert "write_file" in session.skip_confirmations
     assert "bash" in session.skip_confirmations
     assert "ls" in session.allowed_commands
 
@@ -65,7 +72,9 @@ def test_empty_settings():
     session = Session()
     session.init(config, "claude-3-5-sonnet")
 
-    assert len(session.skip_confirmations) == 0
+    assert len(session.skip_confirmations) == len(ALLOWED_TOOLS)
+    for tool in ALLOWED_TOOLS:
+        assert tool in session.skip_confirmations
     assert len(session.allowed_commands) == 0
 
 
@@ -76,5 +85,7 @@ def test_no_settings_key():
     session = Session()
     session.init(config, "claude-3-5-sonnet")
 
-    assert len(session.skip_confirmations) == 0
+    assert len(session.skip_confirmations) == len(ALLOWED_TOOLS)
+    for tool in ALLOWED_TOOLS:
+        assert tool in session.skip_confirmations
     assert len(session.allowed_commands) == 0

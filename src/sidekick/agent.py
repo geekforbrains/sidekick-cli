@@ -44,7 +44,6 @@ async def _format_tool_display(tool_name: str, args: dict):
         elif tool_name == "search_content" and "text_pattern" in args:
             primary_arg = f'"{args["text_pattern"]}"'
         elif tool_name == "list_directory":
-            # Default to "." if path not specified
             path = args.get("path", ".")
             primary_arg = f'"{path}"'
 
