@@ -166,11 +166,27 @@ def _create_confirmation_callback():
 
 
 def _create_display_tool_status_callback():
-    async def display(title: str, *args: Any) -> None:
+    async def display(title: str, *args: Any, **kwargs: Any) -> None:
+        """
+        Display the current tool status.
+
+        Args:
+            title: str
+            *args: Any
+            **kwargs: Any
+                Keyword arguments passed to the tool. These will be rendered in the
+                form ``key=value`` in the output.
+        """
         if session.spinner:
             session.spinner.stop()
 
-        arg_str = ", ".join(str(arg) for arg in args)
+        parts = []
+        if args:
+            parts.extend(str(arg) for arg in args)
+        if kwargs:
+            parts.extend(f"{k}={v}" for k, v in kwargs.items())
+
+        arg_str = ", ".join(parts)
         ui.info(f"{title}({arg_str})")
 
         if session.spinner:
