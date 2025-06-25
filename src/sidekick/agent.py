@@ -61,69 +61,26 @@ async def _format_tool_display(tool_name: str, args: dict):
             ui.info(f"  {key}: {value}")
 
 
-async def _render_tool_call(part):
-    """Print the output of a tool call."""
-    if session.spinner:
-        session.spinner.stop()
+async def _track_tool_request(part):
+    """Track that a tool was requested."""
+    # Store the tool request details for later display
+    if not hasattr(session, "pending_tools"):
+        session.pending_tools = {}
 
-    args = part.args_as_dict()
-
-    # Check if this tool manages its own confirmations
-    tool_manages_confirmation = part.tool_name in [
-        "write_file",
-        "update_file",
-        "run_command",
-        "git_add",
-        "git_commit",
-    ]
-
-    # For tools that don't manage their own confirmations (like MCP tools)
-    if session.confirmation_enabled and not tool_manages_confirmation:
-        from sidekick.constants import ALLOWED_TOOLS
-
-        if (
-            part.tool_name not in ALLOWED_TOOLS
-            and part.tool_name not in session.disabled_confirmations
-        ):
-            response = await ui.confirm_tool_call(part.tool_name, args)
-            if response == "no":
-                raise asyncio.CancelledError("Tool execution cancelled by user")
-            elif response == "always":
-                session.disabled_confirmations.add(part.tool_name)
-
-    # Track tool usage
-    if part.tool_name not in session.tool_usage:
-        session.tool_usage[part.tool_name] = 0
-    session.tool_usage[part.tool_name] += 1
-
-    await _format_tool_display(part.tool_name, args)
-
-    if session.spinner:
-        session.spinner.start()
+    session.pending_tools[part.tool_call_id] = {"name": part.tool_name, "args": part.args_as_dict()}
 
 
-async def _handle_tool_cancellation(tool_calls):
-    """Create tool return parts for cancelled tool calls."""
-    from pydantic_ai import messages
-
-    cancelled_parts = []
-    for tool_call in tool_calls:
-        cancelled_parts.append(
-            messages.ToolReturnPart(
-                tool_name=tool_call.tool_name,
-                content="Tool execution cancelled by user",
-                tool_call_id=tool_call.tool_call_id,
-            )
-        )
-
-    if cancelled_parts:
-        session.messages.append(messages.ModelRequest(parts=cancelled_parts))
+async def _cleanup_pending_tools():
+    """Clean up any pending tool requests."""
+    if hasattr(session, "pending_tools"):
+        session.pending_tools.clear()
 
 
 async def _process_node(node):
     if hasattr(node, "request"):
         session.messages.append(node.request)
 
+        # Handle retry prompts
         for part in node.request.parts:
             if part.part_kind == "retry-prompt":
                 if session.spinner:
@@ -137,20 +94,38 @@ async def _process_node(node):
                 if session.spinner:
                     session.spinner.start()
 
+            # Handle tool returns - show status only for successful executions
+            elif part.part_kind == "tool-return" and hasattr(session, "pending_tools"):
+                tool_id = getattr(part, "tool_call_id", None)
+                if tool_id and tool_id in session.pending_tools:
+                    # Tool was executed successfully, show the status
+                    tool_info = session.pending_tools[tool_id]
+
+                    if session.spinner:
+                        session.spinner.stop()
+
+                    # Track usage
+                    tool_name = tool_info["name"]
+                    if tool_name not in session.tool_usage:
+                        session.tool_usage[tool_name] = 0
+                    session.tool_usage[tool_name] += 1
+
+                    # Display status
+                    await _format_tool_display(tool_name, tool_info["args"])
+
+                    if session.spinner:
+                        session.spinner.start()
+
+                    # Clean up
+                    del session.pending_tools[tool_id]
+
     if hasattr(node, "model_response"):
         session.messages.append(node.model_response)
-        tool_calls = [part for part in node.model_response.parts if part.part_kind == "tool-call"]
 
-        cancelled = False
-        try:
-            for tool_call in tool_calls:
-                await _render_tool_call(tool_call)
-        except asyncio.CancelledError as e:
-            cancelled = True
-            raise e
-        finally:
-            if cancelled and tool_calls:
-                await _handle_tool_cancellation(tool_calls)
+        # Track tool requests (don't display yet)
+        tool_calls = [part for part in node.model_response.parts if part.part_kind == "tool-call"]
+        for tool_call in tool_calls:
+            await _track_tool_request(tool_call)
 
 
 def _calculate_usage_costs(usage):
@@ -210,17 +185,16 @@ def _create_confirmation_callback():
     async def confirm(title: str, preview: any, footer: Optional[str] = None) -> bool:
         tool_name = title.split(":")[0].strip() if ":" in title else title
 
+        # Check if confirmations are disabled globally or for this tool
+        if not session.confirmation_enabled or tool_name in session.disabled_confirmations:
+            return True
+
         # Stop spinner before showing anything
         if session.spinner:
             session.spinner.stop()
 
+        # Display the tool preview
         ui.display_tool_panel(preview, title, footer)
-
-        if tool_name in session.disabled_confirmations:
-            # Restart spinner before returning
-            if session.spinner:
-                session.spinner.start()
-            return True
 
         # Show confirmation options
         options_content = [
@@ -242,14 +216,12 @@ def _create_confirmation_callback():
 
             if choice == "" or choice in ["y", "yes"]:
                 ui.console.print()
-                # Restart spinner before returning
                 if session.spinner:
                     session.spinner.start()
                 return True
             elif choice in ["a", "always"]:
                 session.disabled_confirmations.add(tool_name)
                 ui.console.print()
-                # Restart spinner before returning
                 if session.spinner:
                     session.spinner.start()
                 return True
@@ -272,9 +244,8 @@ async def process_request(message: str):
 
     mh = session.messages.copy()
 
-    deps = ToolDeps(
-        confirm_action=_create_confirmation_callback() if session.confirmation_enabled else None
-    )
+    # Always provide the confirmation callback - tools will check if they need to use it
+    deps = ToolDeps(confirm_action=_create_confirmation_callback())
 
     try:
         async with agent.iter(message, deps=deps, message_history=mh) as agent_run:
@@ -295,3 +266,6 @@ async def process_request(message: str):
             ui.warning("Tool execution cancelled")
             return None
         raise
+    finally:
+        # Clean up any pending tools that didn't execute
+        await _cleanup_pending_tools()

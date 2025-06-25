@@ -20,7 +20,7 @@ console = Console()
 
 # Padding constants for consistent spacing
 PANEL_CONTENT_PADDING = 1
-PANEL_WRAPPER_PADDING = (1, 0, 1, 1)
+PANEL_WRAPPER_PADDING = (0, 0, 0, 1)
 PANEL_WRAPPER_PADDING_NO_BOTTOM = (1, 0, 0, 1)
 PANEL_WRAPPER_PADDING_NO_TOP = (0, 0, 1, 1)
 PANEL_WRAPPER_PADDING_AGENT = (0, 0, 0, 1)
@@ -121,7 +121,7 @@ def display_panel(panel, bottom_padding: bool = True):
 def display_agent_panel(content: str):
     """Display agent response panel with specific padding."""
     panel = create_panel(Markdown(content), "Sidekick", colors.primary)
-    console.print(Padding(panel, PANEL_WRAPPER_PADDING_AGENT))
+    console.print(Padding(panel, PANEL_WRAPPER_PADDING))
 
 
 def display_tool_panel(content, title: str, footer: str = None):
@@ -557,9 +557,8 @@ def usage(usage_data: dict):
         f"Cost(Req/Total): ${usage_data['request_cost']:.5f}/${usage_data['total_cost']:.5f}"
     )
 
-    # Display aligned with panel content, with padding below
+    # Use two spaces to align with panel content
     console.print(f"  {msg}", style=colors.muted)
-    console.print()
 
 
 def get_file_language(filepath: str) -> str:

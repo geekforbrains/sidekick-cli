@@ -1,10 +1,9 @@
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from pydantic_ai import messages
 
-from sidekick.agent import _process_node
+from sidekick.agent import _process_node, _track_tool_request
 
 
 @pytest.mark.asyncio
@@ -54,8 +53,8 @@ async def test_process_node_with_model_response_no_tools():
 
 
 @pytest.mark.asyncio
-async def test_process_node_with_tool_call_success():
-    """Test processing a node with successful tool call."""
+async def test_process_node_with_tool_call_tracking():
+    """Test processing a node with tool call gets tracked."""
     # Create a mock node with tool call
     node = Mock()
     delattr(node, "request")
@@ -64,106 +63,119 @@ async def test_process_node_with_tool_call_success():
     tool_call.part_kind = "tool-call"
     tool_call.tool_name = "test_tool"
     tool_call.tool_call_id = "test_123"
+    tool_call.args_as_dict = Mock(return_value={"arg1": "value1"})
 
     node.model_response = Mock(spec=messages.ModelResponse)
     node.model_response.parts = [tool_call]
 
-    # Mock session and _render_tool_call
+    # Mock session and _track_tool_request
     with patch("sidekick.agent.session") as mock_session:
         mock_messages = MagicMock()
         mock_session.messages = mock_messages
 
-        with patch("sidekick.agent._render_tool_call", new_callable=AsyncMock) as mock_render:
+        with patch("sidekick.agent._track_tool_request", new_callable=AsyncMock) as mock_track:
             await _process_node(node)
 
             # Verify response was appended
             mock_messages.append.assert_called_once_with(node.model_response)
 
-            # Verify tool call was rendered
-            mock_render.assert_called_once_with(tool_call)
+            # Verify tool call was tracked
+            mock_track.assert_called_once_with(tool_call)
 
 
 @pytest.mark.asyncio
-async def test_process_node_with_tool_call_cancellation():
-    """Test processing a node when tool call is cancelled."""
-    # Create a mock node with tool call
+async def test_process_node_with_tool_return():
+    """Test processing a node with tool return shows status."""
+    # Create a mock node with tool return
     node = Mock()
-    delattr(node, "request")
+    delattr(node, "model_response")
 
-    tool_call = Mock(spec=messages.ToolCallPart)
-    tool_call.part_kind = "tool-call"
-    tool_call.tool_name = "test_tool"
+    tool_return = Mock()
+    tool_return.part_kind = "tool-return"
+    tool_return.tool_call_id = "test_123"
+
+    node.request = Mock(spec=messages.ModelRequest)
+    node.request.parts = [tool_return]
+
+    # Mock session with pending tools
+    with patch("sidekick.agent.session") as mock_session:
+        mock_messages = MagicMock()
+        mock_session.messages = mock_messages
+        mock_session.pending_tools = {"test_123": {"name": "test_tool", "args": {"arg1": "value1"}}}
+        mock_session.tool_usage = {}
+        mock_session.spinner = None
+
+        with patch("sidekick.agent._format_tool_display", new_callable=AsyncMock) as mock_display:
+            await _process_node(node)
+
+            # Verify request was appended
+            mock_messages.append.assert_called_once_with(node.request)
+
+            # Verify tool display was called
+            mock_display.assert_called_once_with("test_tool", {"arg1": "value1"})
+
+            # Verify tool usage was tracked
+            assert mock_session.tool_usage["test_tool"] == 1
+
+            # Verify pending tool was cleaned up
+            assert "test_123" not in mock_session.pending_tools
+
+
+@pytest.mark.asyncio
+async def test_process_node_with_retry_prompt():
+    """Test processing a node with retry prompt."""
+    # Create a mock node with retry prompt
+    node = Mock()
+    delattr(node, "model_response")
+
+    retry_part = Mock()
+    retry_part.part_kind = "retry-prompt"
+    retry_part.content = "Trying a different approach"
+
+    node.request = Mock(spec=messages.ModelRequest)
+    node.request.parts = [retry_part]
+
+    # Mock session and ui
+    with patch("sidekick.agent.session") as mock_session:
+        mock_messages = MagicMock()
+        mock_session.messages = mock_messages
+        mock_session.spinner = None
+
+        with patch("sidekick.agent.ui.muted") as mock_muted:
+            await _process_node(node)
+
+            # Verify retry message was displayed
+            mock_muted.assert_called_once_with("Trying a different approach")
+
+
+@pytest.mark.asyncio
+async def test_track_tool_request():
+    """Test tracking tool requests."""
+    # Create a mock tool call
+    tool_call = Mock()
     tool_call.tool_call_id = "test_123"
+    tool_call.tool_name = "test_tool"
+    tool_call.args_as_dict = Mock(return_value={"arg1": "value1"})
 
-    node.model_response = Mock(spec=messages.ModelResponse)
-    node.model_response.parts = [tool_call]
-
-    # Mock session and _render_tool_call to raise CancelledError
+    # Mock session
     with patch("sidekick.agent.session") as mock_session:
-        mock_messages = MagicMock()
-        mock_session.messages = mock_messages
+        # Test when pending_tools doesn't exist
+        delattr(mock_session, "pending_tools")
 
-        with patch("sidekick.agent._render_tool_call", new_callable=AsyncMock) as mock_render:
-            mock_render.side_effect = asyncio.CancelledError("Tool execution cancelled by user")
+        await _track_tool_request(tool_call)
 
-            with patch(
-                "sidekick.agent._handle_tool_cancellation", new_callable=AsyncMock
-            ) as mock_handle:
-                # Verify the CancelledError is re-raised
-                with pytest.raises(asyncio.CancelledError):
-                    await _process_node(node)
+        # Verify pending_tools was created and tool was tracked
+        assert hasattr(mock_session, "pending_tools")
+        assert mock_session.pending_tools["test_123"] == {
+            "name": "test_tool",
+            "args": {"arg1": "value1"},
+        }
 
-                # Verify response was appended before cancellation
-                assert mock_messages.append.call_count == 1
-                mock_messages.append.assert_any_call(node.model_response)
+        # Test when pending_tools already exists
+        await _track_tool_request(tool_call)
 
-                # Verify tool cancellation handler was called
-                mock_handle.assert_called_once_with([tool_call])
-
-
-@pytest.mark.asyncio
-async def test_process_node_with_multiple_tool_calls_cancellation():
-    """Test processing a node with multiple tool calls when one is cancelled."""
-    # Create a mock node with multiple tool calls
-    node = Mock()
-    delattr(node, "request")
-
-    tool_calls = []
-    for i in range(3):
-        tool_call = Mock(spec=messages.ToolCallPart)
-        tool_call.part_kind = "tool-call"
-        tool_call.tool_name = f"tool_{i}"
-        tool_call.tool_call_id = f"id_{i}"
-        tool_calls.append(tool_call)
-
-    # Add a non-tool part to verify it's skipped
-    text_part = Mock(spec=messages.TextPart)
-    text_part.part_kind = "text"
-
-    node.model_response = Mock(spec=messages.ModelResponse)
-    node.model_response.parts = [tool_calls[0], text_part, tool_calls[1], tool_calls[2]]
-
-    # Mock session and _render_tool_call to raise CancelledError on second tool
-    with patch("sidekick.agent.session") as mock_session:
-        mock_messages = MagicMock()
-        mock_session.messages = mock_messages
-
-        with patch("sidekick.agent._render_tool_call", new_callable=AsyncMock) as mock_render:
-            # Succeed for first call, cancel on second
-            mock_render.side_effect = [
-                None,
-                asyncio.CancelledError("Tool execution cancelled by user"),
-            ]
-
-            with patch(
-                "sidekick.agent._handle_tool_cancellation", new_callable=AsyncMock
-            ) as mock_handle:
-                # Verify the CancelledError is re-raised
-                with pytest.raises(asyncio.CancelledError):
-                    await _process_node(node)
-
-                # Verify only the first two tools were processed (before cancellation)
-                assert mock_render.call_count == 2
-
-                # Verify cancellation handler was called with ALL tool calls from the response
-                mock_handle.assert_called_once_with([tool_calls[0], tool_calls[1], tool_calls[2]])
+        # Verify it still works
+        assert mock_session.pending_tools["test_123"] == {
+            "name": "test_tool",
+            "args": {"arg1": "value1"},
+        }
