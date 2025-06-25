@@ -10,6 +10,9 @@ async def update_file(
     ctx: RunContext[ToolDeps], filepath: str, old_content: str, new_content: str
 ) -> str:
     """Update specific content in a file."""
+    if ctx.deps and ctx.deps.display_tool_status:
+        await ctx.deps.display_tool_status("Update", filepath)
+
     if old_content == new_content:
         raise ModelRetry(
             "The old_content and new_content are identical. "

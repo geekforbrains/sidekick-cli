@@ -6,7 +6,7 @@ from sidekick.deps import ToolDeps
 async def read_file(ctx: RunContext[ToolDeps], filepath: str) -> str:
     """Read the contents of a file."""
     if ctx.deps and ctx.deps.display_tool_status:
-        await ctx.deps.display_tool_status("ReadFile", filepath)
+        await ctx.deps.display_tool_status("Read", filepath)
 
     try:
         with open(filepath, "r", encoding="utf-8") as file:

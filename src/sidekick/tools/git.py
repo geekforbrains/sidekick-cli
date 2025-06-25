@@ -15,6 +15,8 @@ async def git_add(ctx: RunContext[ToolDeps], files: str) -> str:
     Returns:
         Success message with staged files count
     """
+    if ctx.deps and ctx.deps.display_tool_status:
+        await ctx.deps.display_tool_status("GitAdd", files)
     try:
         # First check git status to show what will be staged
         status_result = subprocess.run(
@@ -80,6 +82,8 @@ async def git_commit(ctx: RunContext[ToolDeps], message: str) -> str:
     Returns:
         Success message with commit hash
     """
+    if ctx.deps and ctx.deps.display_tool_status:
+        await ctx.deps.display_tool_status("GitCommit", message)
     try:
         # Check if there are staged changes
         status_result = subprocess.run(

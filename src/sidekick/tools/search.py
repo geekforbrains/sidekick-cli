@@ -61,27 +61,38 @@ def _build_find_command(search_type: str, pattern: str) -> list:
     return command
 
 
-async def search_files(pattern: str) -> str:
+from pydantic_ai import RunContext
+
+from sidekick.deps import ToolDeps
+
+
+async def search_files(ctx: RunContext[ToolDeps], pattern: str) -> str:
     """
     Search for files by name or pattern (e.g., '*.py'), ignoring common non-project directories.
     """
+    if ctx.deps and ctx.deps.display_tool_status:
+        await ctx.deps.display_tool_status("SearchFiles", pattern)
     command = _build_find_command("file", pattern)
     return await _run_search_command(command)
 
 
-async def search_dirs(pattern: str) -> str:
+async def search_dirs(ctx: RunContext[ToolDeps], pattern: str) -> str:
     """
     Search for directories by name or pattern (e.g., 'src'), ignoring common non-project directories.
     """
+    if ctx.deps and ctx.deps.display_tool_status:
+        await ctx.deps.display_tool_status("SearchDirs", pattern)
     command = _build_find_command("dir", pattern)
     return await _run_search_command(command)
 
 
-async def search_content(text_pattern: str) -> str:
+async def search_content(ctx: RunContext[ToolDeps], text_pattern: str) -> str:
     """
     Search for a text pattern inside files. Uses 'rg' for speed and .gitignore awareness,
     otherwise falls back to an intelligent 'grep'.
     """
+    if ctx.deps and ctx.deps.display_tool_status:
+        await ctx.deps.display_tool_status("SearchContent", text_pattern)
     if shutil.which("rg"):
         # rg is fast and respects .gitignore automatically. -n for line numbers.
         command = ["rg", "-n", "--", text_pattern, "."]

@@ -4,6 +4,9 @@ import shutil
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+from pydantic_ai import RunContext
+
+from sidekick.deps import ToolDeps
 from .search import EXCLUDE_DIRS
 
 
@@ -174,7 +177,7 @@ def _walk_directory(
     return lines, {"files": total_files, "dirs": total_dirs}
 
 
-async def list_directory(path: str = ".", max_depth: int = 3) -> str:
+async def list_directory(ctx: RunContext[ToolDeps], path: str = ".", max_depth: int = 3) -> str:
     """
     List directory contents in a tree structure, respecting .gitignore and common exclusions.
 
@@ -185,7 +188,9 @@ async def list_directory(path: str = ".", max_depth: int = 3) -> str:
     Returns:
         Formatted directory tree as a string
     """
-    # Normalize path
+    if ctx.deps and ctx.deps.display_tool_status:
+        await ctx.deps.display_tool_status("List", path, depth=max_depth)
+
     path = os.path.abspath(os.path.expanduser(path))
 
     if not os.path.exists(path):
@@ -203,8 +208,7 @@ async def list_directory(path: str = ".", max_depth: int = 3) -> str:
     # Fall back to Python implementation
     lines, stats = _walk_directory(path, max_depth)
 
-    # Add summary
+    # Give AI the context of result
     lines.append("")
     lines.append(f"Total: {stats['files']} files, {stats['dirs']} directories")
-
     return "\n".join(lines)

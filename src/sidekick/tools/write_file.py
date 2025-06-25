@@ -9,6 +9,9 @@ from sidekick.deps import ToolDeps
 
 async def write_file(ctx: RunContext[ToolDeps], filepath: str, content: str) -> str:
     """Write content to a file."""
+    if ctx.deps and ctx.deps.display_tool_status:
+        await ctx.deps.display_tool_status("Write", filepath)
+
     if ctx.deps and ctx.deps.confirm_action:
         syntax = ui.create_syntax_highlighted(content, filepath)
         footer = f"File: {filepath}"
