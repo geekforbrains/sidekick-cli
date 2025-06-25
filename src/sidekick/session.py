@@ -2,8 +2,6 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Set
 
-from .constants import ALLOWED_TOOLS
-
 
 @dataclass
 class Session:
@@ -14,7 +12,6 @@ class Session:
     spinner_rotation_task: Optional[asyncio.Task] = None
     current_task: Optional[asyncio.Task] = None
     sigint_received: bool = False
-    skip_confirmations: Set[str] = field(default_factory=set)
     allowed_commands: Set[str] = field(default_factory=set)
     confirmation_enabled: bool = True
     model_switched: bool = False
@@ -29,18 +26,7 @@ class Session:
         """Initialize the session state."""
         self.current_model = model
 
-        # Always include the default allowed tools
-        self.skip_confirmations.update(ALLOWED_TOOLS)
-
         if "settings" in config:
-            # Add user-defined allowed_tools on top of defaults
-            if "allowed_tools" in config["settings"]:
-                self.skip_confirmations.update(config["settings"]["allowed_tools"])
-
-            # Backward compatibility with tool_ignore
-            if "tool_ignore" in config["settings"]:
-                self.skip_confirmations.update(config["settings"]["tool_ignore"])
-
             if "allowed_commands" in config["settings"]:
                 self.allowed_commands.update(config["settings"]["allowed_commands"])
 

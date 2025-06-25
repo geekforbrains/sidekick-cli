@@ -5,6 +5,7 @@ from pydantic_ai import Agent
 
 from sidekick import ui
 from sidekick.constants import MODELS
+from sidekick.deps import ToolDeps
 from sidekick.mcp import MCPAgent, load_mcp_servers
 from sidekick.session import session
 from sidekick.tools import TOOLS
@@ -59,46 +60,30 @@ async def _format_tool_display(tool_name: str, args: dict):
             ui.info(f"  {key}: {value}")
 
 
-async def _handle_run_command_approval(command_string: str, args: dict) -> str:
-    """Handle approval for run_command tool specifically."""
-    from sidekick.utils.command_parser import extract_commands, is_command_allowed
-
-    # Check if the command is already allowed
-    if is_command_allowed(command_string, session.allowed_commands):
-        return "allowed"
-
-    # Ask for approval
-    response = await ui.confirm_tool_call("run_command", args)
-
-    if response == "always":
-        # Add individual commands to allowed list
-        commands = extract_commands(command_string)
-        session.allowed_commands.update(commands)
-
-    return response
-
-
 async def _render_tool_call(part):
-    """Print the output of a tool call and get confirmation."""
+    """Print the output of a tool call."""
     if session.spinner:
         session.spinner.stop()
 
     args = part.args_as_dict()
 
-    if session.confirmation_enabled:
-        response = None
+    # Check if this tool manages its own confirmations
+    tool_manages_confirmation = part.tool_name in [
+        "write_file",
+        "update_file",
+        "run_command",
+        "git_add",
+        "git_commit",
+    ]
 
-        # Special handling for run_command tool
-        if part.tool_name == "run_command" and "command" in args:
-            response = await _handle_run_command_approval(args["command"], args)
-        # Regular tool handling
-        elif part.tool_name not in session.skip_confirmations:
+    # For tools that don't manage their own confirmations (like MCP tools)
+    if session.confirmation_enabled and not tool_manages_confirmation:
+        from sidekick.constants import ALLOWED_TOOLS
+
+        if part.tool_name not in ALLOWED_TOOLS:
             response = await ui.confirm_tool_call(part.tool_name, args)
-            if response == "always":
-                session.skip_confirmations.add(part.tool_name)
-
-        if response == "no":
-            raise asyncio.CancelledError("Tool execution cancelled by user")
+            if response == "no":
+                raise asyncio.CancelledError("Tool execution cancelled by user")
 
     # Track tool usage
     if part.tool_name not in session.tool_usage:
@@ -202,9 +187,71 @@ def get_or_create_agent():
             system_prompt=_get_prompt("system"),
             tools=TOOLS,
             mcp_servers=load_mcp_servers(),
+            deps_type=ToolDeps,
         )
         session.agents[session.current_model] = MCPAgent(base_agent)
     return session.agents[session.current_model]
+
+
+def _create_confirmation_callback():
+    """Create a confirmation callback for tools."""
+    disabled_tools = set()
+
+    async def confirm(title: str, preview: any) -> bool:
+        tool_name = title.split(":")[0].strip() if ":" in title else title
+
+        if tool_name in disabled_tools:
+            return True
+
+        # Stop spinner before showing confirmation
+        if session.spinner:
+            session.spinner.stop()
+
+        panel = ui.create_panel(preview, title, ui.colors.warning)
+        ui.display_panel(panel, bottom_padding=False)
+
+        # Show confirmation options
+        options_content = [
+            "",
+            "Options:",
+            "  y - Yes, execute this tool",
+            "  a - Always allow this tool",
+            "  n - No, cancel this execution",
+        ]
+        options_panel = ui.create_panel(
+            "\n".join(options_content), "Confirm Action", ui.colors.warning
+        )
+        ui.display_panel(options_panel, bottom_padding=False)
+
+        while True:
+            choice = (
+                ui.console.input(
+                    f"  [{ui.colors.warning}]Continue?[/{ui.colors.warning}] [y/a/n] (default: y): "
+                )
+                .lower()
+                .strip()
+            )
+
+            if choice == "" or choice in ["y", "yes"]:
+                # Restart spinner before returning
+                if session.spinner:
+                    session.spinner.start()
+                return True
+            elif choice in ["a", "always"]:
+                disabled_tools.add(tool_name)
+                # Restart spinner before returning
+                if session.spinner:
+                    session.spinner.start()
+                return True
+            elif choice in ["n", "no"]:
+                # Don't restart spinner on cancel
+                return False
+            else:
+                ui.console.print(
+                    "  Invalid choice. Please enter y, a, or n.", style=ui.colors.error
+                )
+
+    return confirm
 
 
 async def process_request(message: str):
@@ -214,8 +261,12 @@ async def process_request(message: str):
 
     mh = session.messages.copy()
 
+    deps = ToolDeps(
+        confirm_action=_create_confirmation_callback() if session.confirmation_enabled else None
+    )
+
     try:
-        async with agent.iter(message, message_history=mh) as agent_run:
+        async with agent.iter(message, deps=deps, message_history=mh) as agent_run:
             async for node in agent_run:
                 await _process_node(node)
 

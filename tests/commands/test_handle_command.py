@@ -1,48 +1,45 @@
-"""Test main command handler routing."""
+"""Command handler routing tests (DRY parametrised)."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
 from sidekick.commands import handle_command
 
 
+@pytest.mark.parametrize(
+    "user_input, patch_target, expected_args",
+    [
+        ("/dump", "handle_dump", []),
+        ("/yolo", "handle_yolo", []),
+        ("/model 2", "handle_model", ["2"]),
+    ],
+)
 @pytest.mark.asyncio
-async def test_handle_command_routes_dump():
-    """Test /dump command is routed correctly."""
-    with patch("sidekick.commands.handle_dump", new_callable=AsyncMock) as mock_dump:
-        result = await handle_command("/dump")
-        assert result is True
-        mock_dump.assert_called_once()
+async def test_handle_command_routes(monkeypatch, user_input, patch_target, expected_args):
+    mock_func = AsyncMock()
+    monkeypatch.setattr(f"sidekick.commands.{patch_target}", mock_func)
 
+    result = await handle_command(user_input)
 
-@pytest.mark.asyncio
-async def test_handle_command_routes_yolo():
-    """Test /yolo command is routed correctly."""
-    with patch("sidekick.commands.handle_yolo", new_callable=AsyncMock) as mock_yolo:
-        result = await handle_command("/yolo")
-        assert result is True
-        mock_yolo.assert_called_once()
+    assert result is True
 
-
-@pytest.mark.asyncio
-async def test_handle_command_routes_model():
-    """Test /model command is routed correctly."""
-    with patch("sidekick.commands.handle_model", new_callable=AsyncMock) as mock_model:
-        result = await handle_command("/model 2")
-        assert result is True
-        mock_model.assert_called_once_with(["2"])
+    # Verify called arguments irrespective of list vs positional nuance
+    call_args = mock_func.call_args[0]
+    if expected_args:
+        assert call_args[0] == expected_args
+    else:
+        # No arguments expected
+        assert call_args == ()
 
 
 @pytest.mark.asyncio
 async def test_handle_command_non_command():
-    """Test non-command input returns False."""
-    result = await handle_command("not a command")
-    assert result is False
+    """Input without leading slash should not be treated as command."""
+    assert await handle_command("not a command") is False
 
 
 @pytest.mark.asyncio
 async def test_handle_command_unknown():
-    """Test unknown command returns False."""
-    result = await handle_command("/unknown")
-    assert result is False
+    """Unknown command string should return False."""
+    assert await handle_command("/unknown") is False

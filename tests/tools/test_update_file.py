@@ -11,7 +11,7 @@ from sidekick.tools.update_file import update_file
 
 
 @pytest.mark.asyncio
-async def test_update_file_success():
+async def test_update_file_success(mock_ctx):
     """Test successful file update."""
     original_content = "Hello, World!\nThis is a test file.\nGoodbye!"
     old_content = "This is a test file."
@@ -19,7 +19,7 @@ async def test_update_file_success():
     expected_content = "Hello, World!\nThis is an updated file.\nGoodbye!"
 
     with patch("builtins.open", mock_open(read_data=original_content)) as mock_file:
-        result = await update_file("/test/file.txt", old_content, new_content)
+        result = await update_file(mock_ctx, "/test/file.txt", old_content, new_content)
 
         # Verify the file was opened for reading and writing
         assert mock_file.call_count == 2
@@ -34,7 +34,7 @@ async def test_update_file_success():
 
 
 @pytest.mark.asyncio
-async def test_update_file_content_not_found():
+async def test_update_file_content_not_found(mock_ctx):
     """Test ModelRetry when content to replace is not found."""
     original_content = "Hello, World!\nThis is a test file.\nGoodbye!"
     old_content = "This content does not exist"
@@ -42,7 +42,7 @@ async def test_update_file_content_not_found():
 
     with patch("builtins.open", mock_open(read_data=original_content)):
         with pytest.raises(ModelRetry) as exc_info:
-            await update_file("/test/file.txt", old_content, new_content)
+            await update_file(mock_ctx, "/test/file.txt", old_content, new_content)
 
         error_msg = str(exc_info.value)
         assert "Content to replace not found in /test/file.txt" in error_msg
@@ -51,7 +51,7 @@ async def test_update_file_content_not_found():
 
 
 @pytest.mark.asyncio
-async def test_update_file_content_not_found_long_content():
+async def test_update_file_content_not_found_long_content(mock_ctx):
     """Test ModelRetry with truncated preview for long content."""
     original_content = "Short content"
     old_content = "a" * 150  # Long content that doesn't exist
@@ -59,7 +59,7 @@ async def test_update_file_content_not_found_long_content():
 
     with patch("builtins.open", mock_open(read_data=original_content)):
         with pytest.raises(ModelRetry) as exc_info:
-            await update_file("/test/file.txt", old_content, new_content)
+            await update_file(mock_ctx, "/test/file.txt", old_content, new_content)
 
         error_msg = str(exc_info.value)
         assert "Content to replace not found" in error_msg
@@ -68,11 +68,11 @@ async def test_update_file_content_not_found_long_content():
 
 
 @pytest.mark.asyncio
-async def test_update_file_not_found():
+async def test_update_file_not_found(mock_ctx):
     """Test ModelRetry when file doesn't exist."""
     with patch("builtins.open", side_effect=FileNotFoundError()):
         with pytest.raises(ModelRetry) as exc_info:
-            await update_file("/nonexistent/file.txt", "old", "new")
+            await update_file(mock_ctx, "/nonexistent/file.txt", "old", "new")
 
         error_msg = str(exc_info.value)
         assert "File not found: /nonexistent/file.txt" in error_msg
@@ -80,11 +80,11 @@ async def test_update_file_not_found():
 
 
 @pytest.mark.asyncio
-async def test_update_file_read_error():
+async def test_update_file_read_error(mock_ctx):
     """Test ModelRetry on generic read error."""
     with patch("builtins.open", side_effect=PermissionError("Access denied")):
         with pytest.raises(ModelRetry) as exc_info:
-            await update_file("/test/file.txt", "old", "new")
+            await update_file(mock_ctx, "/test/file.txt", "old", "new")
 
         error_msg = str(exc_info.value)
         assert "Error reading file /test/file.txt" in error_msg
@@ -92,7 +92,7 @@ async def test_update_file_read_error():
 
 
 @pytest.mark.asyncio
-async def test_update_file_write_error():
+async def test_update_file_write_error(mock_ctx):
     """Test ModelRetry on write error."""
     original_content = "Hello, World!\nThis is a test file.\nGoodbye!"
     old_content = "This is a test file."
@@ -109,7 +109,7 @@ async def test_update_file_write_error():
 
     with patch("builtins.open", side_effect=open_side_effect):
         with pytest.raises(ModelRetry) as exc_info:
-            await update_file("/test/file.txt", old_content, new_content)
+            await update_file(mock_ctx, "/test/file.txt", old_content, new_content)
 
         error_msg = str(exc_info.value)
         assert "Error writing to file /test/file.txt" in error_msg
@@ -117,7 +117,7 @@ async def test_update_file_write_error():
 
 
 @pytest.mark.asyncio
-async def test_update_file_with_real_file():
+async def test_update_file_with_real_file(mock_ctx):
     """Integration test with actual file operations."""
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as tmp:
         tmp.write("Line 1\nLine 2\nLine 3\n")
@@ -125,7 +125,7 @@ async def test_update_file_with_real_file():
 
     try:
         # Test successful update
-        result = await update_file(tmp_path, "Line 2", "Updated Line 2")
+        result = await update_file(mock_ctx, tmp_path, "Line 2", "Updated Line 2")
         assert result == f"Successfully updated {tmp_path}"
 
         # Verify content was updated
@@ -135,7 +135,7 @@ async def test_update_file_with_real_file():
 
         # Test content not found
         with pytest.raises(ModelRetry) as exc_info:
-            await update_file(tmp_path, "Non-existent line", "New line")
+            await update_file(mock_ctx, tmp_path, "Non-existent line", "New line")
         assert "Content to replace not found" in str(exc_info.value)
 
     finally:
@@ -144,7 +144,7 @@ async def test_update_file_with_real_file():
 
 
 @pytest.mark.asyncio
-async def test_update_file_only_first_occurrence():
+async def test_update_file_only_first_occurrence(mock_ctx):
     """Test that only the first occurrence is replaced."""
     original_content = "foo\nbar\nfoo\nbaz"
     old_content = "foo"
@@ -152,7 +152,7 @@ async def test_update_file_only_first_occurrence():
     expected_content = "replaced\nbar\nfoo\nbaz"
 
     with patch("builtins.open", mock_open(read_data=original_content)) as mock_file:
-        result = await update_file("/test/file.txt", old_content, new_content)
+        result = await update_file(mock_ctx, "/test/file.txt", old_content, new_content)
 
         # Verify only first occurrence was replaced
         handle = mock_file()
@@ -162,7 +162,7 @@ async def test_update_file_only_first_occurrence():
 
 
 @pytest.mark.asyncio
-async def test_update_file_preserves_encoding():
+async def test_update_file_preserves_encoding(mock_ctx):
     """Test that UTF-8 encoding is properly handled."""
     original_content = "Hello 世界!\nThis is a test file with émojis 🎉\nGoodbye!"
     old_content = "This is a test file with émojis 🎉"
@@ -170,7 +170,7 @@ async def test_update_file_preserves_encoding():
     expected_content = "Hello 世界!\nThis is an updated file with émojis 🎊\nGoodbye!"
 
     with patch("builtins.open", mock_open(read_data=original_content)) as mock_file:
-        result = await update_file("/test/file.txt", old_content, new_content)
+        result = await update_file(mock_ctx, "/test/file.txt", old_content, new_content)
 
         # Verify encoding was specified
         mock_file.assert_any_call("/test/file.txt", "r", encoding="utf-8")
@@ -181,3 +181,14 @@ async def test_update_file_preserves_encoding():
         handle.write.assert_called_once_with(expected_content)
 
         assert result == "Successfully updated /test/file.txt"
+
+
+@pytest.mark.asyncio
+async def test_update_file_identical_content(mock_ctx):
+    """Test ModelRetry when old_content and new_content are identical."""
+    with pytest.raises(ModelRetry) as exc_info:
+        await update_file(mock_ctx, "/test/file.txt", "same content", "same content")
+
+    error_msg = str(exc_info.value)
+    assert "old_content and new_content are identical" in error_msg
+    assert "provide different content" in error_msg

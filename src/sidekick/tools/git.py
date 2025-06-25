@@ -1,9 +1,12 @@
+import asyncio
 import subprocess
 
-from pydantic_ai import ModelRetry
+from pydantic_ai import ModelRetry, RunContext
+
+from sidekick.deps import ToolDeps
 
 
-async def git_add(files: str) -> str:
+async def git_add(ctx: RunContext[ToolDeps], files: str) -> str:
     """Stage files for commit using git add.
 
     Args:
@@ -20,6 +23,25 @@ async def git_add(files: str) -> str:
 
         if not status_result.stdout.strip():
             return "No changes to stage"
+
+        if ctx.deps and ctx.deps.confirm_action:
+            files_to_stage = []
+            for line in status_result.stdout.splitlines():
+                if line.strip():
+                    status = line[:2]
+                    filename = line[3:]
+                    if files.strip() == "." or any(
+                        f in filename for f in (files.split() if " " in files else [files])
+                    ):
+                        files_to_stage.append(f"{status} {filename}")
+
+            if files_to_stage:
+                preview = "\n".join(files_to_stage[:20])
+                if len(files_to_stage) > 20:
+                    preview += f"\n... and {len(files_to_stage) - 20} more files"
+
+                if not await ctx.deps.confirm_action(f"Git Add: {files}", preview):
+                    raise asyncio.CancelledError("Tool execution cancelled by user")
 
         # Parse files argument - could be '.', specific files, or patterns
         if files.strip() == ".":
@@ -49,7 +71,7 @@ async def git_add(files: str) -> str:
         raise ModelRetry(f"Error running git add: {str(e)}")
 
 
-async def git_commit(message: str) -> str:
+async def git_commit(ctx: RunContext[ToolDeps], message: str) -> str:
     """Create a git commit with the given message.
 
     Args:
@@ -73,6 +95,15 @@ async def git_commit(message: str) -> str:
 
         if not staged_files:
             return "No staged changes to commit"
+
+        if ctx.deps and ctx.deps.confirm_action:
+            preview = f"Message: {message}\n\nStaged changes:\n"
+            preview += "\n".join(staged_files[:20])
+            if len(staged_files) > 20:
+                preview += f"\n... and {len(staged_files) - 20} more files"
+
+            if not await ctx.deps.confirm_action("Git Commit", preview):
+                raise asyncio.CancelledError("Tool execution cancelled by user")
 
         # Create the commit
         commit_result = subprocess.run(
