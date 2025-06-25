@@ -1,5 +1,6 @@
 import asyncio
 from pathlib import Path
+from typing import Optional
 
 from pydantic_ai import Agent
 
@@ -206,18 +207,25 @@ def get_or_create_agent():
 def _create_confirmation_callback():
     """Create a confirmation callback for tools."""
 
-    async def confirm(title: str, preview: any) -> bool:
+    async def confirm(title: str, preview: any, footer: Optional[str] = None) -> bool:
         tool_name = title.split(":")[0].strip() if ":" in title else title
 
-        if tool_name in session.disabled_confirmations:
-            return True
-
-        # Stop spinner before showing confirmation
+        # Stop spinner before showing anything
         if session.spinner:
             session.spinner.stop()
 
-        panel = ui.create_panel(preview, title, ui.colors.warning)
+        panel = ui.create_panel(preview, title, ui.colors.tool_data)
         ui.display_panel(panel, bottom_padding=False)
+
+        if footer:
+            ui.console.print(f"  {footer}", style=ui.colors.muted)
+            ui.console.print()
+
+        if tool_name in session.disabled_confirmations:
+            # Restart spinner before returning
+            if session.spinner:
+                session.spinner.start()
+            return True
 
         # Show confirmation options
         options_content = [

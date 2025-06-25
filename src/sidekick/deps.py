@@ -6,4 +6,4 @@ from typing import Awaitable, Callable, Optional
 class ToolDeps:
     """Dependencies passed to tools via RunContext."""
 
-    confirm_action: Optional[Callable[[str, str], Awaitable[bool]]] = None
+    confirm_action: Optional[Callable[[str, str, Optional[str]], Awaitable[bool]]] = None

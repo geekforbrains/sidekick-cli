@@ -19,16 +19,19 @@ console = Console()
 PANEL_CONTENT_PADDING = 1
 PANEL_WRAPPER_PADDING = (1, 0, 1, 1)
 PANEL_WRAPPER_PADDING_NO_BOTTOM = (1, 0, 0, 1)
+PANEL_WRAPPER_PADDING_NO_TOP = (0, 0, 1, 1)
+PANEL_WRAPPER_PADDING_AGENT = (0, 0, 0, 1)
 
 
 # Color scheme from main branch
 class Colors:
-    primary = "medium_purple1"
-    secondary = "medium_purple3"
-    success = "green"
-    warning = "orange1"
-    error = "red"
-    muted = "grey62"
+    primary = "medium_purple1"  # Agent responses
+    secondary = "medium_purple3"  # Secondary purple
+    success = "green"  # Success messages
+    warning = "orange1"  # Confirmations/warnings
+    error = "red"  # Errors
+    muted = "grey62"  # Info/help
+    tool_data = "bright_blue"  # Tool output data
 
 
 colors = Colors()
@@ -167,7 +170,7 @@ def muted(message: str, spaces: int = 0):
 def agent(content: str):
     """Display agent output with markdown formatting."""
     panel = create_panel(Markdown(content), "Sidekick", colors.primary)
-    display_panel(panel, bottom_padding=False)
+    console.print(Padding(panel, PANEL_WRAPPER_PADDING_AGENT))
 
 
 def line():
@@ -185,7 +188,7 @@ def dump(data):
 def _display_write_file_confirmation(args: dict):
     """Display confirmation for write_file tool."""
     syntax = create_syntax_highlighted(args["content"], args["filepath"])
-    panel = create_panel(syntax, f"Write File: {args['filepath']}", colors.warning)
+    panel = create_panel(syntax, "Write File", colors.warning)
     display_panel(panel, bottom_padding=False)
     console.print(f"  File: {args['filepath']}", style=colors.muted)
     console.print()

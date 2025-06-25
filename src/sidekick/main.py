@@ -122,6 +122,7 @@ async def repl():
         await initialize_servers()
 
         ui.success("Go kick some ass!")
+        ui.line()
 
         prompt_session = create_multiline_prompt_session()
 
@@ -136,6 +137,8 @@ async def repl():
 
             if should_exit(user_input):
                 break
+
+            ui.line()
 
             if await handle_command(user_input):
                 # Check if model was switched and recreate agent if needed
