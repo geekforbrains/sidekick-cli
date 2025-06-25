@@ -127,7 +127,12 @@ async def _process_node(node):
             if part.part_kind == "retry-prompt":
                 if session.spinner:
                     session.spinner.stop()
-                ui.muted("Update failed, trying a different approach")
+                error_msg = (
+                    part.content
+                    if hasattr(part, "content") and isinstance(part.content, str)
+                    else "Trying a different approach"
+                )
+                ui.muted(f"{error_msg}")
                 if session.spinner:
                     session.spinner.start()
 
