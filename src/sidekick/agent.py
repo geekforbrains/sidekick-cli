@@ -20,18 +20,6 @@ def _get_prompt(name: str) -> str:
         return f"Error: Prompt file '{name}.txt' not found"
 
 
-async def _track_tool_request(part):
-    if not hasattr(session, "pending_tools"):
-        session.pending_tools = {}
-
-    session.pending_tools[part.tool_call_id] = {"name": part.tool_name, "args": part.args_as_dict()}
-
-
-async def _cleanup_pending_tools():
-    if hasattr(session, "pending_tools"):
-        session.pending_tools.clear()
-
-
 async def _process_node(node):
     if hasattr(node, "request"):
         session.messages.append(node.request)
@@ -49,24 +37,8 @@ async def _process_node(node):
                 if session.spinner:
                     session.spinner.start()
 
-            elif part.part_kind == "tool-return" and hasattr(session, "pending_tools"):
-                tool_id = getattr(part, "tool_call_id", None)
-                if tool_id and tool_id in session.pending_tools:
-                    tool_info = session.pending_tools[tool_id]
-
-                    tool_name = tool_info["name"]
-                    if tool_name not in session.tool_usage:
-                        session.tool_usage[tool_name] = 0
-                    session.tool_usage[tool_name] += 1
-
-                    del session.pending_tools[tool_id]
-
     if hasattr(node, "model_response"):
         session.messages.append(node.model_response)
-
-        tool_calls = [part for part in node.model_response.parts if part.part_kind == "tool-call"]
-        for tool_call in tool_calls:
-            await _track_tool_request(tool_call)
 
 
 def _calculate_usage_costs(usage):
@@ -223,5 +195,3 @@ async def process_request(message: str):
             ui.warning("Tool execution cancelled")
             return None
         raise
-    finally:
-        await _cleanup_pending_tools()

@@ -97,16 +97,7 @@ async def handle_usage():
             f"  • Request cost: ${session.last_usage['request_cost']:.5f}\n", style="white"
         )
 
-    # Show tool usage breakdown
-    if session.tool_usage:
-        if session.total_tokens > 0 or session.last_usage:
-            content.append("\n")
-        content.append("Tools Used This Session\n", style=f"bold {ui.colors.primary}")
-        for tool_name, count in sorted(session.tool_usage.items()):
-            display_name = ui.format_tool_name(tool_name)
-            content.append(f"  • {display_name}: {count}x\n", style="white")
-
-    if not session.total_tokens and not session.tool_usage:
+    if not session.total_tokens:
         content.append("No usage data yet in this session", style=ui.colors.muted)
 
     # Remove trailing newline if present

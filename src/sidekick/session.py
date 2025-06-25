@@ -18,7 +18,6 @@ class Session:
     model_switched: bool = False
 
     # Usage tracking
-    tool_usage: Dict[str, int] = field(default_factory=dict)
     last_usage: Optional[Dict[str, Any]] = None
     total_tokens: int = 0
     total_cost: float = 0.0
