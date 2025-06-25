@@ -98,18 +98,21 @@ def _create_confirmation_callback():
 
         ui.display_tool_panel(preview, title, footer)
 
-        options_content = [
-            "Options:",
-            "  y - Yes, execute this tool",
-            "  a - Always allow this tool",
-            "  n - No, cancel this execution",
-        ]
-        ui.display_confirmation_panel("\n".join(options_content))
+        # Display confirmation options without using a panel, but still
+        # indented by two spaces so they line up with other panel content.
+        options = (
+            ("y", "Yes, execute this tool"),
+            ("a", "Always allow this tool"),
+            ("n", "No, cancel this execution"),
+        )
+
+        for key, description in options:
+            ui.console.print(f"  [{ui.colors.warning}]{key}[/{ui.colors.warning}]: {description}")
 
         while True:
             choice = (
                 ui.console.input(
-                    f"  [{ui.colors.warning}]Continue?[/{ui.colors.warning}] [y/a/n] (default: y): "
+                    f"  [{ui.colors.warning}]Continue?[/{ui.colors.warning}] (y): "
                 )
                 .lower()
                 .strip()
@@ -129,10 +132,6 @@ def _create_confirmation_callback():
             elif choice in ["n", "no"]:
                 ui.console.print()
                 return False
-            else:
-                ui.console.print(
-                    "  Invalid choice. Please enter y, a, or n.", style=ui.colors.error
-                )
 
     return confirm
 
