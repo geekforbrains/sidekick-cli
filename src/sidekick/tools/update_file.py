@@ -2,8 +2,8 @@ import asyncio
 
 from pydantic_ai import ModelRetry, RunContext
 
+from sidekick import ui
 from sidekick.deps import ToolDeps
-from sidekick.utils.syntax import create_unified_diff
 
 
 async def update_file(
@@ -34,9 +34,10 @@ async def update_file(
 
     if ctx.deps and ctx.deps.confirm_action:
         updated_content = content.replace(old_content, new_content, 1)
-        diff_preview = create_unified_diff(content, updated_content, filepath)
+        diff_preview = ui.create_unified_diff(content, updated_content, filepath)
+        footer = f"File: {filepath}"
 
-        if not await ctx.deps.confirm_action(f"Update File: {filepath}", diff_preview):
+        if not await ctx.deps.confirm_action("Update File", diff_preview, footer):
             raise asyncio.CancelledError("Tool execution cancelled by user")
 
     try:

@@ -3,14 +3,14 @@ from pathlib import Path
 
 from pydantic_ai import RunContext
 
+from sidekick import ui
 from sidekick.deps import ToolDeps
-from sidekick.utils.syntax import create_syntax_highlighted
 
 
 async def write_file(ctx: RunContext[ToolDeps], filepath: str, content: str) -> str:
     """Write content to a file."""
     if ctx.deps and ctx.deps.confirm_action:
-        syntax = create_syntax_highlighted(content, filepath)
+        syntax = ui.create_syntax_highlighted(content, filepath)
         footer = f"File: {filepath}"
         if not await ctx.deps.confirm_action("Write File", syntax, footer):
             raise asyncio.CancelledError("Tool execution cancelled by user")

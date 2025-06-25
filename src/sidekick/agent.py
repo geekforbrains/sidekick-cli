@@ -214,12 +214,7 @@ def _create_confirmation_callback():
         if session.spinner:
             session.spinner.stop()
 
-        panel = ui.create_panel(preview, title, ui.colors.tool_data)
-        ui.display_panel(panel, bottom_padding=False)
-
-        if footer:
-            ui.console.print(f"  {footer}", style=ui.colors.muted)
-            ui.console.print()
+        ui.display_tool_panel(preview, title, footer)
 
         if tool_name in session.disabled_confirmations:
             # Restart spinner before returning
@@ -229,16 +224,12 @@ def _create_confirmation_callback():
 
         # Show confirmation options
         options_content = [
-            "",
             "Options:",
             "  y - Yes, execute this tool",
             "  a - Always allow this tool",
             "  n - No, cancel this execution",
         ]
-        options_panel = ui.create_panel(
-            "\n".join(options_content), "Confirm Action", ui.colors.warning
-        )
-        ui.display_panel(options_panel, bottom_padding=False)
+        ui.display_confirmation_panel("\n".join(options_content))
 
         while True:
             choice = (
@@ -250,17 +241,20 @@ def _create_confirmation_callback():
             )
 
             if choice == "" or choice in ["y", "yes"]:
+                ui.console.print()
                 # Restart spinner before returning
                 if session.spinner:
                     session.spinner.start()
                 return True
             elif choice in ["a", "always"]:
                 session.disabled_confirmations.add(tool_name)
+                ui.console.print()
                 # Restart spinner before returning
                 if session.spinner:
                     session.spinner.start()
                 return True
             elif choice in ["n", "no"]:
+                ui.console.print()
                 # Don't restart spinner on cancel
                 return False
             else:

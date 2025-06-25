@@ -1,17 +1,20 @@
 import asyncio
+import difflib
 import random
+from pathlib import Path
 
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.panel import Panel
 from rich.pretty import Pretty
+from rich.syntax import Syntax
 from rich.table import Table
+from rich.text import Text
 
 from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.session import session
 from sidekick.utils.display import format_tool_name
-from sidekick.utils.syntax import create_syntax_highlighted, create_unified_diff
 
 console = Console()
 
@@ -21,6 +24,8 @@ PANEL_WRAPPER_PADDING = (1, 0, 1, 1)
 PANEL_WRAPPER_PADDING_NO_BOTTOM = (1, 0, 0, 1)
 PANEL_WRAPPER_PADDING_NO_TOP = (0, 0, 1, 1)
 PANEL_WRAPPER_PADDING_AGENT = (0, 0, 0, 1)
+
+SYNTAX_THEME = "monokai"
 
 
 # Color scheme from main branch
@@ -113,6 +118,43 @@ def display_panel(panel, bottom_padding: bool = True):
     console.print(Padding(panel, padding))
 
 
+def display_agent_panel(content: str):
+    """Display agent response panel with specific padding."""
+    panel = create_panel(Markdown(content), "Sidekick", colors.primary)
+    console.print(Padding(panel, PANEL_WRAPPER_PADDING_AGENT))
+
+
+def display_tool_panel(content, title: str, footer: str = None):
+    """Display tool data panel with optional footer."""
+    panel = create_panel(content, title, colors.tool_data)
+
+    if footer:
+        console.print(Padding(panel, PANEL_WRAPPER_PADDING_NO_BOTTOM))
+        console.print(f"  {footer}", style=colors.muted)
+        console.print()
+    else:
+        console.print(Padding(panel, PANEL_WRAPPER_PADDING))
+
+
+def display_confirmation_panel(content: str):
+    """Display confirmation panel with consistent left padding."""
+    panel = create_panel(content, "Confirm Action", colors.warning)
+    console.print(Padding(panel, (0, 0, 0, 1)))
+
+
+def display_error_panel(message: str, detail: str = None):
+    """Display error panel with consistent padding."""
+    content = f"{message}\n\n{detail}" if detail else message
+    panel = create_panel(content, "Error", colors.error)
+    display_panel(panel)
+
+
+def display_info_panel(content, title: str):
+    """Display info panel with consistent padding."""
+    panel = create_panel(content, title, colors.muted)
+    display_panel(panel)
+
+
 # Style definitions
 class SpinnerStyle:
     DEFAULT = f"[bold {colors.primary}]{{}}[/bold {colors.primary}]"
@@ -142,9 +184,7 @@ def error(message: str, detail: str = None):
         message: The main error message
         detail: Optional detailed error information
     """
-    content = f"{message}\n\n{detail}" if detail else message
-    panel = create_panel(content, "Error", colors.error)
-    display_panel(panel)
+    display_error_panel(message, detail)
 
 
 def warning(message: str):
@@ -169,8 +209,7 @@ def muted(message: str, spaces: int = 0):
 
 def agent(content: str):
     """Display agent output with markdown formatting."""
-    panel = create_panel(Markdown(content), "Sidekick", colors.primary)
-    console.print(Padding(panel, PANEL_WRAPPER_PADDING_AGENT))
+    display_agent_panel(content)
 
 
 def line():
@@ -181,8 +220,7 @@ def line():
 def dump(data):
     """Display data in a formatted panel."""
     pretty = Pretty(data, expand_all=True)
-    panel = create_panel(pretty, "Message History", colors.muted)
-    display_panel(panel)
+    display_info_panel(pretty, "Message History")
 
 
 def _display_write_file_confirmation(args: dict):
@@ -491,8 +529,7 @@ def help():
     for cmd, desc in commands:
         table.add_row(cmd, desc)
 
-    panel = create_panel(table, "Available Commands", colors.muted)
-    display_panel(panel)
+    display_info_panel(table, "Available Commands")
 
 
 def version():
@@ -523,3 +560,205 @@ def usage(usage_data: dict):
     # Display aligned with panel content, with padding below
     console.print(f"  {msg}", style=colors.muted)
     console.print()
+
+
+def get_file_language(filepath: str) -> str:
+    """Detect programming language from file extension.
+
+    Args:
+        filepath: Path to the file
+
+    Returns:
+        Language identifier for Rich syntax highlighting
+    """
+    extension_map = {
+        ".py": "python",
+        ".js": "javascript",
+        ".ts": "typescript",
+        ".jsx": "jsx",
+        ".tsx": "tsx",
+        ".java": "java",
+        ".c": "c",
+        ".cpp": "cpp",
+        ".cs": "csharp",
+        ".go": "go",
+        ".rs": "rust",
+        ".rb": "ruby",
+        ".php": "php",
+        ".swift": "swift",
+        ".kt": "kotlin",
+        ".scala": "scala",
+        ".r": "r",
+        ".lua": "lua",
+        ".dart": "dart",
+        ".sh": "bash",
+        ".bash": "bash",
+        ".zsh": "bash",
+        ".fish": "fish",
+        ".ps1": "powershell",
+        ".sql": "sql",
+        ".html": "html",
+        ".htm": "html",
+        ".xml": "xml",
+        ".css": "css",
+        ".scss": "scss",
+        ".sass": "sass",
+        ".less": "less",
+        ".json": "json",
+        ".yaml": "yaml",
+        ".yml": "yaml",
+        ".toml": "toml",
+        ".ini": "ini",
+        ".cfg": "ini",
+        ".conf": "ini",
+        ".md": "markdown",
+        ".rst": "rst",
+        ".tex": "latex",
+        ".dockerfile": "dockerfile",
+        ".makefile": "makefile",
+        ".cmake": "cmake",
+        ".vim": "vim",
+        ".el": "elisp",
+        ".clj": "clojure",
+        ".ex": "elixir",
+        ".exs": "elixir",
+        ".erl": "erlang",
+        ".hrl": "erlang",
+        ".hs": "haskell",
+        ".ml": "ocaml",
+        ".mli": "ocaml",
+        ".fs": "fsharp",
+        ".fsx": "fsharp",
+        ".pl": "perl",
+        ".pm": "perl",
+        ".jl": "julia",
+        ".nim": "nim",
+        ".nix": "nix",
+        ".vue": "vue",
+        ".svelte": "svelte",
+    }
+
+    # Get file extension
+    path = Path(filepath)
+    ext = path.suffix.lower()
+
+    # Check for special filenames
+    filename = path.name.lower()
+    if filename == "dockerfile":
+        return "dockerfile"
+    elif filename == "makefile":
+        return "makefile"
+    elif filename == "cmakelists.txt":
+        return "cmake"
+
+    # Return mapped language or default to text
+    return extension_map.get(ext, "text")
+
+
+def create_syntax_highlighted(content: str, filepath: str, theme: str = None) -> Syntax:
+    """Create a syntax-highlighted Rich Syntax object.
+
+    Args:
+        content: The code content to highlight
+        filepath: Path to the file (used for language detection)
+        theme: Pygments theme name (default: from SYNTAX_THEME)
+
+    Returns:
+        Rich Syntax object ready for display
+    """
+    if theme is None:
+        theme = SYNTAX_THEME
+
+    language = get_file_language(filepath)
+
+    return Syntax(
+        content,
+        language,
+        theme=theme,
+        line_numbers=True,
+        word_wrap=False,
+    )
+
+
+def create_shell_syntax(command: str, theme: str = None) -> Syntax:
+    """Create a syntax-highlighted shell command.
+
+    Args:
+        command: The shell command to highlight
+        theme: Pygments theme name (default: from SYNTAX_THEME)
+
+    Returns:
+        Rich Syntax object ready for display
+    """
+    if theme is None:
+        theme = SYNTAX_THEME
+
+    return Syntax(
+        command,
+        "bash",
+        theme=theme,
+        line_numbers=False,
+        word_wrap=True,
+    )
+
+
+def create_unified_diff(
+    old_content: str, new_content: str, filepath: str, context_lines: int = 3
+) -> Text:
+    """Create a unified diff with syntax highlighting.
+
+    Args:
+        old_content: The original content
+        new_content: The new content
+        filepath: Path to the file (used for header)
+        context_lines: Number of context lines to show (default: 3)
+
+    Returns:
+        Rich Text object with colored diff
+    """
+    old_lines = old_content.splitlines(keepends=True)
+    new_lines = new_content.splitlines(keepends=True)
+
+    diff_lines = list(
+        difflib.unified_diff(
+            old_lines, new_lines, fromfile=filepath, tofile=filepath, n=context_lines
+        )
+    )
+
+    if not diff_lines:
+        return Text("No changes detected", style="dim")
+
+    diff_text = Text()
+
+    for line in diff_lines:
+        if line.startswith("+++") or line.startswith("---"):
+            diff_text.append(line, style="bold blue")
+        elif line.startswith("@@"):
+            diff_text.append(line, style="cyan")
+        elif line.startswith("+"):
+            diff_text.append(line, style="green")
+        elif line.startswith("-"):
+            diff_text.append(line, style="red")
+        else:
+            diff_text.append(line)
+
+    return diff_text
+
+
+def create_inline_diff(old_content: str, new_content: str) -> tuple[Text, Text]:
+    """Create inline diff showing old and new content side by side.
+
+    Args:
+        old_content: The original content
+        new_content: The new content
+
+    Returns:
+        Tuple of (old_text, new_text) with highlighting
+    """
+    old_text = Text(old_content)
+    new_text = Text(new_content)
+
+    old_text.stylize("red")
+    new_text.stylize("green")
+
+    return old_text, new_text
