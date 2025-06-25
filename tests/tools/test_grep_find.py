@@ -30,7 +30,7 @@ async def test_find_files_success(
     mock_which.side_effect = lambda cmd: "/usr/bin/find" if cmd == "find" else None
     mock_subprocess_exec.return_value = make_mock_process("./src/main.py\n./src/agent.py")
 
-    result = await find(mock_context, "*.py")
+    result = await find(mock_context, ".", "*.py")
 
     args = mock_subprocess_exec.call_args[0]
     assert args[0] == "find" and "-type" in args and "f" in args and "*.py" in args
@@ -45,7 +45,7 @@ async def test_find_dirs_success(mock_subprocess_exec, mock_which, make_mock_pro
     mock_which.side_effect = lambda cmd: "/usr/bin/find" if cmd == "find" else None
     mock_subprocess_exec.return_value = make_mock_process("./src/utils\n./tests/tools")
 
-    result = await find(mock_context, "*tools*", dirs=True)
+    result = await find(mock_context, ".", "*tools*", dirs=True)
 
     args = mock_subprocess_exec.call_args[0]
     assert args[0] == "find" and "-type" in args and "d" in args and "*tools*" in args
@@ -58,7 +58,7 @@ async def test_find_dirs_success(mock_subprocess_exec, mock_which, make_mock_pro
 async def test_grep_with_rg(mock_subprocess_exec, mock_which, make_mock_process, mock_context):
     mock_subprocess_exec.return_value = make_mock_process("main.py:10:def main():")
 
-    result = await grep(mock_context, "def main")
+    result = await grep(mock_context, ".", "def main")
 
     mock_which.assert_called_once_with("rg")
     args = mock_subprocess_exec.call_args[0]
@@ -76,7 +76,7 @@ async def test_grep_with_grep_fallback(
     mock_which.side_effect = lambda cmd: "/usr/bin/grep" if cmd == "grep" else None
     mock_subprocess_exec.return_value = make_mock_process("main.py:10:def main():")
 
-    result = await grep(mock_context, "def main")
+    result = await grep(mock_context, ".", "def main")
 
     # Check that it tried rg, ag, then grep
     assert mock_which.call_count >= 3
@@ -92,7 +92,7 @@ async def test_find_no_results(mock_subprocess_exec, mock_which, make_mock_proce
     # Make fd, rg unavailable so it falls back to find
     mock_which.side_effect = lambda cmd: "/usr/bin/find" if cmd == "find" else None
     mock_subprocess_exec.return_value = make_mock_process("")
-    assert await find(mock_context, "*.nonexistent") == "No results found."
+    assert await find(mock_context, ".", "*.nonexistent") == "No results found."
 
 
 @pytest.mark.asyncio
@@ -104,5 +104,5 @@ async def test_find_command_error(mock_rglob, mock_which, mock_context):
     # Mock the Python fallback to return results
     mock_rglob.return_value = []
 
-    result = await find(mock_context, "*")
+    result = await find(mock_context, ".", "*")
     assert result == "No results found."

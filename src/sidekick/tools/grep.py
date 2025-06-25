@@ -1,4 +1,5 @@
 import asyncio
+import fnmatch
 import os
 import re
 import shutil
@@ -9,7 +10,6 @@ from pydantic_ai import RunContext
 
 from sidekick.deps import ToolDeps
 
-# Comprehensive list of directories to exclude from searches
 EXCLUDE_DIRS = {
     # Version control
     ".git",
@@ -90,7 +90,6 @@ EXCLUDE_DIRS = {
     ".serverless",
 }
 
-# File extensions to treat as binary (skip in grep)
 BINARY_EXTENSIONS = {
     # Images
     ".jpg",
@@ -168,23 +167,26 @@ def _get_gitignore_patterns() -> Set[str]:
 
 
 async def _grep_with_ripgrep(
-    pattern: str, case_sensitive: bool = True, max_count: Optional[int] = None
+    pattern: str,
+    case_sensitive: bool = True,
+    max_count: Optional[int] = None,
+    include_pattern: Optional[str] = None,
 ) -> Optional[str]:
     """Use ripgrep (fastest, respects .gitignore by default)."""
     if not shutil.which("rg"):
         return None
 
-    command = ["rg", "-n"]  # -n for line numbers
+    command = ["rg", "-n"]
 
-    # Case sensitivity
     if not case_sensitive:
         command.append("-i")
 
-    # Max results
     if max_count:
         command.extend(["-m", str(max_count)])
 
-    # Pattern and path
+    if include_pattern:
+        command.extend(["--glob", include_pattern])
+
     command.extend(["--", pattern, "."])
 
     try:
@@ -195,7 +197,6 @@ async def _grep_with_ripgrep(
         )
         stdout, stderr = await process.communicate()
 
-        # ripgrep returns 1 when no matches found, which is not an error
         if process.returncode == 0 or (process.returncode == 1 and not stderr.strip()):
             output = stdout.decode().strip()
             return output or "No results found."
@@ -206,23 +207,26 @@ async def _grep_with_ripgrep(
 
 
 async def _grep_with_ag(
-    pattern: str, case_sensitive: bool = True, max_count: Optional[int] = None
+    pattern: str,
+    case_sensitive: bool = True,
+    max_count: Optional[int] = None,
+    include_pattern: Optional[str] = None,
 ) -> Optional[str]:
     """Use ag (The Silver Searcher) - fast and respects .gitignore."""
     if not shutil.which("ag"):
         return None
 
-    command = ["ag", "--numbers"]  # --numbers for line numbers
+    command = ["ag", "--numbers"]
 
-    # Case sensitivity
     if not case_sensitive:
         command.append("-i")
 
-    # Max results
     if max_count:
         command.extend(["-m", str(max_count)])
 
-    # Pattern and path
+    if include_pattern:
+        command.extend(["-G", include_pattern])
+
     command.extend([pattern, "."])
 
     try:
@@ -243,21 +247,20 @@ async def _grep_with_ag(
 
 
 async def _grep_with_unix_grep(
-    pattern: str, case_sensitive: bool = True, max_count: Optional[int] = None
+    pattern: str,
+    case_sensitive: bool = True,
+    max_count: Optional[int] = None,
+    include_pattern: Optional[str] = None,
 ) -> Optional[str]:
     """Use traditional Unix grep with smart exclusions."""
     if not shutil.which("grep"):
         return None
 
-    command = ["grep", "-r", "-n", "-I"]  # -r recursive, -n line numbers, -I skip binary
+    command = ["grep", "-r", "-n", "-I"]
 
-    # Case sensitivity
     if not case_sensitive:
         command.append("-i")
 
-    # Max results (grep doesn't have a direct option, we'll limit in post-processing)
-
-    # Add exclusions
     exclude_patterns = EXCLUDE_DIRS.copy()
     exclude_patterns.update(_get_gitignore_patterns())
 
@@ -265,11 +268,12 @@ async def _grep_with_unix_grep(
         if "*" not in directory and "/" not in directory:
             command.append(f"--exclude-dir={directory}")
 
-    # Add binary file exclusions
     for ext in BINARY_EXTENSIONS:
         command.append(f"--exclude=*{ext}")
 
-    # Pattern and path
+    if include_pattern:
+        command.extend(["--include", include_pattern])
+
     command.extend([pattern, "."])
 
     try:
@@ -280,11 +284,9 @@ async def _grep_with_unix_grep(
         )
         stdout, stderr = await process.communicate()
 
-        # grep returns 1 when no matches found, which is not an error
         if process.returncode == 0 or (process.returncode == 1 and not stderr.strip()):
             output = stdout.decode().strip()
 
-            # Apply max_count if specified
             if output and max_count:
                 lines = output.splitlines()
                 if len(lines) > max_count:
@@ -299,29 +301,27 @@ async def _grep_with_unix_grep(
 
 
 async def _grep_with_python(
-    pattern: str, case_sensitive: bool = True, max_count: Optional[int] = None
+    pattern: str,
+    case_sensitive: bool = True,
+    max_count: Optional[int] = None,
+    include_pattern: Optional[str] = None,
 ) -> str:
     """Pure Python fallback implementation."""
-    # Compile regex pattern
     try:
         flags = 0 if case_sensitive else re.IGNORECASE
         regex = re.compile(pattern, flags)
     except re.error as e:
         return f"Invalid regex pattern: {e}"
 
-    # Get exclusion patterns
     exclude_patterns = EXCLUDE_DIRS.copy()
     exclude_patterns.update(_get_gitignore_patterns())
 
     results = []
     count = 0
 
-    # Walk the directory tree
     for root, dirs, files in os.walk("."):
-        # Filter out excluded directories
         dirs[:] = [d for d in dirs if d not in exclude_patterns and not d.startswith(".")]
 
-        # Skip if root contains excluded pattern
         skip_root = False
         for exclude in exclude_patterns:
             if exclude in root:
@@ -335,9 +335,12 @@ async def _grep_with_python(
                 results.append(f"... (showing first {max_count} results)")
                 return "\n".join(results) if results else "No results found."
 
-            # Skip binary files
             if any(file.endswith(ext) for ext in BINARY_EXTENSIONS):
                 continue
+
+            if include_pattern:
+                if not fnmatch.fnmatch(file, include_pattern):
+                    continue
 
             filepath = os.path.join(root, file)
 
@@ -345,7 +348,6 @@ async def _grep_with_python(
                 with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                     for line_num, line in enumerate(f, 1):
                         if regex.search(line):
-                            # Format: filepath:line_number:line_content
                             result_line = f"{filepath}:{line_num}:{line.rstrip()}"
                             results.append(result_line)
                             count += 1
@@ -353,40 +355,73 @@ async def _grep_with_python(
                             if max_count and count >= max_count:
                                 break
             except (OSError, PermissionError):
-                # Skip files we can't read
                 continue
 
     return "\n".join(results) if results else "No results found."
 
 
-async def grep(ctx: RunContext[ToolDeps], pattern: str) -> str:  # noqa: N802
-    """Search for a text pattern inside files.
+async def grep(
+    ctx: RunContext[ToolDeps],
+    directory: str = ".",
+    pattern: str = "",
+    *,
+    case_sensitive: bool = True,
+    max_results: Optional[int] = None,
+    include_pattern: Optional[str] = None,
+) -> str:  # noqa: N802
+    """Search for text patterns in file contents.
 
-    If [`ripgrep`](https://github.com/BurntSushi/ripgrep) (rg) is available it will be
-    used because it is significantly faster and honours `.gitignore` out-of-the-box.
-    Otherwise a recursive `grep -rnI` fallback is used with a curated list of
-    directories excluded to avoid extra noise and reduce token usage.
+    Examples:
+        grep(".", "TODO")                    # Find all TODOs in current directory
+        grep("src", "def main")              # Find "def main" in src/ directory
+        grep(".", "error", case_sensitive=False)  # Case-insensitive search
+        grep(".", "import.*pandas")          # Regex search for pandas imports
+        grep(".", "TODO", max_results=10)    # Limit to first 10 results
+        grep(".", "class", include_pattern="*.py")  # Search only Python files
+
+    Args:
+        directory: Directory to search in (default: current directory ".")
+        pattern: Text or regex pattern to search for
+            - Plain text: searches for exact text match
+            - Regex: supports full regex syntax (e.g., "def\\s+\\w+\\(")
+        case_sensitive: Whether search is case-sensitive (default: True)
+        max_results: Maximum number of results to return (default: None for all)
+        include_pattern: File pattern to include (e.g., "*.py", "*.{js,ts}")
+
+    Returns:
+        Newline-separated results in format "filepath:line_number:matching_line"
+        Returns "No results found." if no matches.
+
+    Note:
+        Automatically excludes binary files and common non-project directories.
+        Respects .gitignore when using external tools (ripgrep, ag).
     """
 
+    if not pattern:
+        return "Error: Pattern cannot be empty"
+
     if ctx.deps and ctx.deps.display_tool_status:
-        await ctx.deps.display_tool_status("Grep", pattern)
+        await ctx.deps.display_tool_status("Grep", f'"{directory}" "{pattern}"')
 
-    # Try tools in order of preference (speed and features)
+    directory = directory or "."
+    orig_dir = os.getcwd()
 
-    # 1. Try ripgrep (fastest, best features, respects .gitignore)
-    result = await _grep_with_ripgrep(pattern)
-    if result is not None:
-        return result
+    try:
+        os.chdir(os.path.expanduser(directory))
 
-    # 2. Try ag/silver searcher (fast, respects .gitignore)
-    result = await _grep_with_ag(pattern)
-    if result is not None:
-        return result
+        result = await _grep_with_ripgrep(pattern, case_sensitive, max_results, include_pattern)
+        if result is not None:
+            return result
 
-    # 3. Try traditional Unix grep
-    result = await _grep_with_unix_grep(pattern)
-    if result is not None:
-        return result
+        result = await _grep_with_ag(pattern, case_sensitive, max_results, include_pattern)
+        if result is not None:
+            return result
 
-    # 4. Fall back to pure Python (works everywhere)
-    return await _grep_with_python(pattern)
+        result = await _grep_with_unix_grep(pattern, case_sensitive, max_results, include_pattern)
+        if result is not None:
+            return result
+
+        return await _grep_with_python(pattern, case_sensitive, max_results, include_pattern)
+
+    finally:
+        os.chdir(orig_dir)
