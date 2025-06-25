@@ -13,6 +13,7 @@ class Session:
     current_task: Optional[asyncio.Task] = None
     sigint_received: bool = False
     allowed_commands: Set[str] = field(default_factory=set)
+    disabled_confirmations: Set[str] = field(default_factory=set)
     confirmation_enabled: bool = True
     model_switched: bool = False
 

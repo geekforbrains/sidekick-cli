@@ -80,10 +80,15 @@ async def _render_tool_call(part):
     if session.confirmation_enabled and not tool_manages_confirmation:
         from sidekick.constants import ALLOWED_TOOLS
 
-        if part.tool_name not in ALLOWED_TOOLS:
+        if (
+            part.tool_name not in ALLOWED_TOOLS
+            and part.tool_name not in session.disabled_confirmations
+        ):
             response = await ui.confirm_tool_call(part.tool_name, args)
             if response == "no":
                 raise asyncio.CancelledError("Tool execution cancelled by user")
+            elif response == "always":
+                session.disabled_confirmations.add(part.tool_name)
 
     # Track tool usage
     if part.tool_name not in session.tool_usage:
@@ -195,12 +200,11 @@ def get_or_create_agent():
 
 def _create_confirmation_callback():
     """Create a confirmation callback for tools."""
-    disabled_tools = set()
 
     async def confirm(title: str, preview: any) -> bool:
         tool_name = title.split(":")[0].strip() if ":" in title else title
 
-        if tool_name in disabled_tools:
+        if tool_name in session.disabled_confirmations:
             return True
 
         # Stop spinner before showing confirmation
@@ -238,7 +242,7 @@ def _create_confirmation_callback():
                     session.spinner.start()
                 return True
             elif choice in ["a", "always"]:
-                disabled_tools.add(tool_name)
+                session.disabled_confirmations.add(tool_name)
                 # Restart spinner before returning
                 if session.spinner:
                     session.spinner.start()
