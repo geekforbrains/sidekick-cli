@@ -96,9 +96,8 @@ MODELS = {
 # Non-destructive tools that should always be allowed without confirmation
 ALLOWED_TOOLS = [
     "read_file",
-    "search_files",
-    "search_dirs",
-    "search_content",
+    "find",
+    "grep",
     "list_directory",
 ]
 

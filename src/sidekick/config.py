@@ -99,7 +99,6 @@ def parse_mcp_servers(config: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(mcp_servers, dict):
         raise ConfigValidationError("'mcpServers' field must be an object")
 
-    # Basic validation of server entries
     for key, server_config in mcp_servers.items():
         if not isinstance(server_config, dict):
             raise ConfigValidationError(f"MCP server '{key}' configuration must be an object")

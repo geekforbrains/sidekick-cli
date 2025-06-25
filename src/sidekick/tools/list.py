@@ -7,7 +7,8 @@ from typing import Dict, List, Tuple
 from pydantic_ai import RunContext
 
 from sidekick.deps import ToolDeps
-from .search import EXCLUDE_DIRS
+
+from .grep import EXCLUDE_DIRS
 
 
 def _should_exclude(path: str, gitignore_patterns: List[str]) -> bool:

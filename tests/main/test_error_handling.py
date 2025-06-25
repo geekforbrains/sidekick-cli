@@ -12,7 +12,6 @@ from sidekick.main import handle_user_request
 @pytest.mark.asyncio
 async def test_handle_user_request_with_error():
     """Test that handle_user_request properly calls error handler."""
-    # Create mocks
     mock_ui = MagicMock()
     mock_session = MagicMock()
     mock_session.sigint_received = False

@@ -7,9 +7,8 @@ TOOL_DISPLAY_NAMES: Dict[str, str] = {
     "run_command": "Run",
     "git_add": "GitAdd",
     "git_commit": "GitCommit",
-    "search_files": "SearchFiles",
-    "search_dirs": "SearchDirs",
-    "search_content": "SearchContent",
+    "find": "find",
+    "grep": "grep",
     "list_directory": "List",
 }
 

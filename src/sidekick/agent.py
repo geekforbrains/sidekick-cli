@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any, Optional
 
 from pydantic_ai import Agent
 
@@ -203,7 +203,7 @@ async def process_request(message: str):
 
     deps = ToolDeps(
         confirm_action=_create_confirmation_callback(),
-        display_tool_status=_create_display_tool_status_callback()
+        display_tool_status=_create_display_tool_status_callback(),
     )
 
     try:

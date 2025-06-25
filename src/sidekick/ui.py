@@ -453,12 +453,10 @@ async def confirm_tool_call(tool_name: str, args: dict) -> str:
         _display_git_add_confirmation(args)
     elif tool_name == "git_commit" and "message" in args:
         _display_git_commit_confirmation(args)
-    elif tool_name == "search_files" and "pattern" in args:
+    elif tool_name == "find" and "pattern" in args:
         _display_search_files_confirmation(args)
-    elif tool_name == "search_content" and "text_pattern" in args:
-        _display_search_content_confirmation(args)
-    elif tool_name == "search_dirs" and "pattern" in args:
-        _display_search_dirs_confirmation(args)
+    elif tool_name == "grep" and "pattern" in args:
+        _display_search_content_confirmation({"text_pattern": args["pattern"]})
     else:
         _display_generic_tool_confirmation(tool_name, args, formatted_name)
 

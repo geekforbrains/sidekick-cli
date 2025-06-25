@@ -9,7 +9,6 @@ from sidekick.agent import _calculate_usage_costs
 
 def test_basic_usage_calculation():
     """Test basic usage calculation without cached tokens."""
-    # Create mock usage object
     usage = Mock()
     usage.requests = 1
     usage.request_tokens = 1000
@@ -44,7 +43,6 @@ def test_basic_usage_calculation():
 
 def test_usage_with_cached_tokens():
     """Test usage calculation with cached tokens."""
-    # Create mock usage object with cached tokens
     usage = Mock()
     usage.requests = 1
     usage.request_tokens = 1000
