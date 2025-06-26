@@ -41,3 +41,4 @@ REFACTOR*
 .claude/
 TASKS*.md
 error*.log
+*.log

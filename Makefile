@@ -4,7 +4,7 @@ install:
 	pip install -e ".[dev]"
 
 run:
-	env/bin/sidekick
+	env/bin/sidekick --debug
 
 clean:
 	rm -rf build/

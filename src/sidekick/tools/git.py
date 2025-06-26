@@ -15,8 +15,11 @@ async def git_add(ctx: RunContext[ToolDeps], files: str) -> str:
     Returns:
         Success message with staged files count
     """
-    if ctx.deps and ctx.deps.display_tool_status:
-        await ctx.deps.display_tool_status("GitAdd", files)
+    # Ignore for now, we already show panel
+    #
+    # if ctx.deps and ctx.deps.display_tool_status:
+    #     await ctx.deps.display_tool_status("Git Add", f"{len(files)} files")
+
     try:
         # First check git status to show what will be staged
         status_result = subprocess.run(
@@ -42,7 +45,7 @@ async def git_add(ctx: RunContext[ToolDeps], files: str) -> str:
                 if len(files_to_stage) > 20:
                     preview += f"\n... and {len(files_to_stage) - 20} more files"
 
-                if not await ctx.deps.confirm_action(f"Git Add: {files}", preview):
+                if not await ctx.deps.confirm_action("Git Add", preview):
                     raise asyncio.CancelledError("Tool execution cancelled by user")
 
         # Parse files argument - could be '.', specific files, or patterns
@@ -82,8 +85,12 @@ async def git_commit(ctx: RunContext[ToolDeps], message: str) -> str:
     Returns:
         Success message with commit hash
     """
-    if ctx.deps and ctx.deps.display_tool_status:
-        await ctx.deps.display_tool_status("GitCommit", message)
+    # Ignore for now, we already show panel
+    #
+    # if ctx.deps and ctx.deps.display_tool_status:
+    #     short_message = message[:25].replace("\n", " ")
+    #     await ctx.deps.display_tool_status("Git Commit", short_message)
+
     try:
         # Check if there are staged changes
         status_result = subprocess.run(
@@ -101,7 +108,7 @@ async def git_commit(ctx: RunContext[ToolDeps], message: str) -> str:
             return "No staged changes to commit"
 
         if ctx.deps and ctx.deps.confirm_action:
-            preview = f"Message: {message}\n\nStaged changes:\n"
+            preview = f"Message: {message}\n\nStaged changes:\n\n"
             preview += "\n".join(staged_files[:20])
             if len(staged_files) > 20:
                 preview += f"\n... and {len(staged_files) - 20} more files"

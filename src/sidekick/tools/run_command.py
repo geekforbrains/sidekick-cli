@@ -11,8 +11,10 @@ from sidekick.utils.command_parser import extract_commands, is_command_allowed
 
 async def run_command(ctx: RunContext[ToolDeps], command: str) -> str:
     """Run a shell command and return its output."""
-    if ctx.deps and ctx.deps.display_tool_status:
-        await ctx.deps.display_tool_status("Run", command)
+    # Ignore for now, we already show panel
+    #
+    # if ctx.deps and ctx.deps.display_tool_status:
+    #     await ctx.deps.display_tool_status("Run", command)
 
     if ctx.deps and ctx.deps.confirm_action:
         if not is_command_allowed(command, session.allowed_commands):

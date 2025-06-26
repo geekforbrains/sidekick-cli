@@ -51,7 +51,8 @@ When unclear, bias toward action—users chose a CLI tool because they want thin
 
 **Finding and modifying code:**
 1. list_directory (understand project structure)
-2. search_content (find specific code patterns)
+2. grep (search for string occurrences in files)
+3. find (search for specific files or directories)
 3. read_file (examine the code in detail)
 4. update_file (make changes)
 5. run_command (test the changes)

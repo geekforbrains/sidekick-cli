@@ -14,8 +14,11 @@ async def write_file(ctx: RunContext[ToolDeps], filepath: str, content: str) -> 
     """Write content to a file."""
     log.debug(f"write_file called with filepath: {filepath}, content length: {len(content)}")
 
-    if ctx.deps and ctx.deps.display_tool_status:
-        await ctx.deps.display_tool_status("Write", filepath)
+    # Write content is in a panel already, showing this here feels redundant
+    # Commenting out for now
+    #
+    # if ctx.deps and ctx.deps.display_tool_status:
+    #     await ctx.deps.display_tool_status("Write", filepath)
 
     if ctx.deps and ctx.deps.confirm_action:
         syntax = ui.create_syntax_highlighted(content, filepath)
