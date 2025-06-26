@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from pathlib import Path
 from typing import Any, Optional
 
@@ -12,6 +13,8 @@ from sidekick.mcp import MCPAgent, load_mcp_servers
 from sidekick.session import session
 from sidekick.tools import TOOLS
 
+log = logging.getLogger(__name__)
+
 
 def _get_prompt(name: str) -> str:
     try:
@@ -24,6 +27,7 @@ def _get_prompt(name: str) -> str:
 async def _process_node(node):
     if hasattr(node, "request"):
         session.messages.append(node.request)
+        log.debug(f"Added request to message history: {node.request}")
 
         for part in node.request.parts:
             if part.part_kind == "retry-prompt":
@@ -40,6 +44,7 @@ async def _process_node(node):
 
     if hasattr(node, "model_response"):
         session.messages.append(node.model_response)
+        log.debug(f"Added model response to message history: {node.model_response}")
 
 
 def _calculate_usage_costs(usage):
@@ -197,10 +202,13 @@ def _patch_history_on_error(error_message: str):
 
 
 async def process_request(message: str):
+    log.debug(f"Processing request: {message}")
+
     mcp_agent = get_or_create_agent()
     agent = mcp_agent.agent
 
     mh = session.messages.copy()
+    log.debug(f"Message history size: {len(mh)}")
 
     deps = ToolDeps(
         confirm_action=_create_confirmation_callback(),
@@ -218,14 +226,16 @@ async def process_request(message: str):
                 session.total_tokens += usage.total_tokens
                 session.total_cost = session.last_usage["total_cost"]
 
-            return agent_run.result.output
+            result = agent_run.result.output
+            log.debug(f"Agent response: {result}")
+            return result
     except asyncio.CancelledError as e:
-        # This handles user cancellation from the confirmation prompt
+        log.debug(f"Request cancelled: {e}")
         _patch_history_on_error(str(e))
         ui.warning("Tool execution cancelled")
         return None
     except Exception as e:
-        # This handles any other tool execution error
+        log.error(f"Error processing request: {e}", exc_info=True)
         _patch_history_on_error(f"Tool execution failed: {e}")
         ui.warning(f"An error occurred: {e}")
         return None

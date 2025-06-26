@@ -16,11 +16,11 @@ class Session:
     disabled_confirmations: Set[str] = field(default_factory=set)
     confirmation_enabled: bool = True
     model_switched: bool = False
-
-    # Usage tracking
     last_usage: Optional[Dict[str, Any]] = None
     total_tokens: int = 0
     total_cost: float = 0.0
+    debug_enabled: bool = False
+    log_file: Optional[str] = None
 
     def init(self, config: Dict[str, Any], model: str):
         """Initialize the session state."""

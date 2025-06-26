@@ -1,5 +1,7 @@
 """Command handlers for Sidekick CLI slash commands."""
 
+import logging
+
 from rich.table import Table
 from rich.text import Text
 
@@ -7,6 +9,8 @@ from sidekick import ui
 from sidekick.config import update_config_file
 from sidekick.constants import MODELS
 from sidekick.session import session
+
+log = logging.getLogger(__name__)
 
 
 async def handle_dump():
@@ -59,10 +63,12 @@ async def handle_model(args: list[str]):
                         ui.error(f"Failed to update config: {e}")
                 else:
                     # Switch to model for current session
+                    old_model = session.current_model
                     session.current_model = selected_model
                     # Clear the agent cache and set flag for REPL to recreate agent
                     session.agents.clear()
                     session.model_switched = True
+                    log.debug(f"Model switched from {old_model} to {selected_model}")
                     ui.info(f"Switched to model: {selected_model}")
             else:
                 ui.error(f"Invalid model number. Choose between 1 and {len(model_list)}")

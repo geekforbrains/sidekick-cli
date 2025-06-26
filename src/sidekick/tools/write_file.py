@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from pathlib import Path
 
 from pydantic_ai import RunContext
@@ -6,11 +7,15 @@ from pydantic_ai import RunContext
 from sidekick import ui
 from sidekick.deps import ToolDeps
 
+log = logging.getLogger(__name__)
+
 
 async def write_file(ctx: RunContext[ToolDeps], filepath: str, content: str) -> str:
     """Write content to a file."""
-    # if ctx.deps and ctx.deps.display_tool_status:
-    #     await ctx.deps.display_tool_status("Write", filepath)
+    log.debug(f"write_file called with filepath: {filepath}, content length: {len(content)}")
+
+    if ctx.deps and ctx.deps.display_tool_status:
+        await ctx.deps.display_tool_status("Write", filepath)
 
     if ctx.deps and ctx.deps.confirm_action:
         syntax = ui.create_syntax_highlighted(content, filepath)

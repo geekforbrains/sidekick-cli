@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import signal
 import sys
 
@@ -16,9 +17,11 @@ from sidekick.session import session
 from sidekick.setup import run_setup
 from sidekick.utils.error_handler import handle_error
 from sidekick.utils.input import create_multiline_prompt_session, get_multiline_input
+from sidekick.utils.logger import configure_debug_logging, log_message_history
 
 app = typer.Typer(help=f"{APP_NAME} - Your agentic CLI developer")
 console = Console()
+log = logging.getLogger(__name__)
 
 
 def setup_signal_handler(loop):
@@ -63,6 +66,7 @@ async def initialize_servers():
 
 async def handle_user_request(user_input: str, mcp_agent):
     """Process a user request with proper exception handling."""
+    log.debug(f"Handling user request: {user_input}")
     ui.start_spinner(ui.get_thinking_message())
     session.sigint_received = False
 
@@ -77,6 +81,7 @@ async def handle_user_request(user_input: str, mcp_agent):
             # Display usage information if available
             if session.last_usage:
                 ui.usage(session.last_usage)
+                log.debug(f"Usage stats: {session.last_usage}")
         # If resp is None, it means the tool was cancelled by user, which is already handled
     except asyncio.CancelledError:
         ui.stop_spinner()
@@ -159,6 +164,11 @@ async def repl():
             signal.signal(signal.SIGINT, signal_handler)
 
     restore_default_signal_handler()
+
+    if session.debug_enabled:
+        log_message_history(session.messages)
+        ui.info(f"Debug log saved to: {session.log_file}")
+
     ui.info("Thanks for all the fish.")
 
 
@@ -173,13 +183,20 @@ def setup_and_run_event_loop(coro):
 
 
 @app.command()
-def main(version: bool = typer.Option(False, "--version", "-v", help="Show version and exit.")):
+def main(
+    version: bool = typer.Option(False, "--version", "-v", help="Show version and exit."),
+    debug: bool = typer.Option(False, "--debug", help="Enable debug logging to file."),
+):
     """Sidekick CLI main entry point."""
     if version:
         console.print(f"{APP_NAME} version {APP_VERSION}")
         return
 
-    # Run banner separately
+    if debug:
+        log_file = configure_debug_logging()
+        session.debug_enabled = True
+        session.log_file = log_file
+
     ui.banner()
 
     # Check if config exists, run setup if needed
@@ -205,6 +222,7 @@ def main(version: bool = typer.Option(False, "--version", "-v", help="Show versi
             sys.exit(1)
 
     session.init(config, config["default_model"])
+    log.info(f"Session initialized with model: {session.current_model}")
 
     # Create event loop manually to avoid asyncio.run's signal handling
     setup_and_run_event_loop(repl())
