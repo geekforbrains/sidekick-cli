@@ -136,11 +136,10 @@ def display_tool_panel(content, title: str, footer: str = None):
     _prepare_to_print("panel")
     panel = create_panel(content, title, colors.tool_data)
 
+    # Always use no bottom padding for tool panels since they're followed by confirmation options
+    console.print(Padding(panel, PANEL_WRAPPER_PADDING_NO_BOTTOM))
     if footer:
-        console.print(Padding(panel, PANEL_WRAPPER_PADDING_NO_BOTTOM))
         console.print(f"  {footer}", style=colors.muted)
-    else:
-        console.print(Padding(panel, PANEL_WRAPPER_PADDING))
 
     _last_output = "panel"
 
