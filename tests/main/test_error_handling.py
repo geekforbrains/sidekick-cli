@@ -82,7 +82,7 @@ async def test_handle_user_request_success():
             # Should not call error
             mock_ui.error.assert_not_called()
             # Should display agent response
-            mock_ui.agent.assert_called_once_with("Success response")
+            mock_ui.agent.assert_called_once_with("Success response", has_footer=False)
 
 
 @pytest.mark.asyncio

@@ -103,6 +103,7 @@ def _create_confirmation_callback():
             session.spinner.stop()
 
         ui.display_tool_panel(preview, title, footer)
+        ui.line()
 
         # Display confirmation options without using a panel, but still
         # indented by two spaces so they line up with other panel content.
@@ -123,12 +124,14 @@ def _create_confirmation_callback():
             )
 
             if choice == "" or choice in ["y", "yes"]:
+                ui.line()
                 ui.reset_output_context()  # Reset after user input
                 if session.spinner:
                     session.spinner.start()
                 return True
             elif choice in ["a", "always"]:
                 session.disabled_confirmations.add(tool_name)
+                ui.line()
                 ui.reset_output_context()  # Reset after user input
                 if session.spinner:
                     session.spinner.start()
@@ -232,6 +235,7 @@ async def process_request(message: str):
     except asyncio.CancelledError as e:
         log.debug(f"Request cancelled: {e}")
         _patch_history_on_error(str(e))
+        ui.line()
         ui.warning("Tool execution cancelled")
         return None
     except Exception as e:

@@ -19,7 +19,7 @@ console = Console()
 
 # Padding constants for consistent spacing
 PANEL_CONTENT_PADDING = 1
-PANEL_WRAPPER_PADDING = (0, 0, 0, 1)  # Standard panel padding (left indent)
+PANEL_WRAPPER_PADDING = (0, 0, 1, 1)  # Standard panel padding (left indent)
 PANEL_WRAPPER_PADDING_NO_BOTTOM = (0, 0, 0, 1)  # Used for panels with footers
 
 SYNTAX_THEME = "monokai"
@@ -30,8 +30,6 @@ _last_output = None  # "status", "panel", "user_input", or None
 
 def _prepare_to_print(new_type: str):
     """Adds a blank line if needed based on context."""
-    global _last_output
-
     if _last_output is None or _last_output == "user_input":
         return
 
@@ -122,12 +120,13 @@ def create_panel(content, title: str, border_style: str):
     )
 
 
-def display_agent_panel(content: str):
+def display_agent_panel(content: str, has_footer: bool = False):
     """Display agent response panel with specific padding."""
     global _last_output
     _prepare_to_print("panel")
     panel = create_panel(Markdown(content), "Sidekick", colors.primary)
-    console.print(Padding(panel, PANEL_WRAPPER_PADDING))
+    padding = PANEL_WRAPPER_PADDING_NO_BOTTOM if has_footer else PANEL_WRAPPER_PADDING
+    console.print(Padding(panel, padding))
     _last_output = "panel"
 
 
@@ -142,7 +141,7 @@ def display_tool_panel(content, title: str, footer: str = None):
         console.print(f"  {footer}", style=colors.muted)
     else:
         console.print(Padding(panel, PANEL_WRAPPER_PADDING))
-    
+
     _last_output = "panel"
 
 
@@ -250,14 +249,11 @@ def agent(content: str, has_footer: bool = False):
         content: The markdown content to display
         has_footer: If True, don't add space after (footer will handle it)
     """
-    display_agent_panel(content)
-    if not has_footer:
-        console.print()  # Add space if no footer coming
+    display_agent_panel(content, has_footer=has_footer)
 
 
 def line():
     """Print a simple line separator."""
-    global _last_output
     console.print()
     # Don't update _last_output - line() is explicit spacing
 
@@ -337,8 +333,6 @@ def update_available(latest_version: str):
 
 def usage(usage_data: dict):
     """Display usage information in the compact format."""
-    global _last_output
-
     if not usage_data:
         return
 

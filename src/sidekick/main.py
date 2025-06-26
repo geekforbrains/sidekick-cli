@@ -77,7 +77,8 @@ async def handle_user_request(user_input: str, mcp_agent):
         resp = await request_task
         ui.stop_spinner()
         if resp:
-            ui.agent(resp)
+            has_footer = bool(session.last_usage)
+            ui.agent(resp, has_footer=has_footer)
             # Display usage information if available
             if session.last_usage:
                 ui.usage(session.last_usage)
