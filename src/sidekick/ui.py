@@ -19,12 +19,13 @@ console = Console()
 
 # Padding constants for consistent spacing
 PANEL_CONTENT_PADDING = 1
-PANEL_WRAPPER_PADDING = (0, 0, 0, 1)
-PANEL_WRAPPER_PADDING_NO_BOTTOM = (0, 0, 0, 1)
-PANEL_WRAPPER_PADDING_NO_TOP = (0, 0, 1, 1)
-PANEL_WRAPPER_PADDING_AGENT = (0, 0, 0, 1)
+PANEL_WRAPPER_PADDING = (0, 0, 0, 1)  # Standard panel padding (left indent)
+PANEL_WRAPPER_PADDING_NO_BOTTOM = (0, 0, 0, 1)  # Used for panels with footers
 
 SYNTAX_THEME = "monokai"
+
+# Track last output type for consistent spacing
+_last_output = None  # "status", "panel", "user_input", or None
 
 
 # Color scheme from main branch
@@ -106,52 +107,96 @@ def create_panel(content, title: str, border_style: str):
     )
 
 
-def display_panel(panel, bottom_padding: bool = True):
-    """Display a panel with consistent wrapper padding.
-
-    Args:
-        panel: The panel to display
-        bottom_padding: Whether to include bottom padding (default: True)
-    """
-    padding = PANEL_WRAPPER_PADDING if bottom_padding else PANEL_WRAPPER_PADDING_NO_BOTTOM
-    console.print(Padding(panel, padding))
-
-
 def display_agent_panel(content: str):
     """Display agent response panel with specific padding."""
+    global _last_output
+
+    # Add space before panel if needed
+    if _last_output == "status":
+        console.print()
+    elif _last_output == "panel":
+        console.print()
+
     panel = create_panel(Markdown(content), "Sidekick", colors.primary)
     console.print(Padding(panel, PANEL_WRAPPER_PADDING))
+    # Don't add space here - let caller handle it (for usage footer)
+
+    _last_output = "panel"
 
 
 def display_tool_panel(content, title: str, footer: str = None):
     """Display tool data panel with optional footer."""
+    global _last_output
+
+    # Add space before panel if needed
+    if _last_output == "status":
+        console.print()
+    elif _last_output == "panel":
+        console.print()
+
     panel = create_panel(content, title, colors.tool_data)
 
     if footer:
         console.print(Padding(panel, PANEL_WRAPPER_PADDING_NO_BOTTOM))
         console.print(f"  {footer}", style=colors.muted)
-        console.print()
+        console.print()  # Space after footer
     else:
         console.print(Padding(panel, PANEL_WRAPPER_PADDING))
+        console.print()  # Space after panel
+
+    _last_output = "panel"
 
 
 def display_confirmation_panel(content: str):
     """Display confirmation panel with consistent left padding."""
+    global _last_output
+
+    # Add space before panel if needed
+    if _last_output == "status":
+        console.print()
+    elif _last_output == "panel":
+        console.print()
+
     panel = create_panel(content, "Confirm Action", colors.warning)
     console.print(Padding(panel, (0, 0, 0, 1)))
+    # No space after - expecting user input
+
+    _last_output = "panel"
 
 
 def display_error_panel(message: str, detail: str = None):
     """Display error panel with consistent padding."""
+    global _last_output
+
+    # Add space before panel if needed
+    if _last_output == "status":
+        console.print()
+    elif _last_output == "panel":
+        console.print()
+
     content = f"{message}\n\n{detail}" if detail else message
     panel = create_panel(content, "Error", colors.error)
-    display_panel(panel)
+    console.print(Padding(panel, PANEL_WRAPPER_PADDING))
+    console.print()  # Space after panel
+
+    _last_output = "panel"
 
 
 def display_info_panel(content, title: str):
     """Display info panel with consistent padding."""
+    global _last_output
+
+    # Add space before panel if needed
+    if _last_output == "status":
+        console.print()
+    elif _last_output == "panel":
+        console.print()
+
     panel = create_panel(content, title, colors.muted)
-    display_panel(panel)
+    console.print(Padding(panel, PANEL_WRAPPER_PADDING))
+    console.print()  # Space after panel
+
+    _last_output = "panel"
 
 
 # Style definitions
@@ -164,16 +209,25 @@ class SpinnerStyle:
 
 def banner():
     """Display the application banner."""
+    global _last_output
     console.clear()
     banner_padding = Padding(BANNER, (1, 0, 0, 2))
     version_padding = Padding(f"v{APP_VERSION}", (0, 0, 1, 2))
     console.print(banner_padding, style=colors.primary)
     console.print(version_padding, style=colors.muted)
+    _last_output = None  # Reset context after banner
 
 
 def info(message: str):
     """Display an info message."""
+    global _last_output
+
+    # Add space before status if coming from panel
+    if _last_output == "panel":
+        console.print()
+
     console.print(f"• {message}", style=colors.primary)
+    _last_output = "status"
 
 
 def error(message: str, detail: str = None):
@@ -188,32 +242,75 @@ def error(message: str, detail: str = None):
 
 def warning(message: str):
     """Display a warning message."""
+    global _last_output
+
+    # Add space before status if coming from panel
+    if _last_output == "panel":
+        console.print()
+
     console.print(f"• {message}", style=colors.warning)
+    _last_output = "status"
 
 
 def success(message: str):
     """Display a success message."""
+    global _last_output
+
+    # Add space before status if coming from panel
+    if _last_output == "panel":
+        console.print()
+
     console.print(f"• {message}", style=colors.success)
+    _last_output = "status"
 
 
 def bullet(message: str):
     """Display a bulleted list item."""
+    global _last_output
+
+    # Add space before status if coming from panel
+    if _last_output == "panel":
+        console.print()
+
     console.print(f"  • {message}", style=colors.muted)
+    _last_output = "status"
 
 
 def muted(message: str, spaces: int = 0):
     """Display a muted message."""
+    global _last_output
+
+    # Add space before status if coming from panel
+    if _last_output == "panel":
+        console.print()
+
     console.print(f"{' ' * spaces}• {message}", style=colors.muted)
+    _last_output = "status"
 
 
-def agent(content: str):
-    """Display agent output with markdown formatting."""
+def agent(content: str, has_footer: bool = False):
+    """Display agent output with markdown formatting.
+    
+    Args:
+        content: The markdown content to display
+        has_footer: If True, don't add space after (footer will handle it)
+    """
     display_agent_panel(content)
+    if not has_footer:
+        console.print()  # Add space if no footer coming
 
 
 def line():
     """Print a simple line separator."""
+    global _last_output
     console.print()
+    # Don't update _last_output - line() is explicit spacing
+
+
+def reset_output_context():
+    """Reset the output context after user input."""
+    global _last_output
+    _last_output = "user_input"
 
 
 def dump(data):
@@ -285,6 +382,8 @@ def update_available(latest_version: str):
 
 def usage(usage_data: dict):
     """Display usage information in the compact format."""
+    global _last_output
+
     if not usage_data:
         return
 
@@ -299,6 +398,8 @@ def usage(usage_data: dict):
 
     # Use two spaces to align with panel content
     console.print(f"  {msg}", style=colors.muted)
+    # Don't add space - let the main loop handle spacing before prompt
+    # Keep _last_output as "panel" since this is a footer
 
 
 def get_file_language(filepath: str) -> str:

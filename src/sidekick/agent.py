@@ -124,17 +124,20 @@ def _create_confirmation_callback():
 
             if choice == "" or choice in ["y", "yes"]:
                 ui.console.print()
+                ui.reset_output_context()  # Reset after user input
                 if session.spinner:
                     session.spinner.start()
                 return True
             elif choice in ["a", "always"]:
                 session.disabled_confirmations.add(tool_name)
                 ui.console.print()
+                ui.reset_output_context()  # Reset after user input
                 if session.spinner:
                     session.spinner.start()
                 return True
             elif choice in ["n", "no"]:
                 ui.console.print()
+                ui.reset_output_context()  # Reset after user input
                 return False
 
     return confirm

@@ -25,6 +25,9 @@ async def run_command(ctx: RunContext[ToolDeps], command: str) -> str:
 
             commands = extract_commands(command)
             session.allowed_commands.update(commands)
+        else:
+            # If command is allowed, show as a status
+            await ctx.deps.display_tool_status("Run", command)
 
     result = subprocess.run(
         command,

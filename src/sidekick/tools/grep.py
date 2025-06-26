@@ -401,7 +401,7 @@ async def grep(
         return "Error: Pattern cannot be empty"
 
     if ctx.deps and ctx.deps.display_tool_status:
-        await ctx.deps.display_tool_status("Grep", f'"{directory}" "{pattern}"')
+        await ctx.deps.display_tool_status("Grep", directory, pattern=pattern)
 
     directory = directory or "."
     orig_dir = os.getcwd()
