@@ -1,6 +1,7 @@
 """Command handlers for Sidekick CLI slash commands."""
 
 from rich.table import Table
+from rich.text import Text
 
 from sidekick import ui
 from sidekick.config import update_config_file
@@ -71,8 +72,6 @@ async def handle_model(args: list[str]):
 
 async def handle_usage():
     """Handle /usage command - show session usage statistics."""
-    from rich.text import Text
-
     content = Text()
 
     # Show total tokens and cost

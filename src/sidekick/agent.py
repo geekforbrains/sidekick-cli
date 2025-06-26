@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from pydantic_ai import Agent
+from pydantic_ai.messages import ModelRequest, ToolReturnPart
 
 from sidekick import ui
 from sidekick.constants import MODELS
@@ -111,9 +112,7 @@ def _create_confirmation_callback():
 
         while True:
             choice = (
-                ui.console.input(
-                    f"  [{ui.colors.warning}]Continue?[/{ui.colors.warning}] (y): "
-                )
+                ui.console.input(f"  [{ui.colors.warning}]Continue?[/{ui.colors.warning}] (y): ")
                 .lower()
                 .strip()
             )
@@ -166,6 +165,37 @@ def _create_display_tool_status_callback():
     return display
 
 
+def _patch_history_on_error(error_message: str):
+    """
+    Patches the message history with a ToolReturnPart on error.
+    """
+    if not session.messages:
+        return
+
+    last_message = session.messages[-1]
+
+    if not (
+        hasattr(last_message, "kind")
+        and last_message.kind == "response"
+        and hasattr(last_message, "parts")
+    ):
+        return
+
+    last_tool_call = None
+    for part in reversed(last_message.parts):
+        if hasattr(part, "part_kind") and part.part_kind == "tool-call":
+            last_tool_call = part
+            break
+
+    if last_tool_call:
+        tool_return = ToolReturnPart(
+            tool_name=last_tool_call.tool_name,
+            tool_call_id=last_tool_call.tool_call_id,
+            content=error_message,
+        )
+        session.messages.append(ModelRequest(parts=[tool_return]))
+
+
 async def process_request(message: str):
     mcp_agent = get_or_create_agent()
     agent = mcp_agent.agent
@@ -190,7 +220,12 @@ async def process_request(message: str):
 
             return agent_run.result.output
     except asyncio.CancelledError as e:
-        if str(e) == "Tool execution cancelled by user":
-            ui.warning("Tool execution cancelled")
-            return None
-        raise
+        # This handles user cancellation from the confirmation prompt
+        _patch_history_on_error(str(e))
+        ui.warning("Tool execution cancelled")
+        return None
+    except Exception as e:
+        # This handles any other tool execution error
+        _patch_history_on_error(f"Tool execution failed: {e}")
+        ui.warning(f"An error occurred: {e}")
+        return None

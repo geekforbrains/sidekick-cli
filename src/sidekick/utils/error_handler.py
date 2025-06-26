@@ -1,6 +1,7 @@
 """Simplified error handling for Sidekick CLI."""
 
 import asyncio
+import re
 import tempfile
 import traceback
 from datetime import datetime
@@ -57,9 +58,6 @@ def extract_error_message(error: Exception) -> str:
 
     # For unknown errors, clean up the message
     if len(error_str) > 150:
-        # Try to extract just a message part if it's very long
-        import re
-
         message_match = re.search(
             r'["\']?message["\']?:\s*["\']([^"\'\n]+)["\']', error_str, re.IGNORECASE
         )
