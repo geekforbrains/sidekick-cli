@@ -15,7 +15,7 @@ from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.mcp import load_mcp_servers
 from sidekick.session import session
 from sidekick.setup import run_setup
-from sidekick.utils.error_handler import handle_error
+from sidekick.utils.error import handle_error
 from sidekick.utils.input import create_multiline_prompt_session, get_multiline_input
 from sidekick.utils.logger import configure_debug_logging, log_message_history
 

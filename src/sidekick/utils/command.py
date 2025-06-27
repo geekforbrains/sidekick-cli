@@ -107,20 +107,3 @@ def is_command_allowed(command_string: str, allowed_commands: Set[str]) -> bool:
     """
     commands = extract_commands(command_string)
     return all(cmd in allowed_commands for cmd in commands)
-
-
-def get_command_display_name(command_string: str) -> str:
-    """
-    Get a display-friendly version of the commands for UI.
-
-    Args:
-        command_string: The full shell command string
-
-    Returns:
-        A comma-separated list of command names
-    """
-    commands = extract_commands(command_string)
-    if len(commands) == 1:
-        return f"'{commands[0]}'"
-    else:
-        return ", ".join(f"'{cmd}'" for cmd in commands)

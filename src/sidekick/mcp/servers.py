@@ -13,7 +13,7 @@ from pydantic_ai.tools import RunContext
 from sidekick import ui
 from sidekick.config import (ConfigError, parse_mcp_servers, read_config_file,
                              validate_config_structure)
-from sidekick.utils.display import format_server_name
+from sidekick.ui import format_server_name
 
 logger = logging.getLogger(__name__)
 

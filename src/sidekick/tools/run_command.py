@@ -6,7 +6,7 @@ from pydantic_ai import RunContext
 from sidekick import ui
 from sidekick.deps import ToolDeps
 from sidekick.session import session
-from sidekick.utils.command_parser import extract_commands, is_command_allowed
+from sidekick.utils.command import extract_commands, is_command_allowed
 
 
 async def run_command(ctx: RunContext[ToolDeps], command: str) -> str:
