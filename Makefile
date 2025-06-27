@@ -14,8 +14,8 @@ clean:
 	find . -type f -name "*.pyc" -delete
 
 lint:
-	black src/ tests/
 	isort src/ tests/
+	black src/ tests/
 	flake8 src/ tests/
 
 test:
