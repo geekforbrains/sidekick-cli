@@ -1,81 +1,82 @@
-env/bin/sidekick
-
-
-  ███████╗██╗██████╗ ███████╗██╗  ██╗██╗ ██████╗██╗  ██╗
-  ██╔════╝██║██╔══██╗██╔════╝██║ ██╔╝██║██╔════╝██║ ██╔╝
-  ███████╗██║██║  ██║█████╗  █████╔╝ ██║██║     █████╔╝
-  ╚════██║██║██║  ██║██╔══╝  ██╔═██╗ ██║██║     ██╔═██╗
-  ███████║██║██████╔╝███████╗██║  ██╗██║╚██████╗██║  ██╗
-  ╚══════╝╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝ ╚═════╝╚═╝  ╚═╝
-  v0.5.1
-
-• Using model google-gla:gemini-2.5-pro
+• Using model google-gla:gemini-2.5-flash
 • Starting MCP servers
   • Fetch
   • Brave Search
 • Go kick some ass!
-> hello?
 
- ╭─ Sidekick ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
- │                                                                                                                          │
- │  Hi there! I'm Sidekick. What can I help you with today?                                                                 │
- │                                                                                                                          │
- ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-  Reqs: 1, Tokens(In/Cache/Out): 1544/0/17, Cost(Req/Total): $0.00210/$0.00210
+λ /model 4
 
-> tell me about this codebase
-• Run(ls -F)
+• Switched to model: google-gla:gemini-2.5-pro
+
+λ Read README.md for project context. Then I want you to read through this codebase and determine if theres any areas that could be simplified. Merge
+  similar logic into a single file, remove redundant or unused code or files etc. I'm looking to clean up cruft etc. Read through the codebase in ./sr
+  c/sidekick/ and report back your findings. Don't invent work if there isn't any. Only report something if its actually worth refactoring. Don't over
+   engineer.
+
 • Read(README.md)
-• Read(pyproject.toml)
-• Read(src/copier_template_tester/__init__.py)
-• Read(src/copier_template_tester/__main__.py)
-• Read(src/copier_template_tester/main.py)
+• List(./src/sidekick/, depth=3)
+• Read(src/sidekick/utils/__init__.py)
+• Read(src/sidekick/utils/command_parser.py)
+• Read(src/sidekick/utils/display.py)
+• Read(src/sidekick/utils/error_handler.py)
+• Read(src/sidekick/utils/input.py)
+• Read(src/sidekick/utils/logger.py)
+• Grep(src/sidekick/, pattern=format_server_name)
+• Grep(src/sidekick/, pattern=extract_commands)
+• Grep(src/sidekick/, pattern=is_command_allowed)
+• Grep(src/sidekick/, pattern=get_command_display_name)
+• Grep(src/sidekick/, pattern=handle_error)
+• Grep(src/sidekick/, pattern=get_multiline_input)
+• Grep(src/sidekick/, pattern=configure_debug_logging)
+• Grep(src/sidekick/, pattern=log_message_history)
+• An error occurred: [Errno 2] No such file or directory: 'src/sidekick/'
 
- ╭─ Error ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
- │                                                                                                                          │
- │  Unexpected error (FileNotFoundError): [Errno 2] No such file or directory: 'src/copier_template_tester/__init__.py'     │
- │                                                                                                                          │
- │  Error log: /var/folders/6y/l8v8srld0fs404stp9zdthpc0000gn/T/sidekick_error_20250624_105047.log                          │
- │                                                                                                                          │
- ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+λ continue
 
->
+• Run(ls -F)
+• Grep(src/sidekick/, pattern=extract_commands)
+• Grep(src/sidekick/, pattern=is_command_allowed)
+• Grep(src/sidekick/, pattern=get_command_display_name)
+• Grep(src/sidekick/, pattern=handle_error)
+• Grep(src/sidekick/, pattern=get_multiline_input)
+• Grep(src/sidekick/, pattern=configure_debug_logging)
+• Grep(src/sidekick/, pattern=log_message_history)
+• An error occurred: [Errno 2] No such file or directory: 'src/sidekick/'
 
-----
+λ /model 5
 
-After existing the CLI
+• Switched to model: google-gla:gemini-2.5-flash
 
-----
 
-Task exception was never retrieved
-future: <Task finished name='read_file' coro=<Tool.run() done, defined at /Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/tools.py:370> exception=FileNotFoundError(2, 'No such file or directory')>
-Traceback (most recent call last):
-  File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/tools.py", line 401, in run
+Unhandled exception in event loop:
+  File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/tools.py", line 356, in run
     return await self._run(message, run_context)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/tools.py", line 422, in _run
+  File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/tools.py", line 377, in _run
     response_content = await self.function_schema.call(args_dict, ctx)
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/_function_schema.py", line 53, in call
+  File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/_function_schema.py", line 52, in call
     return await function(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/gavin/Projects/sidekick-cli/src/sidekick/tools/read_file.py", line 3, in read_file
-    with open(filepath, "r", encoding="utf-8") as file:
-         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: 'src/copier_template_tester/__main__.py'
-Task exception was never retrieved
-future: <Task finished name='read_file' coro=<Tool.run() done, defined at /Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/tools.py:370> exception=FileNotFoundError(2, 'No such file or directory')>
-Traceback (most recent call last):
-  File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/tools.py", line 401, in run
+  File "/Users/gavin/Projects/sidekick-cli/src/sidekick/tools/grep.py", line 410, in grep
+    os.chdir(os.path.expanduser(directory))
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Exception [Errno 2] No such file or directory: 'src/sidekick/'
+
+Unhandled exception in event loop:
+  File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/tools.py", line 356, in run
     return await self._run(message, run_context)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/tools.py", line 422, in _run
+  File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/tools.py", line 377, in _run
     response_content = await self.function_schema.call(args_dict, ctx)
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/_function_schema.py", line 53, in call
+  File "/Users/gavin/Projects/sidekick-cli/env/lib/python3.13/site-packages/pydantic_ai/_function_schema.py", line 52, in call
     return await function(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/gavin/Projects/sidekick-cli/src/sidekick/tools/read_file.py", line 3, in read_file
-    with open(filepath, "r", encoding="utf-8") as file:
-         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: 'src/copier_template_tester/main.py'
+  File "/Users/gavin/Projects/sidekick-cli/src/sidekick/tools/grep.py", line 410, in grep
+    os.chdir(os.path.expanduser(directory))
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Exception [Errno 2] No such file or directory: 'src/sidekick/'
+Press ENTER to continue...
