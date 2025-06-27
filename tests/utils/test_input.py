@@ -4,10 +4,16 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
 
-from sidekick.utils.input import (PLACEHOLDER_STYLE, PLACEHOLDER_TEXT, PROMPT_CONTINUATION_INDENT,
-                                  PROMPT_SYMBOL, create_multiline_keybindings,
-                                  create_multiline_prompt_session, create_prompt_style,
-                                  prompt_continuation)
+from sidekick.utils.input import (
+    PLACEHOLDER_STYLE,
+    PLACEHOLDER_TEXT,
+    PROMPT_CONTINUATION_INDENT,
+    PROMPT_SYMBOL,
+    create_multiline_keybindings,
+    create_multiline_prompt_session,
+    create_prompt_style,
+    prompt_continuation,
+)
 
 
 def test_create_multiline_keybindings():

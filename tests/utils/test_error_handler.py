@@ -5,8 +5,12 @@ from unittest.mock import MagicMock
 import pytest
 from pydantic_ai.exceptions import ModelHTTPError
 
-from sidekick.utils.error import (extract_error_message, handle_error, save_error_log,
-                                  should_log_error)
+from sidekick.utils.error import (
+    extract_error_message,
+    handle_error,
+    save_error_log,
+    should_log_error,
+)
 
 
 def test_extract_error_message_model_http_error():

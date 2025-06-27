@@ -9,8 +9,14 @@ from rich.console import Console
 from sidekick import ui
 from sidekick.agent import get_or_create_agent, process_request
 from sidekick.commands import handle_command
-from sidekick.config import (ConfigError, ConfigValidationError, config_exists,
-                             ensure_config_structure, set_env_vars, validate_config_structure)
+from sidekick.config import (
+    ConfigError,
+    ConfigValidationError,
+    config_exists,
+    ensure_config_structure,
+    set_env_vars,
+    validate_config_structure,
+)
 from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.mcp import load_mcp_servers
 from sidekick.session import session
