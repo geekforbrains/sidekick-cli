@@ -94,7 +94,7 @@ def help():
     for cmd, desc in commands:
         table.add_row(cmd, desc)
 
-    console.print(Padding(table, (1, 0, 0, 2)))
+    panels.display_info_panel(table, "Available Commands")
 
 
 def version():
