@@ -17,7 +17,7 @@ from sidekick.session import session
 from sidekick.setup import run_setup
 from sidekick.utils.error import handle_error
 from sidekick.utils.input import create_multiline_prompt_session, get_multiline_input
-from sidekick.utils.logger import configure_debug_logging, log_message_history
+from sidekick.utils.logger import setup_logging
 
 app = typer.Typer(help=f"{APP_NAME} - Your agentic CLI developer")
 console = Console()
@@ -66,7 +66,7 @@ async def initialize_servers():
 
 async def handle_user_request(user_input: str, mcp_agent):
     """Process a user request with proper exception handling."""
-    log.debug(f"Handling user request: {user_input}")
+    log.debug(f"Handling user request: {user_input.replace('\n', ' ')[:100]}...")
     ui.start_spinner(ui.get_thinking_message())
     session.sigint_received = False
 
@@ -82,9 +82,9 @@ async def handle_user_request(user_input: str, mcp_agent):
             # Display usage information if available
             if session.last_usage:
                 ui.usage(session.last_usage)
-                log.debug(f"Usage stats: {session.last_usage}")
         # If resp is None, it means the tool was cancelled by user, which is already handled
     except asyncio.CancelledError:
+        log.info("Request cancelled by user")
         ui.stop_spinner()
         ui.warning("Request cancelled")
         # Recreate agent after cancellation
@@ -167,10 +167,6 @@ async def repl():
 
     restore_default_signal_handler()
 
-    if session.debug_enabled:
-        log_message_history(session.messages)
-        ui.info(f"Debug log saved to: {session.log_file}")
-
     ui.info("Thanks for all the fish.")
 
 
@@ -195,9 +191,9 @@ def main(
         return
 
     if debug:
-        log_file = configure_debug_logging()
         session.debug_enabled = True
-        session.log_file = log_file
+
+    setup_logging(debug_enabled=debug)
 
     ui.banner()
 

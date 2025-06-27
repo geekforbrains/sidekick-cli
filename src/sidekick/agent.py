@@ -205,7 +205,7 @@ def _patch_history_on_error(error_message: str):
 
 
 async def process_request(message: str):
-    log.debug(f"Processing request: {message}")
+    log.debug(f"Processing request: {message.replace('\n', ' ')[:100]}...")
 
     mcp_agent = get_or_create_agent()
     agent = mcp_agent.agent
@@ -230,7 +230,7 @@ async def process_request(message: str):
                 session.total_cost = session.last_usage["total_cost"]
 
             result = agent_run.result.output
-            log.debug(f"Agent response: {result}")
+            log.debug(f"Agent response: {result.replace('\n', ' ')[:100]}...")
             return result
     except asyncio.CancelledError as e:
         log.debug(f"Request cancelled: {e}")
