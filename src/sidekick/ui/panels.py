@@ -5,8 +5,6 @@ from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.panel import Panel
 
-from sidekick.session import session
-
 console = Console()
 
 # Padding constants for consistent spacing

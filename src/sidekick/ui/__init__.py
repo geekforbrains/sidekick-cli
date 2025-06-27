@@ -1,7 +1,8 @@
 """UI module - maintains backward compatibility by re-exporting all functions."""
 
 # Re-export from core
-from sidekick.ui.core import SpinnerStyle, banner, get_thinking_message, start_spinner, stop_spinner
+from sidekick.ui.core import (THINKING_MESSAGES, SpinnerStyle, banner, get_thinking_message,
+                              start_spinner, stop_spinner)
 # Make SYNTAX_THEME available at top level
 # Re-export from formatting
 from sidekick.ui.formatting import (SYNTAX_THEME, create_inline_diff, create_shell_syntax,
@@ -20,6 +21,7 @@ from sidekick.ui.panels import (PANEL_CONTENT_PADDING, PANEL_WRAPPER_PADDING,
 
 __all__ = [
     # Core
+    "THINKING_MESSAGES",
     "SpinnerStyle",
     "banner",
     "get_thinking_message",

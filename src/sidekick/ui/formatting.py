@@ -236,8 +236,8 @@ def format_server_name(key: str) -> str:
             result += " "
         result += char
 
-    # Handle snake_case
-    result = result.replace("_", " ")
+    # Handle snake_case and hyphenated names
+    result = result.replace("_", " ").replace("-", " ")
 
     # Capitalize words, but preserve certain acronyms
     words = result.split()

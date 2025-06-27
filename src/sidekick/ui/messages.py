@@ -1,74 +1,67 @@
 """Status message functions."""
 
 from rich.console import Console
-from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.pretty import Pretty
 from rich.table import Table
 from rich.text import Text
 
 from sidekick.constants import APP_NAME, APP_VERSION
-from sidekick.ui.panels import Colors, _last_output, _prepare_to_print, display_agent_panel
+from sidekick.ui import panels
 
 console = Console()
-colors = Colors()
+colors = panels.Colors()
 
 
 def info(message: str):
     """Display an info message."""
-    global _last_output
-    _prepare_to_print("status")
+    panels._prepare_to_print("status")
     console.print(f"• {message}", style=colors.primary)
-    _last_output = "status"
+    panels._last_output = "status"
 
 
 def error(message: str, detail: str = None):
     """Display an error message."""
-    global _last_output
-    _prepare_to_print("status")
+    panels._prepare_to_print("status")
     if detail:
         console.print(f"✗ {message}: {detail}", style=colors.error)
     else:
         console.print(f"✗ {message}", style=colors.error)
-    _last_output = "status"
+    panels._last_output = "status"
 
 
 def warning(message: str):
     """Display a warning message."""
-    global _last_output
-    _prepare_to_print("status")
+    panels._prepare_to_print("status")
     console.print(f"⚠ {message}", style=colors.warning)
-    _last_output = "status"
+    panels._last_output = "status"
 
 
 def success(message: str):
     """Display a success message."""
-    global _last_output
-    _prepare_to_print("status")
+    panels._prepare_to_print("status")
     console.print(f"✓ {message}", style=colors.success)
-    _last_output = "status"
+    panels._last_output = "status"
 
 
 def bullet(message: str):
     """Display a bullet point message."""
-    global _last_output
-    _prepare_to_print("status")
+    panels._prepare_to_print("status")
     console.print(f"  - {message}", style=colors.muted)
-    _last_output = "status"
+    panels._last_output = "status"
 
 
 def muted(message: str, spaces: int = 0):
     """Display a muted message."""
-    global _last_output
-    _prepare_to_print("status")
+    panels._prepare_to_print("status")
     console.print(f"{' ' * spaces}{message}", style=colors.muted)
-    _last_output = "status"
+    panels._last_output = "status"
 
 
 def agent(content: str, has_footer: bool = False):
     """Display agent response."""
     # Just use the display_agent_panel function from panels
-    display_agent_panel(content, has_footer)
+    panels.display_agent_panel(content, has_footer)
 
 
 def line():

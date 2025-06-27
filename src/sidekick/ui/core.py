@@ -8,7 +8,7 @@ from rich.padding import Padding
 
 from sidekick.constants import APP_VERSION
 from sidekick.session import session
-from sidekick.ui.panels import Colors, _last_output
+from sidekick.ui.panels import Colors
 
 console = Console()
 colors = Colors()
@@ -70,21 +70,20 @@ async def _rotate_thinking_messages(style: str, interval: float = 5.0):
 
 def banner():
     """Display the application banner."""
-    global _last_output
+    from sidekick.ui import panels
+
     console.clear()
     banner_padding = Padding(BANNER, (1, 0, 0, 2))
     version_padding = Padding(f"v{APP_VERSION}", (0, 0, 1, 2))
     console.print(banner_padding, style=colors.primary)
     console.print(version_padding, style=colors.muted)
-    _last_output = None  # Reset context after banner
+    panels._last_output = None  # Reset context after banner
 
 
 def start_spinner(message: str, style: str = SpinnerStyle.DEFAULT):
     """Start the spinner with a message."""
-    from rich.spinner import Spinner
-
     formatted_message = style.format(message)
-    session.spinner = console.status(formatted_message, spinner=Spinner("dots"))
+    session.spinner = console.status(formatted_message, spinner="dots")
     session.spinner.start()
 
     # Start rotation task

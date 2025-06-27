@@ -1,7 +1,7 @@
 """Tests for command parser."""
 
-from sidekick.utils.command_parser import (extract_commands, get_command_display_name,
-                                           is_command_allowed)
+from sidekick.ui import get_command_display_name
+from sidekick.utils.command import extract_commands, is_command_allowed
 
 
 def test_simple_command():
