@@ -2,26 +2,36 @@
 
 import json
 import logging
-from datetime import datetime
 from typing import Any
 
+from sidekick.ui.messages import muted as ui_muted
 
-def configure_debug_logging() -> str:
-    """Configure debug logging when --debug flag is set.
 
-    Returns:
-        Path to the log file
+class UILogHandler(logging.Handler):
     """
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = f"sidekick_{timestamp}.log"
+    A logging handler that outputs messages to the UI's muted function.
+    """
 
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(levelname)-5s - %(name)s - %(message)s",
-        handlers=[logging.FileHandler(log_file, encoding="utf-8")],
-    )
+    def __init__(self, ui_muted_function):
+        super().__init__()
+        self.ui_muted_function = ui_muted_function
 
-    # Silence noisy modules
+    def emit(self, record):
+        log_entry = self.format(record)
+
+        self.ui_muted_function(log_entry)
+
+
+def setup_logging(debug_enabled: bool):
+    """Configure logging to output to the UI's muted function."""
+    ui_log_formatter = logging.Formatter("⚙︎ %(levelname)s: %(message)s")
+
+    if not any(isinstance(handler, UILogHandler) for handler in logging.root.handlers):
+        ui_handler = UILogHandler(ui_muted)
+        ui_handler.setLevel(logging.DEBUG)
+        ui_handler.setFormatter(ui_log_formatter)
+        logging.root.addHandler(ui_handler)
+
     ignored_modules = [
         "httpcore",
         "httpx",
@@ -29,54 +39,13 @@ def configure_debug_logging() -> str:
         "asyncio",
         "markdown_it",
     ]
-
     for module in ignored_modules:
         logging.getLogger(module).setLevel(logging.WARNING)
 
-    logger = logging.getLogger(__name__)
-    logger.info(f"Debug logging initialized to {log_file}")
-
-    return log_file
-
-
-def log_message_history(messages: list):
-    """Write the entire message history to the log file in a readable format."""
-    # Get the file handler from the root logger
-    handlers = logging.getLogger().handlers
-    file_handler = None
-    for handler in handlers:
-        if isinstance(handler, logging.FileHandler):
-            file_handler = handler
-            break
-
-    if not file_handler:
-        return
-
-    # Write directly to the file
-    with open(file_handler.baseFilename, "a", encoding="utf-8") as f:
-        f.write("\n\n")
-        f.write("=" * 80 + "\n")
-        f.write("MESSAGE HISTORY DUMP\n")
-        f.write("=" * 80 + "\n\n")
-
-        for i, message in enumerate(messages):
-            f.write(f"Message {i + 1}:\n")
-            f.write("-" * 40 + "\n")
-
-            try:
-                if hasattr(message, "__dict__"):
-                    f.write(json.dumps(message.__dict__, indent=2, default=str))
-                else:
-                    f.write(str(message))
-            except Exception as e:
-                f.write(f"Error formatting message: {e}\n")
-                f.write(repr(message))
-
-            f.write("\n\n")
-
-        f.write("=" * 80 + "\n")
-        f.write("END OF MESSAGE HISTORY\n")
-        f.write("=" * 80 + "\n")
+    if debug_enabled:
+        logging.root.setLevel(logging.DEBUG)
+    else:
+        logging.root.setLevel(logging.INFO)
 
 
 def format_for_logging(data: Any) -> str:
