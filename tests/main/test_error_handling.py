@@ -30,8 +30,8 @@ async def test_handle_user_request_with_error():
             mock_ui.stop_spinner.assert_called()
 
             # Verify error was displayed
-            mock_ui.error.assert_called_once()
-            call_args = mock_ui.error.call_args
+            mock_ui.display_error_panel.assert_called_once()
+            call_args = mock_ui.display_error_panel.call_args
             assert "ValueError" in call_args[0][0]
             assert "Test error" in call_args[0][0]
             # Should have log file in detail
@@ -59,7 +59,7 @@ async def test_handle_user_request_with_model_http_error():
             await handle_user_request("test input", mcp_agent)
 
             # Verify error was displayed without log file
-            mock_ui.error.assert_called_once_with("test-model: Bad request")
+            mock_ui.display_error_panel.assert_called_once_with("test-model: Bad request")
 
 
 @pytest.mark.asyncio
@@ -80,7 +80,7 @@ async def test_handle_user_request_success():
             await handle_user_request("test input", mcp_agent)
 
             # Should not call error
-            mock_ui.error.assert_not_called()
+            mock_ui.display_error_panel.assert_not_called()
             # Should display agent response
             mock_ui.agent.assert_called_once_with("Success response", has_footer=False)
 
@@ -111,4 +111,4 @@ async def test_handle_user_request_cancellation():
 
             # Should show warning, not error
             mock_ui.warning.assert_called_once_with("Request cancelled")
-            mock_ui.error.assert_not_called()
+            mock_ui.display_error_panel.assert_not_called()

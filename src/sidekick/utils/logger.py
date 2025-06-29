@@ -4,6 +4,7 @@ import json
 import logging
 from typing import Any
 
+from sidekick.session import session
 from sidekick.ui.messages import muted as ui_muted
 
 
@@ -19,7 +20,15 @@ class UILogHandler(logging.Handler):
     def emit(self, record):
         log_entry = self.format(record)
 
+        spinner_was_active = False
+        if session.spinner:
+            spinner_was_active = True
+            session.spinner.stop()
+
         self.ui_muted_function(log_entry)
+
+        if spinner_was_active:
+            session.spinner.start()
 
 
 def setup_logging(debug_enabled: bool):

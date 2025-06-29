@@ -111,7 +111,7 @@ async def handle_user_request(user_input: str, mcp_agent):
         ui.warning("Request interrupted")
     except Exception as e:
         ui.stop_spinner()
-        await handle_error(e, ui.error)
+        await handle_error(e, ui.display_error_panel)
     finally:
         ui.stop_spinner()
         session.current_task = None

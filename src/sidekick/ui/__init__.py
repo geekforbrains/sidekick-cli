@@ -1,6 +1,8 @@
 """UI module - maintains backward compatibility by re-exporting all functions."""
 
 # Re-export from core
+# Re-export from colors
+from sidekick.ui.colors import Colors, colors
 from sidekick.ui.core import (
     THINKING_MESSAGES,
     SpinnerStyle,
@@ -46,8 +48,6 @@ from sidekick.ui.panels import (
     PANEL_CONTENT_PADDING,
     PANEL_WRAPPER_PADDING,
     PANEL_WRAPPER_PADDING_NO_BOTTOM,
-    Colors,
-    colors,
     console,
     create_panel,
     display_agent_panel,

@@ -8,10 +8,9 @@ from rich.padding import Padding
 
 from sidekick.constants import APP_VERSION
 from sidekick.session import session
-from sidekick.ui.panels import Colors
+from sidekick.ui.colors import colors
 
 console = Console()
-colors = Colors()
 
 BANNER = """
 ███████╗██╗██████╗ ███████╗██╗  ██╗██╗ ██████╗██╗  ██╗

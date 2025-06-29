@@ -8,9 +8,9 @@ from rich.text import Text
 
 from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.ui import panels
+from sidekick.ui.colors import colors
 
 console = Console()
-colors = panels.Colors()
 
 
 def info(message: str):

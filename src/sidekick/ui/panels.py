@@ -5,26 +5,14 @@ from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.panel import Panel
 
+from sidekick.ui.colors import colors
+
 console = Console()
 
 # Padding constants for consistent spacing
 PANEL_CONTENT_PADDING = 1
 PANEL_WRAPPER_PADDING = (0, 0, 1, 1)  # Standard panel padding (left indent)
 PANEL_WRAPPER_PADDING_NO_BOTTOM = (0, 0, 0, 1)  # Used for panels with footers
-
-
-# Color scheme
-class Colors:
-    primary = "medium_purple1"  # Agent responses
-    secondary = "medium_purple3"  # Secondary purple
-    success = "green"  # Success messages
-    warning = "orange1"  # Confirmations/warnings
-    error = "red"  # Errors
-    muted = "grey62"  # Info/help
-    tool_data = "bright_blue"  # Tool output data
-
-
-colors = Colors()
 
 # Track last output type for consistent spacing
 _last_output = None  # "status", "panel", "user_input", or None

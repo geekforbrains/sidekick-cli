@@ -103,7 +103,6 @@ def _create_confirmation_callback():
             session.spinner.stop()
 
         ui.display_tool_panel(preview, title, footer)
-        ui.line()
 
         # Display confirmation options without using a panel, but still
         # indented by two spaces so they line up with other panel content.
@@ -113,8 +112,11 @@ def _create_confirmation_callback():
             ("n", "No, cancel this execution"),
         )
 
+        # Add a single blank line before options
+        ui.console.print()
+
         for key, description in options:
-            ui.muted(f"  {key}: {description}")
+            ui.console.print(f"  {key}: {description}", style=ui.colors.warning)
 
         while True:
             choice = ui.console.input("  Continue? (y): ").lower().strip()
