@@ -65,11 +65,6 @@ async def display_server_info():
         ui.bullet("No servers configured")
 
 
-async def initialize_servers():
-    """Initialize MCP servers with spinner feedback."""
-    ui.stop_spinner()
-
-
 async def handle_user_request(user_input: str, mcp_agent):
     """Process a user request with proper exception handling."""
     log.debug(f"Handling user request: {user_input.replace('\n', ' ')[:100]}...")
@@ -119,6 +114,22 @@ async def handle_user_request(user_input: str, mcp_agent):
     return mcp_agent
 
 
+async def handle_model_switch(mcp_agent):
+    ui.start_spinner("Switching model...", ui.SpinnerStyle.MUTED)
+    try:
+        # Exit current agent context
+        if mcp_agent._mcp_entered:
+            await mcp_agent.__aexit__(None, None, None)
+
+        # Create and enter new agent context
+        mcp_agent = get_or_create_agent()
+        await mcp_agent.__aenter__()
+        session.model_switched = False
+    finally:
+        ui.stop_spinner()
+        return mcp_agent
+
+
 async def repl():
     ui.info(f"Using model {session.current_model}")
     mcp_agent = get_or_create_agent()
@@ -131,7 +142,7 @@ async def repl():
 
     ui.start_spinner("Initializing servers...", ui.SpinnerStyle.MUTED)
     async with mcp_agent:
-        await initialize_servers()
+        ui.stop_spinner()
         ui.success("Go kick some ass!")
         prompt_session = create_multiline_prompt_session()
 
@@ -144,7 +155,10 @@ async def repl():
                 break
 
             ui.line()
-            ui.reset_output_context()  # Reset context after user input
+
+            # Reset context after user input
+            # This is for consistent UI styling/spacing
+            ui.reset_output_context()
 
             if not user_input:
                 continue
@@ -153,26 +167,14 @@ async def repl():
                 break
 
             if await handle_command(user_input):
-                # Check if model was switched and recreate agent if needed
                 if session.model_switched:
-                    ui.start_spinner("Switching model...", ui.SpinnerStyle.MUTED)
-                    try:
-                        # Exit current agent context
-                        if mcp_agent._mcp_entered:
-                            await mcp_agent.__aexit__(None, None, None)
-                        # Create and enter new agent context
-                        mcp_agent = get_or_create_agent()
-                        await mcp_agent.__aenter__()
-                        session.model_switched = False
-                    finally:
-                        ui.stop_spinner()
+                    mcp_agent = await handle_model_switch(mcp_agent)
                 continue
 
             mcp_agent = await handle_user_request(user_input, mcp_agent)
             signal.signal(signal.SIGINT, signal_handler)
 
     restore_default_signal_handler()
-
     ui.info("Thanks for all the fish.")
 
 
@@ -203,14 +205,11 @@ def main(
 
     ui.banner()
 
-    # Check if config exists, run setup if needed
     if not config_exists():
         console.print()
         config = run_setup()
-        # Apply env vars from newly created config
         set_env_vars(config.get("env", {}))
     else:
-        # Config exists, try to load and validate it
         try:
             config = ensure_config_structure()
             validate_config_structure(config)

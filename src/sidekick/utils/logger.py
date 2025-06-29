@@ -48,13 +48,14 @@ def setup_logging(debug_enabled: bool):
         "asyncio",
         "markdown_it",
     ]
+
     for module in ignored_modules:
         logging.getLogger(module).setLevel(logging.WARNING)
 
     if debug_enabled:
         logging.root.setLevel(logging.DEBUG)
     else:
-        logging.root.setLevel(logging.INFO)
+        logging.root.setLevel(logging.WARNING)
 
 
 def format_for_logging(data: Any) -> str:
