@@ -34,7 +34,6 @@ async def handle_yolo():
 async def handle_model(args: list[str]):
     """Handle /model command - list, switch, or set default model."""
     if len(args) == 0:
-        # List available models in a styled panel
         table = Table(show_header=False, box=None, padding=(0, 2, 0, 0))
         table.add_column("#", justify="right", style=ui.colors.primary)
         table.add_column("Model", style="white")
@@ -45,8 +44,7 @@ async def handle_model(args: list[str]):
                 label += " [dim](current)[/dim]"
             table.add_row(str(i), label)
 
-        panel = ui.create_panel(table, "Available Models", ui.colors.muted)
-        ui.display_panel(panel)
+        ui.display_info_panel(table, "Available Models")
 
     elif len(args) >= 1:
         try:

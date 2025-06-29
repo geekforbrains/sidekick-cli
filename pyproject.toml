@@ -28,7 +28,7 @@ dependencies = [
     "pydantic-ai",
     "rich",
     "typer",
-    "prompt_toolkit>=3.0",
+    "prompt_toolkit",
 ]
 
 [project.scripts]

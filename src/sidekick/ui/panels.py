@@ -106,7 +106,7 @@ def display_info_panel(content, title: str):
     global _last_output
     _prepare_to_print("panel")
     panel = create_panel(content, title, colors.muted)
-    console.print(Padding(panel, PANEL_WRAPPER_PADDING))
+    console.print(Padding(panel, PANEL_WRAPPER_PADDING_NO_BOTTOM))
     _last_output = "panel"
 
 

@@ -6,7 +6,7 @@ from pathlib import Path
 from rich.syntax import Syntax
 from rich.text import Text
 
-SYNTAX_THEME = "monokai"
+SYNTAX_THEME = "nord"
 
 
 def get_file_language(filepath: str) -> str:
