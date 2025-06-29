@@ -21,6 +21,7 @@ class Session:
     total_cost: float = 0.0
     debug_enabled: bool = False
     log_file: Optional[str] = None
+    project_guide: Optional[str] = None
 
     def init(self, config: Dict[str, Any], model: str):
         """Initialize the session state."""

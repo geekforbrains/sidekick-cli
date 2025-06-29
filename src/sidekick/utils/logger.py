@@ -47,6 +47,8 @@ def setup_logging(debug_enabled: bool):
         "urllib3",
         "asyncio",
         "markdown_it",
+        "anthropic",
+        "openai",
     ]
 
     for module in ignored_modules:

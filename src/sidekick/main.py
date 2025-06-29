@@ -22,6 +22,7 @@ from sidekick.mcp import load_mcp_servers
 from sidekick.session import session
 from sidekick.setup import run_setup
 from sidekick.utils.error import handle_error
+from sidekick.utils.guide import load_guide
 from sidekick.utils.input import create_multiline_prompt_session, get_multiline_input
 from sidekick.utils.logger import setup_logging
 
@@ -225,6 +226,10 @@ def main(
             sys.exit(1)
 
     session.init(config, config["default_model"])
+
+    if load_guide(session):
+        ui.info("Loaded SIDEKICK.md guide")
+
     log.info(f"Session initialized with model: {session.current_model}")
 
     # Create event loop manually to avoid asyncio.run's signal handling

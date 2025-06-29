@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from pydantic_ai import Agent
-from pydantic_ai.messages import ModelRequest, ToolReturnPart
+from pydantic_ai.messages import ModelRequest, ToolReturnPart, UserPromptPart
 
 from sidekick import ui
 from sidekick.constants import MODELS
@@ -12,6 +12,7 @@ from sidekick.deps import ToolDeps
 from sidekick.mcp import MCPAgent, load_mcp_servers
 from sidekick.session import session
 from sidekick.tools import TOOLS
+from sidekick.utils.guide import get_guide
 
 log = logging.getLogger(__name__)
 
@@ -210,6 +211,12 @@ async def process_request(message: str):
 
     mh = session.messages.copy()
     log.debug(f"Message history size: {len(mh)}")
+
+    project_guide = get_guide(session)
+    if project_guide:
+        guide_message = ModelRequest(parts=[UserPromptPart(content=project_guide)])
+        mh.insert(0, guide_message)
+        log.debug("Prepended project guide to message history")
 
     deps = ToolDeps(
         confirm_action=_create_confirmation_callback(),
