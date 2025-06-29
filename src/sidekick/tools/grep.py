@@ -423,5 +423,11 @@ async def grep(
 
         return await _grep_with_python(pattern, case_sensitive, max_results, include_pattern)
 
+    except FileNotFoundError:
+        return f"Error: Directory '{directory}' does not exist. Please check the path."
+    except PermissionError:
+        return f"Error: Permission denied accessing directory '{directory}'"
+    except Exception as e:
+        return f"Error accessing directory '{directory}': {str(e)}"
     finally:
         os.chdir(orig_dir)

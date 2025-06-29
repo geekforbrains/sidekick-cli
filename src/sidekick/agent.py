@@ -27,7 +27,7 @@ def _get_prompt(name: str) -> str:
 async def _process_node(node):
     if hasattr(node, "request"):
         session.messages.append(node.request)
-        log.debug(f"Added request to message history: {node.request}")
+        log.debug("Added request to message history")
 
         for part in node.request.parts:
             if part.part_kind == "retry-prompt":
@@ -44,7 +44,7 @@ async def _process_node(node):
 
     if hasattr(node, "model_response"):
         session.messages.append(node.model_response)
-        log.debug(f"Added model response to message history: {node.model_response}")
+        log.debug("Added model response to message history")
 
 
 def _calculate_usage_costs(usage):
@@ -114,14 +114,10 @@ def _create_confirmation_callback():
         )
 
         for key, description in options:
-            ui.console.print(f"  [{ui.colors.warning}]{key}[/{ui.colors.warning}]: {description}")
+            ui.muted(f"  {key}: {description}")
 
         while True:
-            choice = (
-                ui.console.input(f"  [{ui.colors.warning}]Continue?[/{ui.colors.warning}] (y): ")
-                .lower()
-                .strip()
-            )
+            choice = ui.console.input("  Continue? (y): ").lower().strip()
 
             if choice == "" or choice in ["y", "yes"]:
                 ui.line()
