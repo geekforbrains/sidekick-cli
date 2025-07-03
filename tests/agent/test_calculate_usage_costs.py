@@ -18,7 +18,7 @@ def test_basic_usage_calculation():
 
     # Mock session to have a model and total cost
     with patch("sidekick.agent.session") as mock_session:
-        mock_session.current_model = "openai:gpt-4o"
+        mock_session.current_model = "openai:o4-mini"
         mock_session.total_cost = 0.0
 
         result = _calculate_usage_costs(usage)
@@ -29,9 +29,9 @@ def test_basic_usage_calculation():
         assert result["cached_tokens"] == 0
         assert result["output_tokens"] == 500
 
-        # Verify costs (based on gpt-4o pricing: $2.50/$1.25/$10.00 per 1M)
-        expected_input_cost = 1000 / 1_000_000 * 2.50
-        expected_output_cost = 500 / 1_000_000 * 10.00
+        # Verify costs (based on o4-mini pricing: $1.10/$0.275/$4.40 per 1M)
+        expected_input_cost = 1000 / 1_000_000 * 1.10
+        expected_output_cost = 500 / 1_000_000 * 4.40
         expected_request_cost = expected_input_cost + expected_output_cost
 
         assert result["input_cost"] == pytest.approx(expected_input_cost)
@@ -55,7 +55,7 @@ def test_usage_with_cached_tokens():
     usage.details = [detail]
 
     with patch("sidekick.agent.session") as mock_session:
-        mock_session.current_model = "openai:gpt-4o"
+        mock_session.current_model = "openai:o4-mini"
         mock_session.total_cost = 0.01  # Existing cost
 
         result = _calculate_usage_costs(usage)
@@ -66,9 +66,9 @@ def test_usage_with_cached_tokens():
         assert result["output_tokens"] == 500
 
         # Verify costs (non-cached: 700 tokens)
-        expected_input_cost = 700 / 1_000_000 * 2.50
-        expected_cached_cost = 300 / 1_000_000 * 1.25
-        expected_output_cost = 500 / 1_000_000 * 10.00
+        expected_input_cost = 700 / 1_000_000 * 1.10
+        expected_cached_cost = 300 / 1_000_000 * 0.275
+        expected_output_cost = 500 / 1_000_000 * 4.40
         expected_request_cost = expected_input_cost + expected_cached_cost + expected_output_cost
 
         assert result["input_cost"] == pytest.approx(expected_input_cost)
@@ -123,7 +123,7 @@ def test_usage_without_details_attribute():
     # No details attribute
 
     with patch("sidekick.agent.session") as mock_session:
-        mock_session.current_model = "openai:gpt-4o"
+        mock_session.current_model = "openai:o4-mini"
         mock_session.total_cost = 0.0
 
         result = _calculate_usage_costs(usage)
@@ -192,13 +192,13 @@ def test_cumulative_total_cost():
     usage.details = []
 
     with patch("sidekick.agent.session") as mock_session:
-        mock_session.current_model = "openai:gpt-4o"
+        mock_session.current_model = "openai:o4-mini"
         mock_session.total_cost = 0.05  # Existing total
 
         result = _calculate_usage_costs(usage)
 
         # Calculate expected cost
-        expected_request_cost = (1000 / 1_000_000 * 2.50) + (500 / 1_000_000 * 10.00)
+        expected_request_cost = (1000 / 1_000_000 * 1.10) + (500 / 1_000_000 * 4.40)
 
         # Total should include previous total
         assert result["total_cost"] == pytest.approx(0.05 + expected_request_cost)
