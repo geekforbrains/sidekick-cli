@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from pathlib import Path
 from typing import Any, Optional
@@ -6,10 +5,10 @@ from typing import Any, Optional
 from pydantic_ai import Agent, CallToolsNode
 from pydantic_ai.messages import (
     ModelRequest,
+    TextPart,
     ToolCallPart,
     ToolReturnPart,
     UserPromptPart,
-    TextPart,
 )
 
 from sidekick import ui
@@ -18,6 +17,7 @@ from sidekick.deps import ToolDeps
 from sidekick.mcp import MCPAgent, load_mcp_servers
 from sidekick.session import session
 from sidekick.tools import TOOLS
+from sidekick.utils.error import ErrorContext
 from sidekick.utils.guide import get_guide
 
 log = logging.getLogger(__name__)
@@ -247,6 +247,9 @@ async def process_request(message: str):
         display_tool_status=_create_display_tool_status_callback(),
     )
 
+    ctx = ErrorContext("agent", ui)
+    ctx.add_cleanup(lambda e: _patch_history_on_error(str(e)))
+
     try:
         async with agent.iter(message, deps=deps, message_history=mh) as agent_run:
             async for node in agent_run:
@@ -261,14 +264,5 @@ async def process_request(message: str):
             result = agent_run.result.output
             log.debug(f"Agent response: {result.replace('\n', ' ')[:100]}...")
             return result
-    except asyncio.CancelledError as e:
-        log.debug(f"Request cancelled: {e}")
-        _patch_history_on_error(str(e))
-        ui.line()
-        ui.warning("Tool execution cancelled")
-        return None
     except Exception as e:
-        log.error(f"Error processing request: {e}", exc_info=True)
-        _patch_history_on_error(f"Tool execution failed: {e}")
-        ui.warning(f"An error occurred: {e}")
-        return None
+        return await ctx.handle(e)

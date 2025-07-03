@@ -21,7 +21,7 @@ from sidekick.constants import APP_NAME, APP_VERSION
 from sidekick.mcp import load_mcp_servers
 from sidekick.session import session
 from sidekick.setup import run_setup
-from sidekick.utils.error import handle_error
+from sidekick.utils.error import ErrorContext
 from sidekick.utils.guide import load_guide
 from sidekick.utils.input import create_multiline_prompt_session, get_multiline_input
 from sidekick.utils.logger import setup_logging
@@ -75,27 +75,28 @@ async def handle_user_request(user_input: str, mcp_agent):
     request_task = asyncio.create_task(process_request(user_input))
     session.current_task = request_task
 
-    try:
-        resp = await request_task
-        ui.stop_spinner()
-        if resp:
-            has_footer = bool(session.last_usage)
-            ui.agent(resp, has_footer=has_footer)
-            # Display usage information if available
-            if session.last_usage:
-                ui.usage(session.last_usage)
-        # If resp is None, it means the tool was cancelled by user, which is already handled
-    except asyncio.CancelledError:
-        log.debug("Request cancelled by user")
-        ui.stop_spinner()
-        ui.warning("Request cancelled")
-        # Recreate agent after cancellation
+    async def recreate_agent():
+        nonlocal mcp_agent
         if session.current_model in session.agents:
             if mcp_agent._mcp_entered:
                 await mcp_agent.__aexit__(None, None, None)
             del session.agents[session.current_model]
             mcp_agent = get_or_create_agent()
             await mcp_agent.__aenter__()
+
+    ctx = ErrorContext("request", ui)
+
+    try:
+        resp = await request_task
+        ui.stop_spinner()
+        if resp:
+            has_footer = bool(session.last_usage)
+            ui.agent(resp, has_footer=has_footer)
+            if session.last_usage:
+                ui.usage(session.last_usage)
+    except asyncio.CancelledError as e:
+        ctx.add_cleanup(recreate_agent)
+        await ctx.handle(e)
     except KeyboardInterrupt:
         ui.stop_spinner()
         if not request_task.done():
@@ -106,10 +107,8 @@ async def handle_user_request(user_input: str, mcp_agent):
                 pass
         ui.warning("Request interrupted")
     except Exception as e:
-        ui.stop_spinner()
-        await handle_error(e, ui.display_error_panel)
+        await ctx.handle(e)
     finally:
-        ui.stop_spinner()
         session.current_task = None
 
     return mcp_agent

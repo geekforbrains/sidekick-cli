@@ -6,8 +6,9 @@ import tempfile
 import traceback
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Callable, List, Optional
 
-from pydantic_ai.exceptions import ModelHTTPError
+from pydantic_ai.exceptions import ModelHTTPError, ModelRetry
 
 
 async def handle_error(error: Exception, display_func) -> None:
@@ -17,10 +18,8 @@ async def handle_error(error: Exception, display_func) -> None:
         error: The exception to handle
         display_func: Function to display error (typically ui.error)
     """
-    # Extract user-friendly message
     message = extract_error_message(error)
 
-    # Log if it's unexpected
     if should_log_error(error):
         log_file = save_error_log(error)
         display_func(message, detail=f"Error log: {log_file}")
@@ -30,13 +29,11 @@ async def handle_error(error: Exception, display_func) -> None:
 
 def extract_error_message(error: Exception) -> str:
     """Extract a clean error message from any exception."""
-    # Handle known patterns
     if isinstance(error, ModelHTTPError):
         return f"{error.model_name}: {_get_api_message(error)}"
 
     error_str = str(error)
 
-    # Handle specific error patterns
     if "MALFORMED_FUNCTION_CALL" in error_str:
         return "The AI model had trouble executing a function. Please try again."
 
@@ -45,18 +42,15 @@ def extract_error_message(error: Exception) -> str:
             "The AI model returned an unexpected response format. This might be a temporary issue."
         )
 
-    # Try to extract clean error messages from provider-specific errors
     error_type = type(error).__name__
     module_name = type(error).__module__ if hasattr(type(error), "__module__") else ""
 
-    # Check for provider-specific client errors
     if error_type in ["ClientError", "APIStatusError", "BadRequestError", "AuthenticationError"]:
         clean_msg = _extract_provider_message(error)
         if clean_msg:
             provider = _get_provider_name(module_name)
             return f"{provider}: {clean_msg}"
 
-    # For unknown errors, clean up the message
     if len(error_str) > 150:
         message_match = re.search(
             r'["\']?message["\']?:\s*["\']([^"\'\n]+)["\']', error_str, re.IGNORECASE
@@ -71,7 +65,6 @@ def extract_error_message(error: Exception) -> str:
 
 def should_log_error(error: Exception) -> bool:
     """Determine if error should be logged to file."""
-    # Known/expected errors don't need logging
     known_errors = (asyncio.CancelledError, KeyboardInterrupt, ModelHTTPError)
     return not isinstance(error, known_errors)
 
@@ -111,17 +104,14 @@ def _get_api_message(error: ModelHTTPError) -> str:
 
 def _extract_provider_message(error: Exception) -> str:
     """Extract clean message from provider-specific errors."""
-    # Try various attributes that providers use
     if hasattr(error, "message"):
         return error.message
     elif hasattr(error, "body") and isinstance(error.body, dict):
-        # OpenAI/Anthropic pattern
         if "error" in error.body and isinstance(error.body["error"], dict):
             return error.body["error"].get("message", "")
         elif "message" in error.body:
             return error.body["message"]
     elif hasattr(error, "details") and isinstance(error.details, dict):
-        # Google pattern
         if "error" in error.details and isinstance(error.details["error"], dict):
             return error.details["error"].get("message", "")
         elif "message" in error.details:
@@ -138,3 +128,35 @@ def _get_provider_name(module_name: str) -> str:
     elif "google" in module_name or "genai" in module_name:
         return "Google"
     return "Provider"
+
+
+class ErrorContext:
+    """Context for error handling with cleanup callbacks."""
+
+    def __init__(self, operation: str, ui: Any):
+        self.operation = operation
+        self.ui = ui
+        self.cleanup_callbacks: List[Callable] = []
+
+    def add_cleanup(self, callback: Callable) -> None:
+        self.cleanup_callbacks.append(callback)
+
+    async def handle(self, error: Exception) -> Optional[Any]:
+        """Handle error with context-specific cleanup."""
+        if isinstance(error, ModelRetry):
+            raise error
+
+        self.ui.stop_spinner()
+
+        for callback in self.cleanup_callbacks:
+            if asyncio.iscoroutinefunction(callback):
+                await callback()
+            else:
+                callback(error)
+
+        if isinstance(error, asyncio.CancelledError):
+            self.ui.warning("Request cancelled")
+            return None
+
+        await handle_error(error, self.ui.display_error_panel)
+        return None

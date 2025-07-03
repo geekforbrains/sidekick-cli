@@ -24,7 +24,7 @@ def info(message: str):
 def thinking(message: str):
     """Display an agent thinking message with proper indentation for multi-line content."""
     panels._prepare_to_print("status")
-    lines = message.strip().split('\n')
+    lines = message.strip().split("\n")
     if lines:
         console.print(f"› {lines[0]}", style=colors.muted)
         for line in lines[1:]:

@@ -91,12 +91,12 @@ def display_confirmation_panel(content: str):
     _last_output = "panel"
 
 
-def display_error_panel(message: str, detail: str = None):
+def display_error_panel(message: str, detail: str = None, title="Error"):
     """Display error panel with consistent padding."""
     global _last_output
     _prepare_to_print("panel")
     content = f"{message}\n\n{detail}" if detail else message
-    panel = create_panel(content, "Error", colors.error)
+    panel = create_panel(content, title, colors.error)
     console.print(Padding(panel, PANEL_WRAPPER_PADDING))
     _last_output = "panel"
 
