@@ -21,6 +21,17 @@ def info(message: str):
     panels._last_output = "status"
 
 
+def thinking(message: str):
+    """Display an agent thinking message with proper indentation for multi-line content."""
+    panels._prepare_to_print("status")
+    lines = message.strip().split('\n')
+    if lines:
+        console.print(f"› {lines[0]}", style=colors.muted)
+        for line in lines[1:]:
+            console.print(f"  {line}", style=colors.muted)
+    panels._last_output = "status"
+
+
 def error(message: str, detail: str = None):
     """Display an error message."""
     panels._prepare_to_print("status")

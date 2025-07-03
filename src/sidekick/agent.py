@@ -3,9 +3,14 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
-from pydantic_ai import Agent
-from pydantic_ai.messages import ModelRequest, ToolReturnPart, UserPromptPart, ToolCallPart
-from pydantic_ai import CallToolsNode
+from pydantic_ai import Agent, CallToolsNode
+from pydantic_ai.messages import (
+    ModelRequest,
+    ToolCallPart,
+    ToolReturnPart,
+    UserPromptPart,
+    TextPart,
+)
 
 from sidekick import ui
 from sidekick.constants import MODELS
@@ -27,15 +32,23 @@ def _get_prompt(name: str) -> str:
 
 
 async def _process_node(node):
-    from rich import print
-    print('-' * 20)
-    print(node)
-    print('-' * 20)
+    # from rich import print
+    # print('-' * 20)
+    # print(node)
+    # print('-' * 20)
 
     if isinstance(node, CallToolsNode):
         for part in node.model_response.parts:
             if isinstance(part, ToolCallPart):
-                log.info(f"Calling tool: {part.tool_name}")
+                log.debug(f"Calling tool: {part.tool_name}")
+
+            # I cant' find a definitive way to check if a text part is a "thinking" response
+            # or not, but majority of the time they are accompanied by other tool calls.
+            # Using that as a basis for showing "thinking" messages.
+            if isinstance(part, TextPart) and len(node.model_response.parts) > 1:
+                ui.stop_spinner()
+                ui.thinking(part.content)
+                ui.start_spinner()
 
     if hasattr(node, "request"):
         session.messages.append(node.request)

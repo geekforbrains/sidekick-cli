@@ -79,8 +79,10 @@ def banner():
     panels._last_output = None  # Reset context after banner
 
 
-def start_spinner(message: str, style: str = SpinnerStyle.DEFAULT):
+def start_spinner(message: str = "", style: str = SpinnerStyle.DEFAULT):
     """Start the spinner with a message."""
+    if message == "":
+        message = get_thinking_message()
     formatted_message = style.format(message)
     session.spinner = console.status(formatted_message, spinner="dots")
     session.spinner.start()

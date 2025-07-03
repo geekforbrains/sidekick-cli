@@ -33,6 +33,7 @@ from sidekick.ui.messages import (
     error,
     help,
     info,
+    thinking,
     line,
     muted,
     success,

@@ -86,7 +86,7 @@ async def handle_user_request(user_input: str, mcp_agent):
                 ui.usage(session.last_usage)
         # If resp is None, it means the tool was cancelled by user, which is already handled
     except asyncio.CancelledError:
-        log.info("Request cancelled by user")
+        log.debug("Request cancelled by user")
         ui.stop_spinner()
         ui.warning("Request cancelled")
         # Recreate agent after cancellation
@@ -230,7 +230,7 @@ def main(
     if load_guide(session):
         ui.info("Loaded SIDEKICK.md guide")
 
-    log.info(f"Session initialized with model: {session.current_model}")
+    log.debug(f"Session initialized with model: {session.current_model}")
 
     # Create event loop manually to avoid asyncio.run's signal handling
     setup_and_run_event_loop(repl())
