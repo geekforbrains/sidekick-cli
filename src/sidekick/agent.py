@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 from pydantic_ai import Agent
-from pydantic_ai.messages import ModelRequest, ToolReturnPart, UserPromptPart
+from pydantic_ai.messages import ModelRequest, ToolReturnPart, UserPromptPart, ToolCallPart
+from pydantic_ai import CallToolsNode
 
 from sidekick import ui
 from sidekick.constants import MODELS
@@ -26,6 +27,16 @@ def _get_prompt(name: str) -> str:
 
 
 async def _process_node(node):
+    from rich import print
+    print('-' * 20)
+    print(node)
+    print('-' * 20)
+
+    if isinstance(node, CallToolsNode):
+        for part in node.model_response.parts:
+            if isinstance(part, ToolCallPart):
+                log.info(f"Calling tool: {part.tool_name}")
+
     if hasattr(node, "request"):
         session.messages.append(node.request)
         log.debug("Added request to message history")

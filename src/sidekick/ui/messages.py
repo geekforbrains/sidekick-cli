@@ -6,7 +6,8 @@ from rich.pretty import Pretty
 from rich.table import Table
 from rich.text import Text
 
-from sidekick.constants import APP_NAME, APP_VERSION
+from sidekick.constants import APP_NAME, APP_VERSION, MODELS
+from sidekick.session import session
 from sidekick.ui import panels
 from sidekick.ui.colors import colors
 
@@ -122,5 +123,17 @@ def usage(usage_data: dict):
     content.append(" | ", style=colors.muted)
     content.append("Cost: ", style=colors.muted)
     content.append(f"${usage_data['request_cost']:.5f}")
+
+    if session.current_model and session.total_tokens:
+        model_info = MODELS.get(session.current_model)
+        if model_info and "context_window" in model_info:
+            token_limit = model_info["context_window"]
+            if token_limit > 0:
+                remaining_percentage = ((token_limit - session.total_tokens) / token_limit) * 100
+                # Ensure percentage doesn't go below 0 (can happen if total_tokens exceeds limit)
+                remaining_percentage = max(0, remaining_percentage)
+                content.append(" | ", style=colors.muted)
+                content.append(f"{remaining_percentage:.0f}% ")
+                content.append("Context remaining", style=colors.muted)
 
     console.print(Padding(content, (0, 0, 0, 2)))
