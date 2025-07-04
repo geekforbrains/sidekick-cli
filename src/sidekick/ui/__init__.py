@@ -40,6 +40,7 @@ from sidekick.ui.messages import (
     usage,
     version,
     warning,
+    thinking,
 )
 
 # Re-export constants that were in the original ui.py
