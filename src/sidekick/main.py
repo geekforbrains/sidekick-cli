@@ -31,7 +31,7 @@ console = Console()
 log = logging.getLogger(__name__)
 
 
-def setup_signal_handler(loop):
+def _setup_signal_handler(loop):
     """Set up SIGINT handler for graceful cancellation."""
 
     def signal_handler(signum, frame):
@@ -45,17 +45,17 @@ def setup_signal_handler(loop):
     return signal_handler
 
 
-def restore_default_signal_handler():
+def _restore_default_signal_handler():
     """Restore the default SIGINT handler."""
     signal.signal(signal.SIGINT, signal.default_int_handler)
 
 
-def should_exit(user_input: str) -> bool:
+def _should_exit(user_input: str) -> bool:
     """Check if user wants to exit."""
     return user_input.lower() in ["exit", "quit"]
 
 
-async def display_server_info():
+async def _display_server_info():
     """Display information about configured MCP servers."""
     servers = load_mcp_servers()
     ui.info("Starting MCP servers")
@@ -66,7 +66,7 @@ async def display_server_info():
         ui.bullet("No servers configured")
 
 
-async def handle_user_request(user_input: str, mcp_agent):
+async def _handle_user_request(user_input: str, mcp_agent):
     """Process a user request with proper exception handling."""
     log.debug(f"Handling user request: {user_input.replace('\n', ' ')[:100]}...")
     ui.start_spinner(ui.get_thinking_message())
@@ -114,14 +114,20 @@ async def handle_user_request(user_input: str, mcp_agent):
     return mcp_agent
 
 
-async def handle_model_switch(mcp_agent):
+async def _handle_model_switch(mcp_agent):
+    """
+    Handles the logic for switching the active model.
+
+    When the model is switched, the existing MCP agent's context must be exited
+    and a new agent created and re-entered to ensure MCP servers are properly
+    reconnected for the new model.
+    """
     ui.start_spinner("Switching model...", ui.SpinnerStyle.MUTED)
     try:
-        # Exit current agent context
+
         if mcp_agent._mcp_entered:
             await mcp_agent.__aexit__(None, None, None)
 
-        # Create and enter new agent context
         mcp_agent = get_or_create_agent()
         await mcp_agent.__aenter__()
         session.model_switched = False
@@ -130,15 +136,21 @@ async def handle_model_switch(mcp_agent):
         return mcp_agent
 
 
-async def repl():
+async def _repl():
+    """
+    Main read-eval-print loop (REPL) for the Sidekick CLI.
+
+    This function continuously prompts the user for input, handles commands,
+    processes agent requests, and manages the session state.
+    """
     ui.info(f"Using model {session.current_model}")
     mcp_agent = get_or_create_agent()
 
-    await display_server_info()
+    await _display_server_info()
 
     loop = asyncio.get_event_loop()
     session.sigint_received = False
-    signal_handler = setup_signal_handler(loop)
+    signal_handler = _setup_signal_handler(loop)
 
     ui.start_spinner("Initializing servers...", ui.SpinnerStyle.MUTED)
     async with mcp_agent:
@@ -156,30 +168,37 @@ async def repl():
 
             ui.line()
 
-            # Reset context after user input
-            # This is for consistent UI styling/spacing
             ui.reset_output_context()
 
             if not user_input:
                 continue
 
-            if should_exit(user_input):
+            if _should_exit(user_input):
                 break
 
             if await handle_command(user_input):
                 if session.model_switched:
-                    mcp_agent = await handle_model_switch(mcp_agent)
+                    mcp_agent = await _handle_model_switch(mcp_agent)
                 continue
 
-            mcp_agent = await handle_user_request(user_input, mcp_agent)
+            mcp_agent = await _handle_user_request(user_input, mcp_agent)
             signal.signal(signal.SIGINT, signal_handler)
 
-    restore_default_signal_handler()
+    _restore_default_signal_handler()
     ui.info("Thanks for all the fish.")
 
 
-def setup_and_run_event_loop(coro):
-    """Create and run event loop with proper cleanup."""
+def _setup_and_run_event_loop(coro):
+    """
+    Create, run, and properly clean up the asyncio event loop.
+
+    This manual setup is used instead of the simpler `asyncio.run()` to gain
+    direct access to the loop object. This is necessary because OS signal
+    handlers (like for SIGINT/Ctrl+C) execute outside of the asyncio loop's
+    context. To gracefully cancel a task from the handler, we must use
+    `loop.call_soon_threadsafe()` to safely schedule the cancellation
+    within the running loop.
+    """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
@@ -231,8 +250,7 @@ def main(
 
     log.debug(f"Session initialized with model: {session.current_model}")
 
-    # Create event loop manually to avoid asyncio.run's signal handling
-    setup_and_run_event_loop(repl())
+    _setup_and_run_event_loop(_repl())
 
 
 if __name__ == "__main__":

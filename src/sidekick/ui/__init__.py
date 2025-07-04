@@ -36,11 +36,11 @@ from sidekick.ui.messages import (
     line,
     muted,
     success,
+    thinking,
     update_available,
     usage,
     version,
     warning,
-    thinking,
 )
 
 # Re-export constants that were in the original ui.py
@@ -91,6 +91,7 @@ __all__ = [
     "usage",
     "version",
     "warning",
+    "thinking",
     # Panels
     "Colors",
     "colors",

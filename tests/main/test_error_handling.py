@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pydantic_ai.exceptions import ModelHTTPError
 
-from sidekick.main import handle_user_request
+from sidekick.main import _handle_user_request
 
 
 @pytest.mark.asyncio
@@ -24,7 +24,7 @@ async def test_handle_user_request_with_error():
         with patch("sidekick.main.ui", mock_ui), patch("sidekick.main.session", mock_session):
 
             mcp_agent = MagicMock()
-            await handle_user_request("test input", mcp_agent)
+            await _handle_user_request("test input", mcp_agent)
 
             # Verify spinner was stopped
             mock_ui.stop_spinner.assert_called()
@@ -56,7 +56,7 @@ async def test_handle_user_request_with_model_http_error():
         with patch("sidekick.main.ui", mock_ui), patch("sidekick.main.session", mock_session):
 
             mcp_agent = MagicMock()
-            await handle_user_request("test input", mcp_agent)
+            await _handle_user_request("test input", mcp_agent)
 
             # Verify error was displayed without log file
             mock_ui.display_error_panel.assert_called_once_with("test-model: Bad request")
@@ -77,7 +77,7 @@ async def test_handle_user_request_success():
         with patch("sidekick.main.ui", mock_ui), patch("sidekick.main.session", mock_session):
 
             mcp_agent = MagicMock()
-            await handle_user_request("test input", mcp_agent)
+            await _handle_user_request("test input", mcp_agent)
 
             # Should not call error
             mock_ui.display_error_panel.assert_not_called()
@@ -107,7 +107,7 @@ async def test_handle_user_request_cancellation():
             mock_get_agent.return_value = MagicMock(_mcp_entered=False)
             mcp_agent = MagicMock(_mcp_entered=False)
 
-            await handle_user_request("test input", mcp_agent)
+            await _handle_user_request("test input", mcp_agent)
 
             # Should show warning, not error
             mock_ui.warning.assert_called_once_with("Request cancelled")
