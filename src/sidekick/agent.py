@@ -32,11 +32,6 @@ def _get_prompt(name: str) -> str:
 
 
 async def _process_node(node):
-    # from rich import print
-    # print('-' * 20)
-    # print(node)
-    # print('-' * 20)
-
     if isinstance(node, CallToolsNode):
         for part in node.model_response.parts:
             if isinstance(part, ToolCallPart):
@@ -47,7 +42,7 @@ async def _process_node(node):
             # Using that as a basis for showing "thinking" messages.
             if isinstance(part, TextPart) and len(node.model_response.parts) > 1:
                 ui.stop_spinner()
-                ui.thinking(part.content)
+                ui.display_thinking_panel(part.content)
                 ui.start_spinner()
 
     if hasattr(node, "request"):

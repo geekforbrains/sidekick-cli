@@ -4,6 +4,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.panel import Panel
+from rich.text import Text
 
 from sidekick.ui.colors import colors
 
@@ -102,11 +103,19 @@ def display_error_panel(message: str, detail: str = None, title="Error"):
 
 
 def display_info_panel(content, title: str):
-    """Display info panel with consistent padding."""
     global _last_output
     _prepare_to_print("panel")
     panel = create_panel(content, title, colors.muted)
     console.print(Padding(panel, PANEL_WRAPPER_PADDING_NO_BOTTOM))
+    _last_output = "panel"
+
+
+def display_thinking_panel(content: str):
+    global _last_output
+    _prepare_to_print("panel")
+    text_content = Text(content, style=colors.muted)
+    panel = create_panel(text_content, "Thinking", colors.muted)
+    console.print(Padding(panel, PANEL_WRAPPER_PADDING))
     _last_output = "panel"
 
 

@@ -36,7 +36,6 @@ from sidekick.ui.messages import (
     line,
     muted,
     success,
-    thinking,
     update_available,
     usage,
     version,
@@ -56,6 +55,7 @@ from sidekick.ui.panels import (
     display_error_panel,
     display_info_panel,
     display_panel,
+    display_thinking_panel,
     display_tool_panel,
     reset_output_context,
 )
@@ -91,7 +91,6 @@ __all__ = [
     "usage",
     "version",
     "warning",
-    "thinking",
     # Panels
     "Colors",
     "colors",
@@ -103,6 +102,7 @@ __all__ = [
     "display_info_panel",
     "display_panel",
     "display_tool_panel",
+    "display_thinking_panel",
     "reset_output_context",
     # Constants
     "PANEL_CONTENT_PADDING",
