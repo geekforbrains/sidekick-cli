@@ -1,6 +1,5 @@
 """Test /dump command handler."""
 
-import json
 from unittest.mock import patch
 
 import pytest
@@ -29,5 +28,12 @@ async def test_handle_dump_writes_to_file_and_pretty_prints(mock_ui, mock_sessio
 
         assert temp_dump_file.exists()
         content = temp_dump_file.read_text()
-        expected_content = json.dumps(mock_session.messages, indent=2)
-        assert content == expected_content
+
+        # Check that the file contains the expected format
+        assert "Message #0 - Type: dict" in content
+        assert "Message #1 - Type: dict" in content
+        assert "'role': 'user'" in content
+        assert "'content': 'hello'" in content
+        assert "'role': 'agent'" in content
+        assert "'content': 'hi'" in content
+        assert "=" * 80 in content  # Check for separator lines
