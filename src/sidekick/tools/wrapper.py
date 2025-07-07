@@ -9,17 +9,21 @@ from sidekick.tools.run_command import run_command
 from sidekick.tools.update_file import update_file
 from sidekick.tools.write_file import write_file
 
+TOOL_RETRY_LIMIT = 10
+
 
 def create_tools():
     """Create Tool instances for all tools."""
-    return [
-        Tool(read_file),
-        Tool(write_file),
-        Tool(update_file),
-        Tool(run_command),
-        Tool(git_add),
-        Tool(git_commit),
-        Tool(find),
-        Tool(grep),
-        Tool(list_directory),
+    tools = [
+        read_file,
+        write_file,
+        update_file,
+        run_command,
+        git_add,
+        git_commit,
+        find,
+        grep,
+        list_directory,
     ]
+
+    return [Tool(tool, max_retries=TOOL_RETRY_LIMIT) for tool in tools]

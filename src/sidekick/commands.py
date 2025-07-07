@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import pprint
 
 from rich.table import Table
 from rich.text import Text
@@ -13,10 +14,18 @@ from sidekick.session import session
 
 log = logging.getLogger(__name__)
 
+DUMP_FILE_PATH = "dump.log"
+
 
 async def handle_dump():
-    """Handle /dump command - show message history."""
-    ui.dump(session.messages)
+    """Handle /dump command - write message history to dump.log, overwriting the file each time. The content is pretty printed for readability."""
+    try:
+        with open(DUMP_FILE_PATH, "w") as f:
+            for message in session.messages:
+                f.write(pprint.pformat(message) + "\n")
+        ui.success(f"Message history dumped to {DUMP_FILE_PATH}")
+    except Exception as e:
+        ui.error(f"Failed to dump message history: {e}")
 
 
 async def handle_yolo():
