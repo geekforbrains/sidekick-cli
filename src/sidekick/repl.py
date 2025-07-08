@@ -17,9 +17,17 @@ def _setup_signal_handler(loop):
     """Set up SIGINT handler for graceful cancellation."""
 
     def signal_handler(signum, frame):
-        session.sigint_received = True
         if session.current_task and not session.current_task.done():
-            loop.call_soon_threadsafe(session.current_task.cancel)
+            if not session.sigint_received:
+                session.sigint_received = True
+                ui.stop_spinner()
+                ui.start_spinner(
+                    "Interrupting... (press Ctrl+C again to force quit)", ui.SpinnerStyle.WARNING
+                )
+                loop.call_soon_threadsafe(session.current_task.cancel)
+            else:
+                # Second Ctrl+C forces immediate exit
+                raise KeyboardInterrupt()
         else:
             raise KeyboardInterrupt()
 
@@ -84,9 +92,10 @@ class Repl:
                 ui.agent(resp, has_footer=has_footer)
                 if session.last_usage:
                     ui.usage(session.last_usage)
-        except asyncio.CancelledError as e:
+        except asyncio.CancelledError:
+            ui.stop_spinner()
             ctx.add_cleanup(recreate_agent)
-            await ctx.handle(e)
+            await ctx.handle(asyncio.CancelledError())
             return
         except KeyboardInterrupt:
             ui.stop_spinner()
@@ -101,6 +110,7 @@ class Repl:
             await ctx.handle(e)
         finally:
             session.current_task = None
+            session.sigint_received = False
 
     async def _handle_model_switch(self):
         """Handles switching the active model and reconnecting servers."""
@@ -131,8 +141,11 @@ class Repl:
 
                 try:
                     user_input = await get_multiline_input(prompt_session)
-                except (EOFError, KeyboardInterrupt):
+                except EOFError:
                     break
+                except KeyboardInterrupt:
+                    ui.muted("Use Ctrl+D or 'exit' to quit")
+                    continue
 
                 ui.line()
                 ui.reset_output_context()
@@ -149,7 +162,6 @@ class Repl:
                     continue
 
                 await self._handle_user_request(user_input)
-                signal.signal(signal.SIGINT, self.signal_handler)
 
         _restore_default_signal_handler()
         ui.info("Thanks for all the fish.")

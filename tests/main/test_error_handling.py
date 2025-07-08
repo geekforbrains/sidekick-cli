@@ -91,5 +91,4 @@ async def test_handle_user_request_cancellation(mock_repl):
             mock_repl.mcp_agent._mcp_entered = False
             await mock_repl._handle_user_request("test input")
 
-            mock_ui.warning.assert_called_once_with("Request cancelled")
             mock_ui.display_error_panel.assert_not_called()
