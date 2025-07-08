@@ -25,8 +25,6 @@ async def test_handle_model_list(mock_ui, mock_session, mock_models):
 @pytest.mark.asyncio
 async def test_handle_model_switch(mock_ui, mock_session, mock_models):
     """Test /model <num> switches to selected model."""
-    mock_session.agents = MagicMock()
-    mock_session.model_switched = False
 
     with (
         patch("sidekick.commands.ui", mock_ui),
@@ -36,8 +34,6 @@ async def test_handle_model_switch(mock_ui, mock_session, mock_models):
         await handle_model(["2"])
 
         assert mock_session.current_model == "model2"
-        mock_session.agents.clear.assert_called_once()
-        assert mock_session.model_switched is True
         mock_ui.info.assert_called_with("Switched to model: model2")
 
 

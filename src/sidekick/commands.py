@@ -152,12 +152,8 @@ async def handle_model(args: list[str]):
                     except Exception as e:
                         ui.error(f"Failed to update config: {e}")
                 else:
-                    # Switch to model for current session
                     old_model = session.current_model
                     session.current_model = selected_model
-                    # Clear the agent cache and set flag for REPL to recreate agent
-                    session.agents.clear()
-                    session.model_switched = True
                     log.debug(f"Model switched from {old_model} to {selected_model}")
                     ui.info(f"Switched to model: {selected_model}")
             else:

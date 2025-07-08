@@ -93,7 +93,6 @@ async def test_process_node_with_tool_return():
     with patch("sidekick.agent.session") as mock_session:
         mock_messages = MagicMock()
         mock_session.messages = mock_messages
-        mock_session.spinner = None
         mock_session.sigint_received = False
 
         await _process_node(node)
@@ -118,7 +117,6 @@ async def test_process_node_with_retry_prompt():
     with patch("sidekick.agent.session") as mock_session:
         mock_messages = MagicMock()
         mock_session.messages = mock_messages
-        mock_session.spinner = None
         mock_session.sigint_received = False
 
         with patch("sidekick.agent.ui.muted") as mock_muted:

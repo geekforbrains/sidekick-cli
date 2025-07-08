@@ -33,12 +33,9 @@ async def mcp_tool_confirmation_callback(
     This callback is invoked for every MCP tool call and ensures that
     confirmations are shown regardless of yolo mode or other settings.
     """
-    from sidekick.session import session
-
     # Check if we have the confirmation callback available
     if hasattr(ctx.deps, "confirm_action") and ctx.deps.confirm_action:
-        if session.spinner:
-            session.spinner.stop()
+        ui.stop_spinner()
 
         # Format the arguments for display
         from rich.pretty import Pretty
@@ -51,8 +48,7 @@ async def mcp_tool_confirmation_callback(
         if not confirmed:
             raise asyncio.CancelledError("MCP tool execution cancelled by user")
 
-        if session.spinner:
-            session.spinner.start()
+        ui.start_spinner()
 
     # Call the original tool
     return await original_call_tool(tool_name, arguments)

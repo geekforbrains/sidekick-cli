@@ -12,9 +12,8 @@ from sidekick.repl import Repl
 @pytest.fixture
 def mock_repl():
     """Fixture to create a mock Repl instance for testing."""
-    with patch("sidekick.repl.get_or_create_agent"), patch("sidekick.repl._setup_signal_handler"):
+    with patch("sidekick.repl._setup_signal_handler"):
         repl = Repl()
-        repl.mcp_agent = MagicMock()
         return repl
 
 
@@ -80,7 +79,6 @@ async def test_handle_user_request_cancellation(mock_repl):
     mock_session = MagicMock(
         sigint_received=False,
         current_task=None,
-        agents={"test-model": MagicMock()},
         current_model="test-model",
     )
 
@@ -88,7 +86,6 @@ async def test_handle_user_request_cancellation(mock_repl):
         mock_process.side_effect = asyncio.CancelledError()
 
         with patch("sidekick.repl.ui", mock_ui), patch("sidekick.repl.session", mock_session):
-            mock_repl.mcp_agent._mcp_entered = False
             await mock_repl._handle_user_request("test input")
 
             mock_ui.display_error_panel.assert_not_called()

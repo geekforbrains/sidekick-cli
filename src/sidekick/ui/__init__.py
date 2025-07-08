@@ -4,10 +4,8 @@
 # Re-export from colors
 from sidekick.ui.colors import Colors, colors
 from sidekick.ui.core import (
-    THINKING_MESSAGES,
     SpinnerStyle,
     banner,
-    get_thinking_message,
     start_spinner,
     stop_spinner,
 )

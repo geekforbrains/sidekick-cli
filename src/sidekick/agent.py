@@ -55,16 +55,14 @@ async def _process_node(node):
 
         for part in node.request.parts:
             if part.part_kind == "retry-prompt":
-                if session.spinner:
-                    session.spinner.stop()
+                ui.stop_spinner()
                 error_msg = (
                     part.content
                     if hasattr(part, "content") and isinstance(part.content, str)
                     else "Trying a different approach"
                 )
                 ui.muted(f"{error_msg}")
-                if session.spinner:
-                    session.spinner.start()
+                ui.start_spinner()
 
     if hasattr(node, "model_response"):
         session.messages.append(node.model_response)
@@ -103,17 +101,16 @@ def _calculate_usage_costs(usage):
     }
 
 
-def get_or_create_agent():
-    if session.current_model not in session.agents:
-        base_agent = Agent(
-            model=session.current_model,
-            system_prompt=_get_prompt("system"),
-            tools=TOOLS,
-            mcp_servers=load_mcp_servers(),
-            deps_type=ToolDeps,
-        )
-        session.agents[session.current_model] = MCPAgent(base_agent)
-    return session.agents[session.current_model]
+def create_agent():
+    """Create a fresh agent instance with MCP server support."""
+    base_agent = Agent(
+        model=session.current_model,
+        system_prompt=_get_prompt("system"),
+        tools=TOOLS,
+        mcp_servers=load_mcp_servers(),
+        deps_type=ToolDeps,
+    )
+    return MCPAgent(base_agent)
 
 
 def _create_confirmation_callback():
@@ -123,9 +120,7 @@ def _create_confirmation_callback():
         if not session.confirmation_enabled or tool_name in session.disabled_confirmations:
             return True
 
-        if session.spinner:
-            session.spinner.stop()
-
+        ui.stop_spinner()
         ui.display_tool_panel(preview, title, footer)
 
         # Display confirmation options without using a panel, but still
@@ -147,16 +142,14 @@ def _create_confirmation_callback():
 
             if choice == "" or choice in ["y", "yes"]:
                 ui.line()
-                ui.reset_output_context()  # Reset after user input
-                if session.spinner:
-                    session.spinner.start()
+                ui.reset_output_context()
+                ui.start_spinner()
                 return True
             elif choice in ["a", "always"]:
                 session.disabled_confirmations.add(tool_name)
                 ui.line()
-                ui.reset_output_context()  # Reset after user input
-                if session.spinner:
-                    session.spinner.start()
+                ui.reset_output_context()
+                ui.start_spinner()
                 return True
             elif choice in ["n", "no"]:
                 ui.reset_output_context()  # Reset after user input
@@ -177,8 +170,7 @@ def _create_display_tool_status_callback():
                 Keyword arguments passed to the tool. These will be rendered in the
                 form ``key=value`` in the output.
         """
-        if session.spinner:
-            session.spinner.stop()
+        ui.stop_spinner()
 
         parts = []
         if args:
@@ -188,9 +180,7 @@ def _create_display_tool_status_callback():
 
         arg_str = ", ".join(parts)
         ui.info(f"{title}({arg_str})")
-
-        if session.spinner:
-            session.spinner.start()
+        ui.start_spinner()
 
     return display
 
@@ -229,50 +219,48 @@ def _patch_history_on_error(error_message: str):
 async def process_request(message: str):
     log.debug(f"Processing request: {message.replace('\n', ' ')[:100]}...")
 
-    mcp_agent = get_or_create_agent()
-    agent = mcp_agent.agent
+    async with create_agent() as mcp_agent:
+        agent = mcp_agent.agent
 
-    mh = session.messages.copy()
-    log.debug(f"Message history size: {len(mh)}")
+        mh = session.messages.copy()
+        log.debug(f"Message history size: {len(mh)}")
 
-    project_guide = get_guide(session)
-    if project_guide:
-        guide_message = ModelRequest(parts=[UserPromptPart(content=project_guide)])
-        mh.insert(0, guide_message)
-        log.debug("Prepended project guide to message history")
+        project_guide = get_guide(session)
+        if project_guide:
+            guide_message = ModelRequest(parts=[UserPromptPart(content=project_guide)])
+            mh.insert(0, guide_message)
+            log.debug("Prepended project guide to message history")
 
-    deps = ToolDeps(
-        confirm_action=_create_confirmation_callback(),
-        display_tool_status=_create_display_tool_status_callback(),
-    )
+        deps = ToolDeps(
+            confirm_action=_create_confirmation_callback(),
+            display_tool_status=_create_display_tool_status_callback(),
+        )
 
-    ctx = ErrorContext("agent", ui)
-    ctx.add_cleanup(lambda e: _patch_history_on_error(str(e)))
+        ctx = ErrorContext("agent", ui)
+        ctx.add_cleanup(lambda e: _patch_history_on_error(str(e)))
 
-    try:
-        async with agent.iter(message, deps=deps, message_history=mh) as agent_run:
-            async for node in agent_run:
-                if session.sigint_received:
-                    raise asyncio.CancelledError()
+        try:
+            async with agent.iter(message, deps=deps, message_history=mh) as agent_run:
+                async for node in agent_run:
+                    if session.sigint_received:
+                        raise asyncio.CancelledError()
 
-                await _process_node(node)
+                    await _process_node(node)
 
-            usage = agent_run.usage()
-            if usage:
-                session.last_usage = _calculate_usage_costs(usage)
-                session.total_tokens += usage.total_tokens
-                session.total_cost = session.last_usage["total_cost"]
+                usage = agent_run.usage()
+                if usage:
+                    session.last_usage = _calculate_usage_costs(usage)
+                    session.total_tokens += usage.total_tokens
+                    session.total_cost = session.last_usage["total_cost"]
 
-            result = agent_run.result.output
-            log.debug(f"Agent response: {result.replace('\n', ' ')[:100]}...")
-            return result
-    except asyncio.CancelledError:
-        raise
-    except Exception as e:
-        # Check if this is a ClosedResourceError from anyio (happens during cancellation)
-        if type(e).__name__ == "ClosedResourceError" and e.__class__.__module__ == "anyio":
-            raise asyncio.CancelledError() from e
-        # Check if this is an McpError for connection closed (happens during cancellation)
-        if type(e).__name__ == "McpError" and str(e) == "Connection closed":
-            raise asyncio.CancelledError() from e
-        return await ctx.handle(e)
+                result = agent_run.result.output
+                log.debug(f"Agent response: {result.replace('\n', ' ')[:100]}...")
+                return result
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            if type(e).__name__ == "ClosedResourceError" and e.__class__.__module__ == "anyio":
+                raise asyncio.CancelledError() from e
+            if type(e).__name__ == "McpError" and str(e) == "Connection closed":
+                raise asyncio.CancelledError() from e
+            return await ctx.handle(e)

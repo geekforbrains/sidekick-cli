@@ -6,22 +6,18 @@ from typing import Any, Dict, Optional, Set
 @dataclass
 class Session:
     current_model: Optional[str] = None
-    agents: Dict = field(default_factory=dict)
     messages: list = field(default_factory=list)
-    spinner: Any = None
-    spinner_rotation_task: Optional[asyncio.Task] = None
-    current_task: Optional[asyncio.Task] = None
-    sigint_received: bool = False
     allowed_commands: Set[str] = field(default_factory=set)
     disabled_confirmations: Set[str] = field(default_factory=set)
     confirmation_enabled: bool = True
-    model_switched: bool = False
     last_usage: Optional[Dict[str, Any]] = None
     total_tokens: int = 0
     total_cost: float = 0.0
     debug_enabled: bool = False
     log_file: Optional[str] = None
     project_guide: Optional[str] = None
+    current_task: Optional[asyncio.Task] = None
+    sigint_received: bool = False
 
     def init(self, config: Dict[str, Any], model: str):
         """Initialize the session state."""
