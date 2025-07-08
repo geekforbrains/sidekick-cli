@@ -87,6 +87,7 @@ class Repl:
         except asyncio.CancelledError as e:
             ctx.add_cleanup(recreate_agent)
             await ctx.handle(e)
+            return
         except KeyboardInterrupt:
             ui.stop_spinner()
             if not request_task.done():

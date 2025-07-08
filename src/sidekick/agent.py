@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from pathlib import Path
 from typing import Any, Optional
@@ -259,5 +260,13 @@ async def process_request(message: str):
             result = agent_run.result.output
             log.debug(f"Agent response: {result.replace('\n', ' ')[:100]}...")
             return result
+    except asyncio.CancelledError:
+        raise
     except Exception as e:
+        # Check if this is a ClosedResourceError from anyio (happens during cancellation)
+        if type(e).__name__ == "ClosedResourceError" and e.__class__.__module__ == "anyio":
+            raise asyncio.CancelledError() from e
+        # Check if this is an McpError for connection closed (happens during cancellation)
+        if type(e).__name__ == "McpError" and str(e) == "Connection closed":
+            raise asyncio.CancelledError() from e
         return await ctx.handle(e)
