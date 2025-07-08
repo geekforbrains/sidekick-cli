@@ -155,11 +155,6 @@ class ErrorContext:
                 callback(error)
 
         if isinstance(error, asyncio.CancelledError):
-            # Only show message if not already shown by signal handler
-            from sidekick.session import session
-
-            if not session.sigint_received:
-                self.ui.warning("Request cancelled")
             return None
 
         await handle_error(error, self.ui.display_error_panel)

@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Set
 
@@ -11,10 +10,7 @@ class Session:
     disabled_confirmations: Set[str] = field(default_factory=set)
     confirmation_enabled: bool = True
     debug_enabled: bool = False
-    log_file: Optional[str] = None
     project_guide: Optional[str] = None
-    current_task: Optional[asyncio.Task] = None
-    sigint_received: bool = False
 
     def init(self, config: Dict[str, Any], model: str):
         """Initialize the session state."""

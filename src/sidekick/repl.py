@@ -14,28 +14,6 @@ from sidekick.utils.input import create_multiline_prompt_session, get_multiline_
 log = logging.getLogger(__name__)
 
 
-def _setup_signal_handler(loop):
-    """Set up SIGINT handler for graceful cancellation."""
-
-    def signal_handler(signum, frame):
-        if session.current_task and not session.current_task.done():
-            if not session.sigint_received:
-                session.sigint_received = True
-                ui.stop_spinner()
-                ui.start_spinner(
-                    "Interrupting... (press Ctrl+C again to force quit)", ui.SpinnerStyle.WARNING
-                )
-                loop.call_soon_threadsafe(session.current_task.cancel)
-            else:
-                # Second Ctrl+C forces immediate exit
-                raise KeyboardInterrupt()
-        else:
-            raise KeyboardInterrupt()
-
-    signal.signal(signal.SIGINT, signal_handler)
-    return signal_handler
-
-
 def _restore_default_signal_handler():
     """Restore the default SIGINT handler."""
     signal.signal(signal.SIGINT, signal.default_int_handler)
@@ -58,21 +36,44 @@ async def _display_server_info():
 
 
 class Repl:
-    """Manages the application's Read-Eval-Print Loop and session state."""
+    """Manages the application's Read-Eval-Print Loop and interrupt handling."""
 
     def __init__(self):
         """Initializes the REPL manager with signal handler."""
         self.loop = asyncio.get_event_loop()
-        self.signal_handler = _setup_signal_handler(self.loop)
+        self.current_task = None
+        self.sigint_received = False
+        self.signal_handler = self._setup_signal_handler()
+
+    def _setup_signal_handler(self):
+        """Set up SIGINT handler for graceful cancellation."""
+
+        def signal_handler(signum, frame):
+            if self.current_task and not self.current_task.done():
+                if not self.sigint_received:
+                    self.sigint_received = True
+                    ui.stop_spinner()
+                    ui.start_spinner(
+                        "Interrupting... (press Ctrl+C again to force quit)",
+                        ui.SpinnerStyle.WARNING,
+                    )
+                    self.loop.call_soon_threadsafe(self.current_task.cancel)
+                else:
+                    raise KeyboardInterrupt()
+            else:
+                raise KeyboardInterrupt()
+
+        signal.signal(signal.SIGINT, signal_handler)
+        return signal_handler
 
     async def _handle_user_request(self, user_input: str):
         """Process a user request with proper exception handling."""
         log.debug(f"Handling user request: {user_input.replace('\n', ' ')[:100]}...")
         ui.start_spinner()
-        session.sigint_received = False
+        self.sigint_received = False
 
         request_task = asyncio.create_task(process_request(user_input))
-        session.current_task = request_task
+        self.current_task = request_task
 
         ctx = ErrorContext("request", ui)
 
@@ -90,8 +91,8 @@ class Repl:
         except Exception as e:
             await ctx.handle(e)
         finally:
-            session.current_task = None
-            session.sigint_received = False
+            self.current_task = None
+            self.sigint_received = False
 
     async def run(self):
         """Runs the main read-eval-print loop."""

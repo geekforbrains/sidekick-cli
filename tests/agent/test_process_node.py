@@ -1,4 +1,3 @@
-import asyncio
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -20,7 +19,6 @@ async def test_process_node_with_request():
     with patch("sidekick.agent.session") as mock_session:
         mock_messages = MagicMock()
         mock_session.messages = mock_messages
-        mock_session.sigint_received = False
 
         await _process_node(node)
 
@@ -43,7 +41,6 @@ async def test_process_node_with_model_response_no_tools():
     with patch("sidekick.agent.session") as mock_session:
         mock_messages = MagicMock()
         mock_session.messages = mock_messages
-        mock_session.sigint_received = False
 
         await _process_node(node)
 
@@ -69,7 +66,6 @@ async def test_process_node_with_tool_call():
     with patch("sidekick.agent.session") as mock_session:
         mock_messages = MagicMock()
         mock_session.messages = mock_messages
-        mock_session.sigint_received = False
 
         await _process_node(node)
 
@@ -93,7 +89,6 @@ async def test_process_node_with_tool_return():
     with patch("sidekick.agent.session") as mock_session:
         mock_messages = MagicMock()
         mock_session.messages = mock_messages
-        mock_session.sigint_received = False
 
         await _process_node(node)
 
@@ -117,24 +112,9 @@ async def test_process_node_with_retry_prompt():
     with patch("sidekick.agent.session") as mock_session:
         mock_messages = MagicMock()
         mock_session.messages = mock_messages
-        mock_session.sigint_received = False
 
         with patch("sidekick.agent.ui.muted") as mock_muted:
             await _process_node(node)
 
             # Verify retry message was displayed
             mock_muted.assert_called_once_with("Trying a different approach")
-
-
-@pytest.mark.asyncio
-async def test_process_node_with_sigint_received():
-    """Test that _process_node raises CancelledError when sigint_received is True."""
-    node = Mock()
-    node.request = Mock(spec=messages.ModelRequest)
-    node.request.parts = []
-
-    with patch("sidekick.agent.session") as mock_session:
-        mock_session.sigint_received = True
-
-        with pytest.raises(asyncio.CancelledError):
-            await _process_node(node)

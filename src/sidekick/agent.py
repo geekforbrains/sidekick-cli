@@ -33,9 +33,6 @@ def _get_prompt(name: str) -> str:
 
 
 async def _process_node(node):
-    if session.sigint_received:
-        raise asyncio.CancelledError()
-
     if isinstance(node, CallToolsNode):
         for part in node.model_response.parts:
             if isinstance(part, ToolCallPart):
@@ -210,9 +207,6 @@ async def process_request(message: str):
         try:
             async with agent.iter(message, deps=deps, message_history=mh) as agent_run:
                 async for node in agent_run:
-                    if session.sigint_received:
-                        raise asyncio.CancelledError()
-
                     await _process_node(node)
 
                 usage = agent_run.usage()

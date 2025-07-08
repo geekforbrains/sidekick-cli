@@ -12,7 +12,7 @@ from sidekick.repl import Repl
 @pytest.fixture
 def mock_repl():
     """Fixture to create a mock Repl instance for testing."""
-    with patch("sidekick.repl._setup_signal_handler"):
+    with patch("signal.signal"):
         repl = Repl()
         return repl
 
