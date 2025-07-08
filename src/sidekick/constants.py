@@ -109,7 +109,6 @@ MODELS = {
 ALLOWED_TOOLS = [
     "read_file",
     "find",
-    "grep",
     "list_directory",
 ]
 
@@ -126,7 +125,6 @@ DEFAULT_USER_CONFIG = {
         "allowed_commands": [
             "ls",
             "cat",
-            "grep",
             "rg",
             "find",
             "pwd",

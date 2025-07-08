@@ -8,7 +8,7 @@ from pydantic_ai import RunContext
 
 from sidekick.deps import ToolDeps
 
-from .grep import EXCLUDE_DIRS
+from .common import EXCLUDE_DIRS
 
 
 def _should_exclude(path: str, gitignore_patterns: List[str]) -> bool:

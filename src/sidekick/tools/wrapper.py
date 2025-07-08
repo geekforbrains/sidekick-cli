@@ -2,7 +2,6 @@ from pydantic_ai import Tool
 
 from sidekick.tools.find import find
 from sidekick.tools.git import git_add, git_commit
-from sidekick.tools.grep import grep
 from sidekick.tools.list import list_directory
 from sidekick.tools.read_file import read_file
 from sidekick.tools.run_command import run_command
@@ -22,7 +21,6 @@ def create_tools():
         git_add,
         git_commit,
         find,
-        grep,
         list_directory,
     ]
 

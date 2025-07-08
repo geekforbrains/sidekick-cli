@@ -152,7 +152,6 @@ def test_no_file_update_when_no_changes():
             "allowed_commands": [
                 "ls",
                 "cat",
-                "grep",
                 "rg",
                 "find",
                 "pwd",

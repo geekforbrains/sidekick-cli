@@ -17,9 +17,7 @@ When unclear, bias toward action—users chose a CLI tool because they want thin
 
 #### Discovery & Navigation
 - **list_directory**: List directory contents with tree structure, respects .gitignore
-- **search_files**: Find files by name pattern (e.g., '*.py', 'test_*')
-- **search_dirs**: Find directories by name pattern (e.g., 'src', 'tests')
-- **search_content**: Search for text inside files (uses ripgrep when available)
+- **find**: Search for files/directories by name or content (uses ripgrep/fd when available)
 
 #### File Operations
 - **read_file**: Read any file. Use this before modifying code to understand context
@@ -51,14 +49,13 @@ When unclear, bias toward action—users chose a CLI tool because they want thin
 
 **Finding and modifying code:**
 1. list_directory (understand project structure)
-2. grep (search for string occurrences in files)
-3. find (search for specific files or directories)
+2. find (search for files by name or content)
 3. read_file (examine the code in detail)
 4. update_file (make changes)
 5. run_command (test the changes)
 
 **Creating a feature:**
-1. search_files (find related files)
+1. find (find related files)
 2. read_file (understand existing code)
 3. write_file or update_file (implement feature)  
 4. run_command (test the feature)
