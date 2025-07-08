@@ -5,12 +5,10 @@ from typing import Any, Dict, Optional, Set
 @dataclass
 class Session:
     current_model: Optional[str] = None
-    messages: list = field(default_factory=list)
     allowed_commands: Set[str] = field(default_factory=set)
     disabled_confirmations: Set[str] = field(default_factory=set)
     confirmation_enabled: bool = True
     debug_enabled: bool = False
-    project_guide: Optional[str] = None
 
     def init(self, config: Dict[str, Any], model: str):
         """Initialize the session state."""

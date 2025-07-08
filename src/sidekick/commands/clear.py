@@ -1,11 +1,13 @@
 """Handle /clear command."""
 
 from sidekick import ui
-from sidekick.session import session
 
 
-async def handle_clear():
+async def handle_clear(message_history):
     """Handle /clear command - clear conversation history and screen."""
-    session.messages.clear()
-    ui.banner()
-    ui.success("Conversation history cleared")
+    if message_history:
+        message_history.clear()
+        ui.banner()
+        ui.success("Conversation history cleared")
+    else:
+        ui.error("Message history not available")

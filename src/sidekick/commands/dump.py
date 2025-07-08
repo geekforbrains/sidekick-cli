@@ -1,7 +1,6 @@
 """Handle /dump command."""
 
 from sidekick import ui
-from sidekick.session import session
 
 DUMP_FILE_PATH = "dump.log"
 
@@ -80,11 +79,15 @@ def recursive_expand(obj, indent=0):
     return repr(obj)
 
 
-async def handle_dump():
+async def handle_dump(message_history):
     """Handle /dump command - write message history to dump.log, overwriting the file each time."""
+    if not message_history:
+        ui.error("Message history not available")
+        return
+
     try:
         with open(DUMP_FILE_PATH, "w") as f:
-            for i, message in enumerate(session.messages):
+            for i, message in enumerate(message_history):
                 f.write(f"{'=' * 80}\n")
                 f.write(f"Message #{i} - Type: {type(message).__name__}\n")
                 f.write(f"{'=' * 80}\n\n")

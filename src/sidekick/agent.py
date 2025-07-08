@@ -5,11 +5,8 @@ from typing import Any, Optional
 
 from pydantic_ai import Agent, CallToolsNode
 from pydantic_ai.messages import (
-    ModelRequest,
     TextPart,
     ToolCallPart,
-    ToolReturnPart,
-    UserPromptPart,
 )
 
 from sidekick import ui
@@ -19,7 +16,6 @@ from sidekick.session import session
 from sidekick.tools import TOOLS
 from sidekick.usage import usage_tracker
 from sidekick.utils.error import ErrorContext
-from sidekick.utils.guide import get_guide
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +28,7 @@ def _get_prompt(name: str) -> str:
         return f"Error: Prompt file '{name}.txt' not found"
 
 
-async def _process_node(node):
+async def _process_node(node, message_history):
     if isinstance(node, CallToolsNode):
         for part in node.model_response.parts:
             if isinstance(part, ToolCallPart):
@@ -47,8 +43,7 @@ async def _process_node(node):
                 ui.start_spinner()
 
     if hasattr(node, "request"):
-        session.messages.append(node.request)
-        log.debug("Added request to message history")
+        message_history.add_request(node.request)
 
         for part in node.request.parts:
             if part.part_kind == "retry-prompt":
@@ -62,8 +57,7 @@ async def _process_node(node):
                 ui.start_spinner()
 
     if hasattr(node, "model_response"):
-        session.messages.append(node.model_response)
-        log.debug("Added model response to message history")
+        message_history.add_response(node.model_response)
 
 
 def create_agent():
@@ -150,51 +144,14 @@ def _create_display_tool_status_callback():
     return display
 
 
-def _patch_history_on_error(error_message: str):
-    """
-    Patches the message history with a ToolReturnPart on error.
-    """
-    if not session.messages:
-        return
-
-    last_message = session.messages[-1]
-
-    if not (
-        hasattr(last_message, "kind")
-        and last_message.kind == "response"
-        and hasattr(last_message, "parts")
-    ):
-        return
-
-    last_tool_call = None
-    for part in reversed(last_message.parts):
-        if hasattr(part, "part_kind") and part.part_kind == "tool-call":
-            last_tool_call = part
-            break
-
-    if last_tool_call:
-        tool_return = ToolReturnPart(
-            tool_name=last_tool_call.tool_name,
-            tool_call_id=last_tool_call.tool_call_id,
-            content=error_message,
-        )
-        session.messages.append(ModelRequest(parts=[tool_return]))
-
-
-async def process_request(message: str):
+async def process_request(message: str, message_history):
     log.debug(f"Processing request: {message.replace('\n', ' ')[:100]}...")
 
     async with create_agent() as mcp_agent:
         agent = mcp_agent.agent
 
-        mh = session.messages.copy()
+        mh = message_history.get_messages_for_agent()
         log.debug(f"Message history size: {len(mh)}")
-
-        project_guide = get_guide(session)
-        if project_guide:
-            guide_message = ModelRequest(parts=[UserPromptPart(content=project_guide)])
-            mh.insert(0, guide_message)
-            log.debug("Prepended project guide to message history")
 
         deps = ToolDeps(
             confirm_action=_create_confirmation_callback(),
@@ -202,12 +159,12 @@ async def process_request(message: str):
         )
 
         ctx = ErrorContext("agent", ui)
-        ctx.add_cleanup(lambda e: _patch_history_on_error(str(e)))
+        ctx.add_cleanup(lambda e: message_history.patch_on_error(str(e)))
 
         try:
             async with agent.iter(message, deps=deps, message_history=mh) as agent_run:
                 async for node in agent_run:
-                    await _process_node(node)
+                    await _process_node(node, message_history)
 
                 usage = agent_run.usage()
                 if usage:

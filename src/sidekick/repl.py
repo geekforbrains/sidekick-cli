@@ -6,6 +6,7 @@ from sidekick import ui
 from sidekick.agent import process_request
 from sidekick.commands import handle_command
 from sidekick.mcp import load_mcp_servers
+from sidekick.messages import MessageHistory
 from sidekick.session import session
 from sidekick.usage import usage_tracker
 from sidekick.utils.error import ErrorContext
@@ -38,12 +39,15 @@ async def _display_server_info():
 class Repl:
     """Manages the application's Read-Eval-Print Loop and interrupt handling."""
 
-    def __init__(self):
+    def __init__(self, project_guide=None):
         """Initializes the REPL manager with signal handler."""
         self.loop = asyncio.get_event_loop()
         self.current_task = None
         self.sigint_received = False
         self.signal_handler = self._setup_signal_handler()
+        self.message_history = MessageHistory()
+        if project_guide:
+            self.message_history.set_project_guide(project_guide)
 
     def _setup_signal_handler(self):
         """Set up SIGINT handler for graceful cancellation."""
@@ -72,7 +76,7 @@ class Repl:
         ui.start_spinner()
         self.sigint_received = False
 
-        request_task = asyncio.create_task(process_request(user_input))
+        request_task = asyncio.create_task(process_request(user_input, self.message_history))
         self.current_task = request_task
 
         ctx = ErrorContext("request", ui)
@@ -122,7 +126,7 @@ class Repl:
             if _should_exit(user_input):
                 break
 
-            if await handle_command(user_input):
+            if await handle_command(user_input, self.message_history):
                 continue
 
             await self._handle_user_request(user_input)

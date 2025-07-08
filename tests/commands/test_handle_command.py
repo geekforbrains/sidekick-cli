@@ -10,9 +10,10 @@ from sidekick.commands import handle_command
 @pytest.mark.parametrize(
     "user_input, patch_target, expected_args",
     [
-        ("/dump", "handle_dump", []),
+        ("/dump", "handle_dump", [None]),
+        ("/clear", "handle_clear", [None]),
         ("/yolo", "handle_yolo", []),
-        ("/model 2", "handle_model", ["2"]),
+        ("/model 2", "handle_model", [["2"]]),
     ],
 )
 @pytest.mark.asyncio
@@ -24,12 +25,13 @@ async def test_handle_command_routes(monkeypatch, user_input, patch_target, expe
 
     assert result is True
 
-    # Verify called arguments irrespective of list vs positional nuance
     call_args = mock_func.call_args[0]
     if expected_args:
-        assert call_args[0] == expected_args
+        if len(expected_args) == 1 and isinstance(expected_args[0], list):
+            assert call_args[0] == expected_args[0]
+        else:
+            assert list(call_args) == expected_args
     else:
-        # No arguments expected
         assert call_args == ()
 
 

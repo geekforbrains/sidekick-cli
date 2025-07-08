@@ -88,12 +88,13 @@ def main(
     config = _initialize_config()
     session.init(config, config["default_model"])
 
-    if load_guide(session):
+    project_guide = load_guide()
+    if project_guide:
         ui.info("Loaded SIDEKICK.md guide")
 
     log.debug(f"Session initialized with model: {session.current_model}")
 
-    repl = Repl()
+    repl = Repl(project_guide=project_guide)
     _setup_and_run_event_loop(repl.run())
 
 

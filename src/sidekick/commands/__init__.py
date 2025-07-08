@@ -18,7 +18,7 @@ __all__ = [
 ]
 
 
-async def handle_command(user_input: str) -> bool:
+async def handle_command(user_input: str, message_history=None) -> bool:
     """Handle slash commands. Returns True if command was handled."""
     if not user_input.startswith("/"):
         return False
@@ -28,11 +28,11 @@ async def handle_command(user_input: str) -> bool:
     args = parts[1:] if len(parts) > 1 else []
 
     handlers = {
-        "/dump": handle_dump,
+        "/dump": lambda: handle_dump(message_history),
         "/yolo": handle_yolo,
         "/model": lambda: handle_model(args),
         "/usage": handle_usage,
-        "/clear": handle_clear,
+        "/clear": lambda: handle_clear(message_history),
         "/help": handle_help,
     }
 

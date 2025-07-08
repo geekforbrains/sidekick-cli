@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from pydantic_ai import messages
@@ -15,15 +15,11 @@ async def test_process_node_with_request():
 
     delattr(node, "model_response")
 
-    # Mock session
-    with patch("sidekick.agent.session") as mock_session:
-        mock_messages = MagicMock()
-        mock_session.messages = mock_messages
+    mock_message_history = Mock()
 
-        await _process_node(node)
+    await _process_node(node, mock_message_history)
 
-        # Verify request was appended
-        mock_messages.append.assert_called_once_with(node.request)
+    mock_message_history.add_request.assert_called_once_with(node.request)
 
 
 @pytest.mark.asyncio
@@ -38,14 +34,11 @@ async def test_process_node_with_model_response_no_tools():
     node.model_response = Mock(spec=messages.ModelResponse)
     node.model_response.parts = [text_part]
 
-    with patch("sidekick.agent.session") as mock_session:
-        mock_messages = MagicMock()
-        mock_session.messages = mock_messages
+    mock_message_history = Mock()
 
-        await _process_node(node)
+    await _process_node(node, mock_message_history)
 
-        # Verify response was appended
-        mock_messages.append.assert_called_once_with(node.model_response)
+    mock_message_history.add_response.assert_called_once_with(node.model_response)
 
 
 @pytest.mark.asyncio
@@ -63,14 +56,11 @@ async def test_process_node_with_tool_call():
     node.model_response = Mock(spec=messages.ModelResponse)
     node.model_response.parts = [tool_call]
 
-    with patch("sidekick.agent.session") as mock_session:
-        mock_messages = MagicMock()
-        mock_session.messages = mock_messages
+    mock_message_history = Mock()
 
-        await _process_node(node)
+    await _process_node(node, mock_message_history)
 
-        # Verify response was appended
-        mock_messages.append.assert_called_once_with(node.model_response)
+    mock_message_history.add_response.assert_called_once_with(node.model_response)
 
 
 @pytest.mark.asyncio
@@ -86,14 +76,11 @@ async def test_process_node_with_tool_return():
     node.request = Mock(spec=messages.ModelRequest)
     node.request.parts = [tool_return]
 
-    with patch("sidekick.agent.session") as mock_session:
-        mock_messages = MagicMock()
-        mock_session.messages = mock_messages
+    mock_message_history = Mock()
 
-        await _process_node(node)
+    await _process_node(node, mock_message_history)
 
-        # Verify request was appended
-        mock_messages.append.assert_called_once_with(node.request)
+    mock_message_history.add_request.assert_called_once_with(node.request)
 
 
 @pytest.mark.asyncio
@@ -109,12 +96,9 @@ async def test_process_node_with_retry_prompt():
     node.request = Mock(spec=messages.ModelRequest)
     node.request.parts = [retry_part]
 
-    with patch("sidekick.agent.session") as mock_session:
-        mock_messages = MagicMock()
-        mock_session.messages = mock_messages
+    mock_message_history = Mock()
 
-        with patch("sidekick.agent.ui.muted") as mock_muted:
-            await _process_node(node)
+    with patch("sidekick.agent.ui.muted") as mock_muted:
+        await _process_node(node, mock_message_history)
 
-            # Verify retry message was displayed
-            mock_muted.assert_called_once_with("Trying a different approach")
+        mock_muted.assert_called_once_with("Trying a different approach")

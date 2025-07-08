@@ -13,7 +13,7 @@ from sidekick.repl import Repl
 def mock_repl():
     """Fixture to create a mock Repl instance for testing."""
     with patch("signal.signal"):
-        repl = Repl()
+        repl = Repl(project_guide=None)
         return repl
 
 
