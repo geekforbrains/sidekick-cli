@@ -4,12 +4,33 @@ import os
 import re
 import shutil
 from pathlib import Path
-from typing import Optional, Set
+from typing import List, Optional, Set
 
 from pydantic_ai import RunContext
 
 from sidekick.deps import ToolDeps
 from sidekick.tools.common import BINARY_EXTENSIONS, EXCLUDE_DIRS
+
+
+async def _run_external_tool(tool_name: str, cmd: List[str]) -> Optional[str]:
+    """Common helper for running external tools with subprocess."""
+    if not shutil.which(tool_name):
+        return None
+
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+
+        if process.returncode == 0:
+            output = stdout.decode().strip()
+            return output if output else "No results found."
+        elif process.returncode == 1:  # Common "no matches found" exit code
+            return "No results found."
+        return None
+    except Exception:
+        return None
 
 
 def _get_gitignore_patterns() -> Set[str]:
@@ -31,9 +52,6 @@ def _get_gitignore_patterns() -> Set[str]:
 
 
 async def _find_files_with_fd(pattern: str, dirs: bool, max_depth: Optional[int]) -> Optional[str]:
-    if not shutil.which("fd"):
-        return None
-
     cmd = ["fd"]
     if dirs:
         cmd.extend(["--type", "d"])
@@ -45,41 +63,21 @@ async def _find_files_with_fd(pattern: str, dirs: bool, max_depth: Optional[int]
 
     cmd.append(pattern)
 
-    try:
-        process = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-
-        if process.returncode == 0:
-            output = stdout.decode().strip()
-            return output if output else "No results found."
-        return None
-    except Exception:
-        return None
+    return await _run_external_tool("fd", cmd)
 
 
 async def _find_files_with_rg(pattern: str, max_depth: Optional[int]) -> Optional[str]:
-    if not shutil.which("rg"):
-        return None
-
     cmd = ["rg", "--files"]
     if max_depth:
         cmd.extend(["--max-depth", str(max_depth)])
 
-    try:
-        process = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-
-        if process.returncode == 0:
-            files = stdout.decode().strip().split("\n")
-            matching = [f for f in files if fnmatch.fnmatch(f, pattern)]
-            return "\n".join(matching) if matching else "No results found."
-        return None
-    except Exception:
-        return None
+    result = await _run_external_tool("rg", cmd)
+    if result and result != "No results found.":
+        # rg --files lists all files, so we need to filter by pattern
+        files = result.strip().split("\n")
+        matching = [f for f in files if fnmatch.fnmatch(f, pattern)]
+        return "\n".join(matching) if matching else "No results found."
+    return result
 
 
 async def _find_content_with_rg(
@@ -88,9 +86,6 @@ async def _find_content_with_rg(
     case_sensitive: bool = True,
     max_results: Optional[int] = None,
 ) -> Optional[str]:
-    if not shutil.which("rg"):
-        return None
-
     cmd = ["rg", "--line-number"]
 
     if not case_sensitive:
@@ -104,20 +99,7 @@ async def _find_content_with_rg(
 
     cmd.append(content)
 
-    try:
-        process = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-
-        if process.returncode == 0:
-            output = stdout.decode().strip()
-            return output if output else "No results found."
-        elif process.returncode == 1:
-            return "No results found."
-        return None
-    except Exception:
-        return None
+    return await _run_external_tool("rg", cmd)
 
 
 async def _find_content_with_ag(
@@ -126,9 +108,6 @@ async def _find_content_with_ag(
     case_sensitive: bool = True,
     max_results: Optional[int] = None,
 ) -> Optional[str]:
-    if not shutil.which("ag"):
-        return None
-
     cmd = ["ag", "--line-numbers"]
 
     if not case_sensitive:
@@ -142,20 +121,7 @@ async def _find_content_with_ag(
 
     cmd.append(content)
 
-    try:
-        process = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-
-        if process.returncode == 0:
-            output = stdout.decode().strip()
-            return output if output else "No results found."
-        elif process.returncode == 1:
-            return "No results found."
-        return None
-    except Exception:
-        return None
+    return await _run_external_tool("ag", cmd)
 
 
 def _find_files_python(pattern: str, dirs: bool, max_depth: Optional[int]) -> str:
