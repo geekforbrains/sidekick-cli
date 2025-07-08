@@ -1,6 +1,9 @@
 import asyncio
 import logging
+import os
 import signal
+import subprocess
+import sys
 
 from sidekick import ui
 from sidekick.agent import process_request
@@ -43,27 +46,40 @@ class Repl:
         """Initializes the REPL manager with signal handler."""
         self.loop = asyncio.get_event_loop()
         self.current_task = None
-        self.sigint_received = False
         self.signal_handler = self._setup_signal_handler()
         self.message_history = MessageHistory()
         if project_guide:
             self.message_history.set_project_guide(project_guide)
 
+    def _kill_child_processes(self):
+        """Kill all child processes of the current process."""
+        if sys.platform == "win32":
+            return
+
+        pid = os.getpid()
+        try:
+            import psutil
+
+            parent = psutil.Process(pid)
+            for child in parent.children(recursive=True):
+                try:
+                    child.kill()
+                except Exception:
+                    pass
+        except ImportError:
+            try:
+                subprocess.run(["pkill", "-P", str(pid)], capture_output=True)
+            except Exception:
+                pass
+
     def _setup_signal_handler(self):
-        """Set up SIGINT handler for graceful cancellation."""
+        """Set up SIGINT handler for immediate cancellation."""
 
         def signal_handler(signum, frame):
             if self.current_task and not self.current_task.done():
-                if not self.sigint_received:
-                    self.sigint_received = True
-                    ui.stop_spinner()
-                    ui.start_spinner(
-                        "Interrupting... (press Ctrl+C again to force quit)",
-                        ui.SpinnerStyle.WARNING,
-                    )
-                    self.loop.call_soon_threadsafe(self.current_task.cancel)
-                else:
-                    raise KeyboardInterrupt()
+                ui.stop_spinner()
+                self._kill_child_processes()
+                self.loop.call_soon_threadsafe(self.current_task.cancel)
             else:
                 raise KeyboardInterrupt()
 
@@ -74,7 +90,6 @@ class Repl:
         """Process a user request with proper exception handling."""
         log.debug(f"Handling user request: {user_input.replace('\n', ' ')[:100]}...")
         ui.start_spinner()
-        self.sigint_received = False
 
         request_task = asyncio.create_task(process_request(user_input, self.message_history))
         self.current_task = request_task
@@ -96,7 +111,6 @@ class Repl:
             await ctx.handle(e)
         finally:
             self.current_task = None
-            self.sigint_received = False
 
     async def run(self):
         """Runs the main read-eval-print loop."""

@@ -76,7 +76,6 @@ class SilentMCPServerStdio(MCPServerStdio):
         server = StdioServerParameters(
             command=self.command, args=list(self.args), env=self.env, cwd=self.cwd
         )
-        # Key change: errlog=null_stream instead of default stderr
         with open(os.devnull, "w") as null_stream:
             async with stdio_client(server=server, errlog=null_stream) as (
                 read_stream,
