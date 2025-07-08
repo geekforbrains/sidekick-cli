@@ -13,9 +13,9 @@ async def test_handle_model_list(mock_ui, mock_session, mock_models):
     mock_session.current_model = "model2"
 
     with (
-        patch("sidekick.commands.ui", mock_ui),
-        patch("sidekick.commands.session", mock_session),
-        patch("sidekick.commands.MODELS", mock_models),
+        patch("sidekick.commands.model.ui", mock_ui),
+        patch("sidekick.commands.model.session", mock_session),
+        patch("sidekick.commands.model.MODELS", mock_models),
     ):
         await handle_model([])
 
@@ -27,9 +27,9 @@ async def test_handle_model_switch(mock_ui, mock_session, mock_models):
     """Test /model <num> switches to selected model."""
 
     with (
-        patch("sidekick.commands.ui", mock_ui),
-        patch("sidekick.commands.session", mock_session),
-        patch("sidekick.commands.MODELS", mock_models),
+        patch("sidekick.commands.model.ui", mock_ui),
+        patch("sidekick.commands.model.session", mock_session),
+        patch("sidekick.commands.model.MODELS", mock_models),
     ):
         await handle_model(["2"])
 
@@ -41,8 +41,8 @@ async def test_handle_model_switch(mock_ui, mock_session, mock_models):
 async def test_handle_model_invalid_number(mock_ui):
     """Test /model with invalid number shows error."""
     with (
-        patch("sidekick.commands.ui", mock_ui),
-        patch("sidekick.commands.MODELS", {"model1": {}, "model2": {}}),
+        patch("sidekick.commands.model.ui", mock_ui),
+        patch("sidekick.commands.model.MODELS", {"model1": {}, "model2": {}}),
     ):
         await handle_model(["5"])
         mock_ui.error.assert_called_with("Invalid model number. Choose between 1 and 2")
@@ -54,9 +54,9 @@ async def test_handle_model_set_default(mock_ui):
     mock_update = MagicMock()
 
     with (
-        patch("sidekick.commands.ui", mock_ui),
-        patch("sidekick.commands.MODELS", {"model1": {}, "model2": {}}),
-        patch("sidekick.commands.update_config_file", mock_update),
+        patch("sidekick.commands.model.ui", mock_ui),
+        patch("sidekick.commands.model.MODELS", {"model1": {}, "model2": {}}),
+        patch("sidekick.commands.model.update_config_file", mock_update),
     ):
         await handle_model(["2", "default"])
 

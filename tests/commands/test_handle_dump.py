@@ -18,9 +18,9 @@ async def test_handle_dump_writes_to_file_and_pretty_prints(mock_ui, mock_sessio
     ]
 
     with (
-        patch("sidekick.commands.ui", mock_ui),
-        patch("sidekick.commands.session", mock_session),
-        patch("sidekick.commands.DUMP_FILE_PATH", str(temp_dump_file)),
+        patch("sidekick.commands.dump.ui", mock_ui),
+        patch("sidekick.commands.dump.session", mock_session),
+        patch("sidekick.commands.dump.DUMP_FILE_PATH", str(temp_dump_file)),
     ):
         await handle_dump()
 
