@@ -13,11 +13,11 @@ from pydantic_ai.messages import (
 )
 
 from sidekick import ui
-from sidekick.constants import MODELS
 from sidekick.deps import ToolDeps
 from sidekick.mcp import MCPAgent, load_mcp_servers
 from sidekick.session import session
 from sidekick.tools import TOOLS
+from sidekick.usage import usage_tracker
 from sidekick.utils.error import ErrorContext
 from sidekick.utils.guide import get_guide
 
@@ -67,38 +67,6 @@ async def _process_node(node):
     if hasattr(node, "model_response"):
         session.messages.append(node.model_response)
         log.debug("Added model response to message history")
-
-
-def _calculate_usage_costs(usage):
-    cached_tokens = 0
-    if hasattr(usage, "details") and usage.details:
-        for detail in usage.details:
-            if hasattr(detail, "cached_tokens"):
-                cached_tokens += detail.cached_tokens
-
-    input_tokens = usage.request_tokens
-    non_cached_input = input_tokens - cached_tokens
-    output_tokens = usage.response_tokens
-
-    model_ids = list(MODELS.keys())
-    pricing = MODELS.get(session.current_model, MODELS[model_ids[0]])["pricing"]
-
-    input_cost = non_cached_input / 1_000_000 * pricing["input"]
-    cached_cost = cached_tokens / 1_000_000 * pricing["cached_input"]
-    output_cost = output_tokens / 1_000_000 * pricing["output"]
-    request_cost = input_cost + cached_cost + output_cost
-
-    return {
-        "requests": usage.requests,
-        "input_tokens": input_tokens,
-        "cached_tokens": cached_tokens,
-        "output_tokens": output_tokens,
-        "input_cost": input_cost,
-        "cached_cost": cached_cost,
-        "output_cost": output_cost,
-        "request_cost": request_cost,
-        "total_cost": session.total_cost + request_cost,
-    }
 
 
 def create_agent():
@@ -249,9 +217,7 @@ async def process_request(message: str):
 
                 usage = agent_run.usage()
                 if usage:
-                    session.last_usage = _calculate_usage_costs(usage)
-                    session.total_tokens += usage.total_tokens
-                    session.total_cost = session.last_usage["total_cost"]
+                    usage_tracker.record_usage(session.current_model, usage)
 
                 result = agent_run.result.output
                 log.debug(f"Agent response: {result.replace('\n', ' ')[:100]}...")

@@ -10,6 +10,7 @@ from sidekick.constants import APP_NAME, APP_VERSION, MODELS
 from sidekick.session import session
 from sidekick.ui import panels
 from sidekick.ui.colors import colors
+from sidekick.usage import usage_tracker
 
 console = Console()
 
@@ -135,12 +136,14 @@ def usage(usage_data: dict):
     content.append("Cost: ", style=colors.muted)
     content.append(f"${usage_data['request_cost']:.5f}")
 
-    if session.current_model and session.total_tokens:
+    if session.current_model and usage_tracker.total_tokens:
         model_info = MODELS.get(session.current_model)
         if model_info and "context_window" in model_info:
             token_limit = model_info["context_window"]
             if token_limit > 0:
-                remaining_percentage = ((token_limit - session.total_tokens) / token_limit) * 100
+                remaining_percentage = (
+                    (token_limit - usage_tracker.total_tokens) / token_limit
+                ) * 100
                 # Ensure percentage doesn't go below 0 (can happen if total_tokens exceeds limit)
                 remaining_percentage = max(0, remaining_percentage)
                 content.append(" | ", style=colors.muted)

@@ -7,6 +7,7 @@ from sidekick.agent import process_request
 from sidekick.commands import handle_command
 from sidekick.mcp import load_mcp_servers
 from sidekick.session import session
+from sidekick.usage import usage_tracker
 from sidekick.utils.error import ErrorContext
 from sidekick.utils.input import create_multiline_prompt_session, get_multiline_input
 
@@ -79,10 +80,10 @@ class Repl:
             resp = await request_task
             ui.stop_spinner()
             if resp:
-                has_footer = bool(session.last_usage)
+                has_footer = bool(usage_tracker.last_request)
                 ui.agent(resp, has_footer=has_footer)
-                if session.last_usage:
-                    ui.usage(session.last_usage)
+                if usage_tracker.last_request:
+                    ui.usage(usage_tracker.last_request)
         except asyncio.CancelledError:
             ui.stop_spinner()
             ui.warning("Request interrupted")

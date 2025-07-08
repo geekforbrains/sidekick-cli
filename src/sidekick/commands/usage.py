@@ -3,34 +3,38 @@
 from rich.text import Text
 
 from sidekick import ui
-from sidekick.session import session
+from sidekick.usage import usage_tracker
 
 
 async def handle_usage():
     """Handle /usage command - show session usage statistics."""
     content = Text()
 
-    if session.total_tokens > 0:
+    if usage_tracker.total_tokens > 0:
         content.append("Total Statistics\n", style=f"bold {ui.colors.primary}")
-        content.append(f"  • Total tokens: {session.total_tokens:,}\n", style="white")
-        content.append(f"  • Total cost: ${session.total_cost:.5f}\n", style="white")
+        content.append(f"  • Total tokens: {usage_tracker.total_tokens:,}\n", style="white")
+        content.append(f"  • Total cost: ${usage_tracker.total_cost:.5f}\n", style="white")
+        content.append(f"  • Total requests: {usage_tracker.total_requests:,}\n", style="white")
 
-    if session.last_usage:
-        if session.total_tokens > 0:
+    if usage_tracker.last_request:
+        if usage_tracker.total_tokens > 0:
             content.append("\n")
         content.append("Last Request\n", style=f"bold {ui.colors.primary}")
-        content.append(f"  • Input tokens: {session.last_usage['input_tokens']:,}\n", style="white")
+        content.append(f"  • Model: {usage_tracker.last_request['model']}\n", style="white")
         content.append(
-            f"  • Cached tokens: {session.last_usage['cached_tokens']:,}\n", style="white"
+            f"  • Input tokens: {usage_tracker.last_request['input_tokens']:,}\n", style="white"
         )
         content.append(
-            f"  • Output tokens: {session.last_usage['output_tokens']:,}\n", style="white"
+            f"  • Cached tokens: {usage_tracker.last_request['cached_tokens']:,}\n", style="white"
         )
         content.append(
-            f"  • Request cost: ${session.last_usage['request_cost']:.5f}\n", style="white"
+            f"  • Output tokens: {usage_tracker.last_request['output_tokens']:,}\n", style="white"
+        )
+        content.append(
+            f"  • Request cost: ${usage_tracker.last_request['request_cost']:.5f}\n", style="white"
         )
 
-    if not session.total_tokens:
+    if not usage_tracker.total_tokens:
         content.append("No usage data yet in this session", style=ui.colors.muted)
 
     if content.plain.endswith("\n"):

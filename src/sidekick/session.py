@@ -10,9 +10,6 @@ class Session:
     allowed_commands: Set[str] = field(default_factory=set)
     disabled_confirmations: Set[str] = field(default_factory=set)
     confirmation_enabled: bool = True
-    last_usage: Optional[Dict[str, Any]] = None
-    total_tokens: int = 0
-    total_cost: float = 0.0
     debug_enabled: bool = False
     log_file: Optional[str] = None
     project_guide: Optional[str] = None
