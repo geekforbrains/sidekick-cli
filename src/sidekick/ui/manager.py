@@ -73,13 +73,12 @@ MESSAGE_STYLES = {
     MessageType.THINKING: {"prefix": "›", "style": colors.muted},
 }
 
-# Padding constants
-PANEL_CONTENT_PADDING = 1
-PANEL_WRAPPER_PADDING = (0, 0, 0, 1)  # top, right, bottom, left
-
 
 class UIManager:
     """Manages UI output with automatic spacing and consistent styling."""
+
+    PANEL_CONTENT_PADDING = 1
+    PANEL_WRAPPER_PADDING = (0, 0, 0, 1)
 
     def __init__(self):
         self.console = Console()
@@ -87,18 +86,56 @@ class UIManager:
         self._spinner_active = False
 
     def _prepare_spacing(self, new_type: OutputType):
-        """Add appropriate spacing based on output type transitions."""
+        """Add spacing based on output transitions.
+
+        Rules:
+        - Panel -> Status: add blank line
+        - Any -> Panel: add blank line (except after user input)
+        - Status -> Status: no spacing
+        """
         if self._last_output is None:
             return
 
-        # Add spacing based on transition type
         if new_type == OutputType.STATUS and self._last_output == OutputType.PANEL:
-            # Panel -> Status: add blank line
             self.console.print()
         elif new_type == OutputType.PANEL and self._last_output != OutputType.USER_INPUT:
-            # Any -> Panel: add blank line (except after user input)
             self.console.print()
-        # Status -> Status: no spacing (consecutive status messages stay together)
+
+    def _prepare_panel_content(self, content, markdown, syntax):
+        """Prepare content for display in panel.
+
+        Args:
+            content: Raw content to display
+            markdown: Whether to render as markdown
+            syntax: Language for syntax highlighting
+
+        Returns:
+            Formatted content ready for panel display
+        """
+        if markdown and isinstance(content, str):
+            return Markdown(content)
+        elif syntax and isinstance(content, str):
+            return create_syntax_highlighted(content, syntax)
+        return content
+
+    def _determine_panel_title(self, title, panel_type, config):
+        """Determine final panel title based on type and configuration.
+
+        Args:
+            title: Optional title override
+            panel_type: Type of panel for special handling
+            config: Panel style configuration
+
+        Returns:
+            Final title string or None
+        """
+        if title is None and config["title_prefix"]:
+            return config["title_prefix"]
+        elif title and config["title_prefix"] and panel_type == PanelType.AGENT:
+            return title
+        elif title and config["title_prefix"]:
+            return f"{config['title_prefix']}: {title}"
+        return title
 
     def panel(
         self,
@@ -124,38 +161,19 @@ class UIManager:
         """
         self._prepare_spacing(OutputType.PANEL)
 
-        # Get panel configuration
         config = PANEL_STYLES[panel_type]
+        display_content = self._prepare_panel_content(content, markdown, syntax)
+        final_title = self._determine_panel_title(title, panel_type, config)
 
-        # Prepare content
-        if markdown and isinstance(content, str):
-            display_content = Markdown(content)
-        elif syntax and isinstance(content, str):
-            display_content = create_syntax_highlighted(content, syntax)
-        else:
-            display_content = content
-
-        # Determine title
-        if title is None and config["title_prefix"]:
-            title = config["title_prefix"]
-        elif title and config["title_prefix"] and panel_type in [PanelType.AGENT]:
-            # For agent panels, use provided title as-is
-            pass
-        elif title and config["title_prefix"]:
-            title = f"{config['title_prefix']}: {title}"
-
-        # Create panel
         panel = Panel(
-            Padding(display_content, PANEL_CONTENT_PADDING),
-            title=title,
+            Padding(display_content, self.PANEL_CONTENT_PADDING),
+            title=final_title,
             title_align="left",
             border_style=config["border_style"],
         )
 
-        # Display panel with consistent padding (no bottom padding)
-        self.console.print(Padding(panel, PANEL_WRAPPER_PADDING))
+        self.console.print(Padding(panel, self.PANEL_WRAPPER_PADDING))
 
-        # Display footer if provided
         if footer:
             self.console.print(f"  {footer}", style=colors.muted)
 
@@ -183,7 +201,6 @@ class UIManager:
         prefix = config["prefix"]
         style = config["style"]
 
-        # Special handling for thinking messages (multi-line)
         if message_type == MessageType.THINKING:
             lines = text.strip().split("\n")
             if lines:
@@ -191,14 +208,12 @@ class UIManager:
                 for line in lines[1:]:
                     self.console.print(f"  {line}", style=style)
         else:
-            # Build message
             indent_str = " " * indent
             if prefix:
                 msg = f"{indent_str}{prefix} {text}"
             else:
                 msg = f"{indent_str}{text}"
 
-            # Add detail for errors
             if detail and message_type == MessageType.ERROR:
                 msg = f"{msg}: {detail}"
 
@@ -215,15 +230,15 @@ class UIManager:
         self._last_output = OutputType.USER_INPUT
 
     def set_spinner_active(self, active: bool):
-        """Update spinner state."""
-        self._spinner_active = active
-        if active:
-            # Don't overwrite panel or user input output type when starting spinner
-            # This preserves proper spacing for status messages after panels and user input
-            if self._last_output not in (OutputType.PANEL, OutputType.USER_INPUT):
-                self._last_output = OutputType.SPINNER
+        """Update spinner state and preserve spacing context.
 
-    # Convenience methods for common operations
+        Args:
+            active: Whether spinner is active
+        """
+        self._spinner_active = active
+        if active and self._last_output not in (OutputType.PANEL, OutputType.USER_INPUT):
+            self._last_output = OutputType.SPINNER
+
     def agent(self, content: str, has_footer: bool = False):
         """Display agent response panel."""
         self.panel(
@@ -293,7 +308,11 @@ class UIManager:
         self.panel(content, title=title, panel_type=PanelType.INFO)
 
     def dump(self, data):
-        """Display data in a pretty format."""
+        """Display data in a pretty format.
+
+        Args:
+            data: Any data structure to display
+        """
         self.console.print(Pretty(data))
 
     def help(self):
