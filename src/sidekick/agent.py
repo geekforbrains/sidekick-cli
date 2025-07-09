@@ -39,7 +39,7 @@ async def _process_node(node, message_history):
             # Using that as a basis for showing "thinking" messages.
             if isinstance(part, TextPart) and len(node.model_response.parts) > 1:
                 ui.stop_spinner()
-                ui.display_thinking_panel(part.content)
+                ui.thinking_panel(part.content)
                 ui.start_spinner()
 
     if hasattr(node, "request"):
@@ -80,7 +80,7 @@ def _create_confirmation_callback():
             return True
 
         ui.stop_spinner()
-        ui.display_tool_panel(preview, title, footer)
+        ui.tool(preview, title, footer)
 
         # Display confirmation options without using a panel, but still
         # indented by two spaces so they line up with other panel content.

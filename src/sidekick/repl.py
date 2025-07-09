@@ -133,7 +133,7 @@ class Repl:
                 continue
 
             ui.line()
-            ui.reset_output_context()
+            ui.reset_context()
 
             if not user_input:
                 continue

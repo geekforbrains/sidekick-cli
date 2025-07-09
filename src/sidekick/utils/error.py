@@ -157,5 +157,5 @@ class ErrorContext:
         if isinstance(error, asyncio.CancelledError):
             return None
 
-        await handle_error(error, self.ui.display_error_panel)
+        await handle_error(error, self.ui.error_panel)
         return None

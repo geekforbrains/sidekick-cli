@@ -25,7 +25,7 @@ async def handle_model(args: list[str]):
                 label += " [dim](current)[/dim]"
             table.add_row(str(i), label)
 
-        ui.display_info_panel(table, "Available Models")
+        ui.info_panel(table, "Available Models")
 
     elif len(args) >= 1:
         try:

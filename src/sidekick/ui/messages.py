@@ -1,6 +1,7 @@
 """Status message functions."""
 
 from rich.console import Console
+from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.pretty import Pretty
 from rich.table import Table
@@ -73,8 +74,11 @@ def muted(message: str, spaces: int = 0):
 
 def agent(content: str, has_footer: bool = False):
     """Display agent response."""
-    # Just use the display_agent_panel function from panels
-    panels.display_agent_panel(content, has_footer)
+    panels._prepare_to_print("panel")
+    panel = panels.create_panel(Markdown(content), "Sidekick", colors.primary)
+    padding = panels.PANEL_WRAPPER_PADDING_NO_BOTTOM if has_footer else panels.PANEL_WRAPPER_PADDING
+    panels.console.print(Padding(panel, padding))
+    panels._last_output = "panel"
 
 
 def line():
@@ -107,7 +111,10 @@ def help():
     for cmd, desc in commands:
         table.add_row(cmd, desc)
 
-    panels.display_info_panel(table, "Available Commands")
+    panels._prepare_to_print("panel")
+    panel = panels.create_panel(table, "Available Commands", colors.muted)
+    panels.console.print(Padding(panel, panels.PANEL_WRAPPER_PADDING_NO_BOTTOM))
+    panels._last_output = "panel"
 
 
 def version():
