@@ -75,8 +75,8 @@ MESSAGE_STYLES = {
 
 # Padding constants
 PANEL_CONTENT_PADDING = 1
-PANEL_WRAPPER_PADDING = (0, 0, 1, 1)  # top, right, bottom, left
-PANEL_WRAPPER_PADDING_NO_BOTTOM = (0, 0, 0, 1)
+PANEL_WRAPPER_PADDING = (0, 0, 0, 1)  # top, right, bottom, left - no bottom padding
+PANEL_WRAPPER_PADDING_NO_BOTTOM = (0, 0, 0, 1)  # same as above for consistency
 
 
 class UIManager:
@@ -92,16 +92,14 @@ class UIManager:
         if self._last_output is None or self._last_output == OutputType.USER_INPUT:
             return
 
-        # Add space when switching from panel to status
+        # Add spacing based on transition type
         if new_type == OutputType.STATUS and self._last_output == OutputType.PANEL:
+            # Panel -> Status: add blank line
             self.console.print()
-        # Add space when switching from status/spinner to panel, or panel to panel
-        elif new_type == OutputType.PANEL and (
-            self._last_output == OutputType.STATUS
-            or self._last_output == OutputType.PANEL
-            or self._last_output == OutputType.SPINNER
-        ):
+        elif new_type == OutputType.PANEL:
+            # Any -> Panel: add blank line (except after user input)
             self.console.print()
+        # Status -> Status: no spacing (consecutive status messages stay together)
 
     def panel(
         self,
@@ -155,11 +153,8 @@ class UIManager:
             border_style=config["border_style"],
         )
 
-        # Display with appropriate padding
-        padding = (
-            PANEL_WRAPPER_PADDING_NO_BOTTOM if (has_footer or footer) else PANEL_WRAPPER_PADDING
-        )
-        self.console.print(Padding(panel, padding))
+        # Display panel with consistent padding (no bottom padding)
+        self.console.print(Padding(panel, PANEL_WRAPPER_PADDING))
 
         # Display footer if provided
         if footer:

@@ -3,7 +3,6 @@
 import logging
 
 from sidekick import ui
-from sidekick.ui.messages import muted as ui_muted
 
 
 class UILogHandler(logging.Handler):
@@ -18,7 +17,7 @@ class UILogHandler(logging.Handler):
         if spinner_was_active:
             ui.stop_spinner()
 
-        ui_muted(self.format(record))
+        ui.muted(self.format(record))
 
         if spinner_was_active:
             ui.start_spinner()

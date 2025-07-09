@@ -28,14 +28,11 @@ class SpinnerStyle:
 
 def banner():
     """Display the application banner."""
-    from sidekick.ui import panels
-
     console.clear()
-    banner_padding = Padding(BANNER, (1, 0, 0, 2))
+    banner_padding = Padding(BANNER, (0, 0, 0, 2))
     version_padding = Padding(f"v{APP_VERSION}", (0, 0, 1, 2))
     console.print(banner_padding, style=colors.primary)
     console.print(version_padding, style=colors.muted)
-    panels._last_output = None  # Reset context after banner
 
 
 def start_spinner(message: str = "", style: str = SpinnerStyle.DEFAULT):
