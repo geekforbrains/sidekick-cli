@@ -132,7 +132,6 @@ class Repl:
                 ui.muted("Use Ctrl+D or 'exit' to quit")
                 continue
 
-            ui.line()
             ui.reset_context()
 
             if not user_input:

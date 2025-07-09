@@ -97,7 +97,7 @@ class UIManager:
             self.console.print()
         # Add space when switching from status/spinner to panel, or panel to panel
         elif new_type == OutputType.PANEL and (
-            self._last_output == OutputType.STATUS 
+            self._last_output == OutputType.STATUS
             or self._last_output == OutputType.PANEL
             or self._last_output == OutputType.SPINNER
         ):

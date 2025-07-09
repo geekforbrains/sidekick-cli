@@ -14,6 +14,7 @@ from sidekick.deps import ToolDeps
 from sidekick.mcp import MCPAgent, load_mcp_servers
 from sidekick.session import session
 from sidekick.tools import TOOLS
+from sidekick.ui.colors import colors
 from sidekick.usage import usage_tracker
 from sidekick.utils.error import ErrorContext
 
@@ -90,11 +91,8 @@ def _create_confirmation_callback():
             ("n", "No, cancel this execution"),
         )
 
-        # Add a single blank line before options
-        ui.console.print()
-
         for key, description in options:
-            ui.console.print(f"  {key}: {description}", style=ui.colors.warning)
+            ui.muted(f"{key}: {description}", indent=2)
 
         while True:
             choice = ui.console.input("  Continue? (y): ").lower().strip()
