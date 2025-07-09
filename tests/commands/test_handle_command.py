@@ -43,5 +43,5 @@ async def test_handle_command_non_command():
 
 @pytest.mark.asyncio
 async def test_handle_command_unknown():
-    """Unknown command string should return False."""
-    assert await handle_command("/unknown") is False
+    """Unknown command string should return True and display error."""
+    assert await handle_command("/unknown") is True

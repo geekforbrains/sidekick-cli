@@ -1,5 +1,6 @@
 """Command handlers for Sidekick CLI."""
 
+from sidekick import ui
 from sidekick.commands.clear import handle_clear
 from sidekick.commands.dump import handle_dump
 from sidekick.commands.help import handle_help
@@ -41,4 +42,8 @@ async def handle_command(user_input: str, message_history=None) -> bool:
         await handler()
         return True
 
-    return False
+    ui.line()
+    ui.error(f"Unknown command: {command}")
+    ui.muted("Use /help to see available commands")
+
+    return True

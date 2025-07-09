@@ -69,7 +69,7 @@ MESSAGE_STYLES = {
     MessageType.WARNING: {"prefix": "⚠", "style": colors.warning},
     MessageType.SUCCESS: {"prefix": "✓", "style": colors.success},
     MessageType.BULLET: {"prefix": "  -", "style": colors.muted},
-    MessageType.MUTED: {"prefix": "", "style": colors.muted},
+    MessageType.MUTED: {"prefix": "ℹ", "style": colors.muted},
     MessageType.THINKING: {"prefix": "›", "style": colors.muted},
 }
 
