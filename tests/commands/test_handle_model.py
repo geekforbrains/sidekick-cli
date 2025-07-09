@@ -19,7 +19,7 @@ async def test_handle_model_list(mock_ui, mock_session, mock_models):
     ):
         await handle_model([])
 
-        mock_ui.display_info_panel.assert_called_once()
+        mock_ui.info_panel.assert_called_once()
 
 
 @pytest.mark.asyncio

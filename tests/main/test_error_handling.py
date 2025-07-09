@@ -30,8 +30,8 @@ async def test_handle_user_request_with_error(mock_repl):
             await mock_repl._handle_user_request("test input")
 
             mock_ui.stop_spinner.assert_called()
-            mock_ui.display_error_panel.assert_called_once()
-            call_args = mock_ui.display_error_panel.call_args
+            mock_ui.error_panel.assert_called_once()
+            call_args = mock_ui.error_panel.call_args
             assert "ValueError" in call_args[0][0]
             assert "Test error" in call_args[0][0]
             assert "detail" in call_args[1]
@@ -53,7 +53,7 @@ async def test_handle_user_request_with_model_http_error(mock_repl):
         with patch("sidekick.repl.ui", mock_ui), patch("sidekick.repl.session", mock_session):
             await mock_repl._handle_user_request("test input")
 
-            mock_ui.display_error_panel.assert_called_once_with("test-model: Bad request")
+            mock_ui.error_panel.assert_called_once_with("test-model: Bad request")
 
 
 @pytest.mark.asyncio
@@ -68,7 +68,7 @@ async def test_handle_user_request_success(mock_repl):
         with patch("sidekick.repl.ui", mock_ui), patch("sidekick.repl.session", mock_session):
             await mock_repl._handle_user_request("test input")
 
-            mock_ui.display_error_panel.assert_not_called()
+            mock_ui.error_panel.assert_not_called()
             mock_ui.agent.assert_called_once_with("Success response", has_footer=False)
 
 
@@ -88,4 +88,4 @@ async def test_handle_user_request_cancellation(mock_repl):
         with patch("sidekick.repl.ui", mock_ui), patch("sidekick.repl.session", mock_session):
             await mock_repl._handle_user_request("test input")
 
-            mock_ui.display_error_panel.assert_not_called()
+            mock_ui.error_panel.assert_not_called()
