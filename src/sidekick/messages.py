@@ -30,6 +30,17 @@ class MessageHistory:
         self._messages.append(response)
         log.debug("Added model response to message history")
 
+    def add_cancellation_note(self) -> None:
+        """Add a user prompt indicating the request was cancelled.
+
+        This provides clear context to the LLM that the user interrupted the request.
+        """
+        cancellation_request = messages.ModelRequest(
+            parts=[messages.UserPromptPart(content="Previous request cancelled by user")]
+        )
+        self.add_request(cancellation_request)
+        log.debug("Added cancellation note to message history")
+
     def patch_on_error(self, error_message: str) -> None:
         """Patch the message history with a ToolReturnPart on error.
 

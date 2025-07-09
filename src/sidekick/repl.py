@@ -107,6 +107,7 @@ class Repl:
         except asyncio.CancelledError:
             ui.stop_spinner()
             ui.warning("Request interrupted")
+            self.message_history.add_cancellation_note()
         except Exception as e:
             await ctx.handle(e)
         finally:
