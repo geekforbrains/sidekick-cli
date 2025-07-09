@@ -146,4 +146,6 @@ class Repl:
             await self._handle_user_request(user_input)
 
         _restore_default_signal_handler()
+
+        ui.line()
         ui.info("Thanks for all the fish.")

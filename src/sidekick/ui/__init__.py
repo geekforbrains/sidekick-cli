@@ -10,7 +10,7 @@ from sidekick.ui.formatting import (
     get_command_display_name,
     get_file_language,
 )
-from sidekick.ui.manager import MessageType, PanelType, UIManager
+from sidekick.ui.manager import MessageType, OutputType, PanelType, UIManager
 from sidekick.ui.special import update_available as _update_available
 from sidekick.ui.special import usage as _usage
 from sidekick.ui.special import version as _version
@@ -79,6 +79,10 @@ def banner():
 
 def start_spinner(message: str = "", style: str = SpinnerStyle.DEFAULT):
     """Start the spinner with a message."""
+    # Add spacing before spinner if coming after user input
+    if _ui._last_output == OutputType.USER_INPUT:
+        _ui.console.print()
+
     _spinner.start(message, style)
     _ui.set_spinner_active(True)
 

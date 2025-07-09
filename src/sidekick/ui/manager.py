@@ -75,8 +75,7 @@ MESSAGE_STYLES = {
 
 # Padding constants
 PANEL_CONTENT_PADDING = 1
-PANEL_WRAPPER_PADDING = (0, 0, 0, 1)  # top, right, bottom, left - no bottom padding
-PANEL_WRAPPER_PADDING_NO_BOTTOM = (0, 0, 0, 1)  # same as above for consistency
+PANEL_WRAPPER_PADDING = (0, 0, 0, 1)  # top, right, bottom, left
 
 
 class UIManager:
@@ -89,14 +88,14 @@ class UIManager:
 
     def _prepare_spacing(self, new_type: OutputType):
         """Add appropriate spacing based on output type transitions."""
-        if self._last_output is None or self._last_output == OutputType.USER_INPUT:
+        if self._last_output is None:
             return
 
         # Add spacing based on transition type
         if new_type == OutputType.STATUS and self._last_output == OutputType.PANEL:
             # Panel -> Status: add blank line
             self.console.print()
-        elif new_type == OutputType.PANEL:
+        elif new_type == OutputType.PANEL and self._last_output != OutputType.USER_INPUT:
             # Any -> Panel: add blank line (except after user input)
             self.console.print()
         # Status -> Status: no spacing (consecutive status messages stay together)
@@ -219,7 +218,10 @@ class UIManager:
         """Update spinner state."""
         self._spinner_active = active
         if active:
-            self._last_output = OutputType.SPINNER
+            # Don't overwrite panel or user input output type when starting spinner
+            # This preserves proper spacing for status messages after panels and user input
+            if self._last_output not in (OutputType.PANEL, OutputType.USER_INPUT):
+                self._last_output = OutputType.SPINNER
 
     # Convenience methods for common operations
     def agent(self, content: str, has_footer: bool = False):

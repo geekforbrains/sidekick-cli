@@ -8,15 +8,18 @@ from sidekick import ui
 from sidekick.config import update_config_file
 from sidekick.constants import MODELS
 from sidekick.session import session
+from sidekick.ui.colors import colors
 
 log = logging.getLogger(__name__)
 
 
 async def handle_model(args: list[str]):
     """Handle /model command - list, switch, or set default model."""
+    ui.line()
+
     if len(args) == 0:
         table = Table(show_header=False, box=None, padding=(0, 2, 0, 0))
-        table.add_column("#", justify="right", style=ui.colors.primary)
+        table.add_column("#", justify="right", style=colors.primary)
         table.add_column("Model", style="white")
 
         for i, model_name in enumerate(MODELS.keys(), 1):

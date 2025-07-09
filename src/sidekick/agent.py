@@ -93,21 +93,17 @@ def _create_confirmation_callback():
         for key, description in options:
             ui.muted(f"{key}: {description}", indent=2)
 
-        ui.line()  # Add blank line before user input prompt
         while True:
             choice = ui.console.input("  Continue? (y): ").lower().strip()
 
             if choice == "" or choice in ["y", "yes"]:
-                ui.reset_context()  # Mark as user input for proper spacing
                 ui.start_spinner()
                 return True
             elif choice in ["a", "always"]:
                 session.disabled_confirmations.add(tool_name)
-                ui.reset_context()  # Mark as user input for proper spacing
                 ui.start_spinner()
                 return True
             elif choice in ["n", "no"]:
-                ui.reset_context()  # Mark as user input for proper spacing
                 return False
 
     return confirm
@@ -175,5 +171,6 @@ async def process_request(message: str, message_history):
             if type(e).__name__ == "ClosedResourceError" and e.__class__.__module__ == "anyio":
                 raise asyncio.CancelledError() from e
             if type(e).__name__ == "McpError" and str(e) == "Connection closed":
+                log.debug("MCP connection closed, cancelling request")
                 raise asyncio.CancelledError() from e
             return await ctx.handle(e)
